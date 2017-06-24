@@ -125,6 +125,25 @@ print_ptr_text	ldy ptr	; get low byte of ptr - 1
 		tay
 		rts
 
+	; first command should be 0 of course, but I want to be able to tell it apart from text terminator...
+	CMD_PRINT	= 1
+	CMD_ENDOFBLOCK	= 2
+	CMD_NORTH	= 3
+	CMD_SOUTH	= 4
+	CMD_EAST	= 5
+	CMD_WEST	= 6
+	CMD_UP		= 7
+	CMD_DOWN	= 8
+!macro print		{!by CMD_PRINT		}
+!macro terminate	{!by 0			}
+!macro end_sit		{!by CMD_ENDOFBLOCK	}
+!macro north	.target {!by CMD_NORTH:	!wo .target	}
+!macro south	.target {!by CMD_SOUTH:	!wo .target	}
+!macro east	.target {!by CMD_EAST:	!wo .target	}
+!macro west	.target {!by CMD_WEST:	!wo .target	}
+!macro up	.target {!by CMD_UP:	!wo .target	}
+!macro down	.target {!by CMD_DOWN:	!wo .target	}
+	cr		= 13
 
 
 	MAX_CHOICES		= 9	; 1..9

@@ -1,22 +1,38 @@
 #!/usr/bin/python2
 import sys
 
-class convertor(object):
-	"""converts MCA source to ACME source"""
+def sit_label(name):
+	return 's_' + name
 
+class convertor(object):
+	'converts MCA2 source to ACME source'
 	def __init__(self):
+		self.allowed_errors = 10	# convertor stops after this many errors
 		self.line_number = 0	# for error output
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
 		self.in_sit = False	# needed so no command is issued outside of situation
+		self.cond_depth = 0	# needed to count nested "if"s
 		self.vars = []	# list of declared variables (including fakes for literals)
-		self.situations = []	# list of actual "code" lines
-		# FIXME - add dicts for "referenced situations" and "referenced vars"
+		self.code = []	# list of actual "code" lines
+		# sets/dicts to catch errors:
+		self.defined_sits = dict()	# value is line number of definition
+		self.referenced_sits = set()
+		# FIXME - add sets for "referenced situations" and "referenced vars"
 		#self.label_count = 0	# for generating "goto" labels for if/else
-
-	def src_error(self, msg):
-		print >> sys.stderr, "Error in line %d: %s!" % (self.line_number, msg)
-		sys.exit(1)
-
+	def msg(self, msg):
+		print >> sys.stderr, msg
+	def warning(self, msg):
+		self.msg('Warning: ' + msg)
+	def error(self, msg):
+		self.msg('Error: ' + msg)
+		if self.allowed_errors == 0:
+			sys.exit(1)
+		self.allowed_errors -= 1
+	def error_line(self, msg):
+		self.error('in line %d: %s!' % (self.line_number, msg))
+	#def err_serious_line(self, msg):
+	#	print >> sys.stderr, 'Serious error in line %d: %s!' % (self.line_number, msg)
+	#	sys.exit(1)
 	def output(self):
 		print ';ACME0.96.2'
 		print ';'
@@ -24,13 +40,20 @@ class convertor(object):
 		print ';'
 		for v in self.vars:
 			print v
-		for line in self.situations:
+		for line in self.code:
 			print line
 		print ';end of auto-generated file'
-		# FIXME - compare "referenced situations" and "referenced vars" to actual lists!
-		
+		# compare defined and referenced situations:
+		for sit in self.referenced_sits:
+			if sit not in self.defined_sits:
+				self.error('situation "' + sit + '" referenced but not defined')
+		for sit in self.defined_sits:
+			if sit not in self.referenced_sits:
+				self.warning('situation "' + sit + '" defined but never used')
+		# FIXME - compare "referenced vars" to actual list!
+# helper functions to parse lines:
 	def preprocess(self, line_in):
-		"""count and remove indentation characters, remove comments"""
+		'count and remove indentation characters, remove comments'
 		indents = 1	# leading prefix for binary space/tab pattern
 		count_indents = True
 		quotes = None
@@ -57,16 +80,128 @@ class convertor(object):
 				break	# remove comment
 			line_out += char
 		if quotes != None:
-			self.src_error("quotes still open at end of line")
+			self.error_line('quotes still open at end of line')
 		return indents, line_out
+	def get2of2(self, line):
+		'make sure line consists of two parts and return second one'
+		parts = line.split()
+		if len(parts) != 2:
+			self.error_line('line does not fit "KEYWORD ARGUMENT" format')
+		return parts[1]
+# wrapper functions for adding lines:
+	def add_label(self, label):
+		self.code.append(label)
+	def add_code(self, line):
+		self.code.append('\t\t' + line)
+# helper functions to close logical blocks:
+	def no_text(self):
+		'if we are in text mode, terminate'
+		if self.text_mode:
+			self.add_code('+terminate')
+			self.text_mode = False
+	def no_sit(self):
+		'if we are in situation, terminate'
+		if self.in_sit:
+			if self.cond_depth != 0:
+				self.error_line('cannot start new situation, there are "if" blocks left open')
+			self.add_code('+end_sit')
+			self.in_sit = False
+# functions to parse different line types:
+	def process_text_line(self, line):
+		'text line'
+		if self.text_mode == False:
+			self.add_code('+print')
+			self.text_mode = True
+		self.add_code('!tx ' + line)
+	def process_sit_line(self, line):
+		'new situation'
+		self.no_text()
+		self.no_sit()
+		# check
+		sit_name = self.get2of2(line)
+		if sit_name in self.defined_sits:
+			self.error_line('cannot create situation "' + sit_name + '", already created in line ' + str(self.defined_sits[sit_name]))
+		self.defined_sits[sit_name] = self.line_number
+		# create
+		self.add_label(sit_label(sit_name))
+		self.in_sit = True
+		# FIXME - maybe default to text mode in each new sit?
+	def process_dir_line(self, direction, line):
+		'allow a direction of movement and specify target'
+		self.no_text()
+		target_sit_name = self.get2of2(line)
+		self.referenced_sits.add(target_sit_name)
+		self.add_code('+' + direction + ' ' + sit_label(target_sit_name))
+	def process_inc_line(self, line):
+		'increment variable'
+		self.no_text()
+		self.error_line('not implemented')
+	def process_dec_line(self, line):
+		'decrement variable'
+		self.no_text()
+		self.error_line('not implemented')
+	def process_var_line(self, line):
+		'variable declaration'
+		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
+		self.error_line('not implemented')
+	def process_if_line(self, line):
+		'conditional execution of block'
+		self.no_text()
+		self.error_line('not implemented')
+	def process_else_line(self, line):
+		'ELSE block'
+		self.no_text()
+		self.error_line('not implemented')
+	def process_endif_line(self, line):
+		'end of if/else block'
+		self.no_text()
+		self.error_line('not implemented')
+	def process_let_line(self, line):
+		'writing to variable'
+		self.no_text()
+		self.error_line('not implemented')
 
 	def process_line(self, line):
-		"""process a single line of input"""
+		'process a single line of input'
 		self.line_number += 1
 		indents, line = self.preprocess(line)
+		# ignore empty lines
 		if line == '':
 			return
-		self.situations.append(str(indents) + line)
+		if line.startswith('"'):
+			self.process_text_line(line)
+		else:
+			key = line.split()[0]
+			if key == 'sit':
+				self.process_sit_line(line)
+			elif key == 'inc':
+				self.process_inc_line(line)
+			elif key == 'dec':
+				self.process_dec_line(line)
+			elif key == 'var':
+				self.process_var_line(line)
+			elif key == 'if':
+				self.process_if_line(line)
+			elif key == 'else':
+				self.process_else_line(line)
+			elif key == 'endif':
+				self.process_endif_line(line)
+			elif key == 'n':
+				self.process_dir_line('north', line)
+			elif key == 's':
+				self.process_dir_line('south', line)
+			elif key == 'e':
+				self.process_dir_line('east', line)
+			elif key == 'w':
+				self.process_dir_line('west', line)
+			elif key == 'u':
+				self.process_dir_line('up', line)
+			elif key == 'd':
+				self.process_dir_line('down', line)
+			else:
+				self.process_let_line(line)
+		#debug:
+		#self.code.append(str(indents) + line)
 
 	def parse_file(self, filename):
 		with open(filename, 'r') as file:

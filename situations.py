@@ -39,10 +39,10 @@ sit deck4_transporter_room
 	d deck5_jefferies
 	# FIXME - maybe allow ns, ew, ud to give two targets at once?
 	# => this will make the game display n/e/u/d as possible directions and s/w as impossible
-FIXME - add shorthand command for "alternative action leading to new situation"?
+#FIXME - add shorthand command for "alternative action leading to new situation"?
 	# 'a' is for alternative actions, with key, text and result as arguments
 	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
-	a
+#	a
 
 	# still to do:
 	# inc VAR
