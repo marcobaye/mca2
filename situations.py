@@ -4,7 +4,7 @@
 # new file format to describe situations:
 # file is parsed line-by-line
 # hash character indicates comments
-	# leading whitespace is ignored? or use indentation as block delimiter?
+	# leading whitespace is ignored
 
 # first non-whitespace char determines type of line:
 # sit	new situation
@@ -28,6 +28,62 @@
 # example:
 
 # 'sit' starts a new situation, arg is name
+sit start	# <= one situation MUST be called "start", this is where the game begins
+	"Hi! Hit the correct key to begin the game."
+	a corridor2
+
+# "forward" rooms
+sit ready_room
+	"You are in the Captain's ready room."
+
+sit bridge
+	"You are on the bridge of the starship. There are doors facing west, east and south."
+	w2 ready_room
+	e2 bathroom
+	s2 corridor1
+
+sit bathroom
+	"You are in a bathroom. There are three sea shells visible."
+
+# corridor, forward
+sit captains_quarters
+	"You are in what looks like the Captain's quarters."
+
+sit corridor1
+	"You are at the northern end of a corridor. There are doors to the north, east and west."
+	we2 captains_quarters room1e
+
+sit room1e
+	"An empty room."
+
+# corridor, middle
+sit room2w
+	"An empty room."
+
+sit corridor2
+	"You are in a corridor. There are two doors (east and west)."
+	ns2 corridor1 corridor3
+	we2 room2w room2e
+
+sit room2e
+	"An empty room."
+
+# corridor, back
+sit room3w
+	"An empty room."
+
+sit corridor3
+	""
+	we2 room3w room3e
+
+sit room3e
+	"An empty room."
+
+# "back" rooms
+sit engine_room
+	"You are in the engine room."
+	n2 corridor3
+
 sit deck4_transporter_room
 	# '"' starts text to output (implicit PRINT)
 	"You are in what looks like a transporter room right out of Star Trek.", cr
@@ -37,7 +93,6 @@ sit deck4_transporter_room
 	e turbolift
 	u deck3_jefferies
 	d deck5_jefferies
-	# FIXME - maybe allow ns, ew, ud to give two targets at once?
 	# => this will make the game display n/e/u/d as possible directions and s/w as impossible
 #FIXME - add shorthand command for "alternative action leading to new situation"?
 	# 'a' is for alternative actions, with key, text and result as arguments

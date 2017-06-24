@@ -1,26 +1,29 @@
-;ACME 0.95.8
-; Name		mca
-; Purpose	multiple choice adventure
-; Author	(c) Marco Baye, 2016
+;ACME 0.96.2
+; Name		mca2
+; Purpose	multiple choice adventure 2
+; Author	(c) Marco Baye, 2017
 ; Licence	Free software
 ; Changes:
 ;  3 Sep 2016	First try, posted to forum64
 ;  4 Sep 2016	added some comments and shaved off a byte
+; 24 Jun 2017	started work to convert from original mca to mca2
 
 	!src <cbm/c64/petscii.a>
 	!src <cbm/c64/vic.a>
 	!src <cbm/c64/kernal.a>
+	!ct pet
 
 ; helper values
 	CR		= 13
 	MODIFIED8	= $ff
 
 ; zp variables
-!addr	ptr		= $fb
+!addr	sitptr		= $fd	; current situation
+!addr	txtptr		= $fb	; text pointer
 
 ; basic header
 	* = $0801
-		!wo line2, 2016
+		!wo line2, 2017
 		!by $9e, $20	; "sys "
 		!by '0' + entry % 10000 / 1000
 		!by '0' + entry %  1000 /  100
@@ -31,18 +34,35 @@ line2		!wo 0
 
 ; main program
 entry ; entry point for SYS
-		!ct pet
+		; init
 		cld
-		; let ptr point to start situation
-		lda #<start_situation
-		ldx #>start_situation
-		sta ptr
-		stx ptr + 1
+		lda #0
+		sta addr($d020)
+		sta addr($d021)
+		lda #<welcome_text
+		ldx #>welcome_text
+		jsr print_xxaa_text
+
+		jsr init_vars
+		jmp engine
+
+welcome_text	!tx petscii_LOCK, petscii_LOWERCASE, petscii_GREEN, petscii_CLEAR
+		!tx "Welcome to Multiple Choice Adventure 2!", CR, CR, 0
+
+init_vars
+		; let situation ptr point to start situation
+; FIXME - this should be done via some kind of "init-all-vars" loop!
+		lda #<s_start
+		ldx #>s_start
+		sta sitptr
+		stx sitptr + 1
+		rts
+
+engine
 mainloop	;
-		jsr print_ptr_text
+		jsr print_sit_text	; => Y is 0
 		lda #CR
 		jsr k_chrout
-; FIXME - init y to zero!
 		ldx #0	; no choices yet
 		; now iterate over choices
 		beq iter_choices
@@ -50,7 +70,7 @@ mainloop	;
 next_choice		; copy target
 			sta target_high, x
 			iny
-			lda (ptr), y
+			lda (sitptr), y
 			sta target_low, x
 			lda #' '
 			jsr k_chrout
@@ -64,17 +84,17 @@ next_choice		; copy target
 			; advance pointer
 			sec	; +1
 			tya
-			adc ptr
-			sta ptr
+			adc sitptr
+			sta sitptr
 			bcc +
-				inc ptr + 1
+				inc sitptr + 1
 +			; output choice text
-			jsr print_ptr_text
+			jsr print_sit_text
 			lda #CR
 			jsr k_chrout
 			inx	; count this choice
 iter_choices		iny
-			lda (ptr), y
+			lda (sitptr), y
 			bne next_choice
 		; no more choices
 		stx number_of_choices
@@ -93,9 +113,9 @@ iter_choices		iny
 		; update situation pointer
 		tax
 		lda target_low, x
-		sta ptr
+		sta sitptr
 		lda target_high, x
-		sta ptr + 1
+		sta sitptr + 1
 		; output entered character
 		tya
 		jsr k_chrout
@@ -107,42 +127,52 @@ iter_choices		iny
 		; start over
 		jmp mainloop
 
-; entry: ptr points to text
-; exit: ptr points to terminating zero, A=0, X preserved, Y=0
-print_ptr_text	ldy ptr	; get low byte of ptr - 1
-		lda #0	; and zero ptr low, so "(ptr), y" points to text
-		sta ptr
+; entry: -
+; exit: txtptr points to terminating zero, A=0, X preserved, Y=0
+print_sit_text	lda sitptr
+		ldx sitptr + 1
+; entry: XXAA points to text
+; exit: txtptr points to terminating zero, A=0, X preserved, Y=0
+print_xxaa_text	sta txtptr
+		stx txtptr + 1
+; entry: txtptr points to text
+; exit: txtptr points to terminating zero, A=0, X preserved, Y=0
+print_ptr_text	ldy txtptr	; get low byte of ptr - 1
+		lda #0	; and zero ptr low, so "(txtptr), y" points to text
+		sta txtptr
 		beq +++
 		;--
 ---			jsr k_chrout
 			iny
 			bne +++
-				inc ptr + 1	; fix high byte
-+++			lda (ptr), y
+				inc txtptr + 1	; fix high byte
++++			lda (txtptr), y
 			bne ---
 		; write updated address
-		sty ptr
+		sty txtptr
 		tay
 		rts
 
 	; first command should be 0 of course, but I want to be able to tell it apart from text terminator...
 	CMD_PRINT	= 1
-	CMD_ENDOFBLOCK	= 2
+	CMD_END_OF_SIT	= 2	; end of situation
 	CMD_NORTH	= 3
 	CMD_SOUTH	= 4
 	CMD_EAST	= 5
 	CMD_WEST	= 6
 	CMD_UP		= 7
 	CMD_DOWN	= 8
+	;CMD_GOTO	= 9	; to implement if/else/endif blocks
 !macro print		{!by CMD_PRINT		}
 !macro terminate	{!by 0			}
-!macro end_sit		{!by CMD_ENDOFBLOCK	}
-!macro north	.target {!by CMD_NORTH:	!wo .target	}
+!macro end_sit		{!by CMD_END_OF_SIT	}
+!macro north	.target	{!by CMD_NORTH:	!wo .target	}
 !macro south	.target {!by CMD_SOUTH:	!wo .target	}
 !macro east	.target {!by CMD_EAST:	!wo .target	}
 !macro west	.target {!by CMD_WEST:	!wo .target	}
 !macro up	.target {!by CMD_UP:	!wo .target	}
 !macro down	.target {!by CMD_DOWN:	!wo .target	}
+;!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
 	cr		= 13
 
 
