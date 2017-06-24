@@ -1,0 +1,172 @@
+;ACME 0.95.8
+; Name		mca
+; Purpose	multiple choice adventure
+; Author	(c) Marco Baye, 2016
+; Licence	Free software
+; Changes:
+;  3 Sep 2016	First try, posted to forum64
+;  4 Sep 2016	added some comments and shaved off a byte
+
+	!src <cbm/c64/petscii.a>
+	!src <cbm/c64/vic.a>
+	!src <cbm/c64/kernal.a>
+
+; helper values
+	CR		= 13
+	MODIFIED8	= $ff
+
+; zp variables
+!addr	ptr		= $fb
+
+; basic header
+	* = $0801
+		!wo line2, 2016
+		!by $9e, $20	; "sys "
+		!by '0' + entry % 10000 / 1000
+		!by '0' + entry %  1000 /  100
+		!by '0' + entry %   100 /   10
+		!by '0' + entry %    10
+		!pet $3a, $8f, " saufbox!", $0	; ":rem "
+line2		!wo 0
+
+; main program
+entry ; entry point for SYS
+		!ct pet
+		cld
+		; let ptr point to start situation
+		lda #<start_situation
+		ldx #>start_situation
+		sta ptr
+		stx ptr + 1
+mainloop	;
+		jsr print_ptr_text
+		lda #CR
+		jsr k_chrout
+; FIXME - init y to zero!
+		ldx #0	; no choices yet
+		; now iterate over choices
+		beq iter_choices
+		;--
+next_choice		; copy target
+			sta target_high, x
+			iny
+			lda (ptr), y
+			sta target_low, x
+			lda #' '
+			jsr k_chrout
+			; output choice character
+			txa
+			clc
+			adc #FIRST_CHOICE_CHARACTER
+			jsr k_chrout
+			lda #' '
+			jsr k_chrout
+			; advance pointer
+			sec	; +1
+			tya
+			adc ptr
+			sta ptr
+			bcc +
+				inc ptr + 1
++			; output choice text
+			jsr print_ptr_text
+			lda #CR
+			jsr k_chrout
+			inx	; count this choice
+iter_choices		iny
+			lda (ptr), y
+			bne next_choice
+		; no more choices
+		stx number_of_choices
+		; ask user for input
+		lda #'?'
+		jsr k_chrout
+		; wait for valid input
+---			jsr k_getin
+			tay	; remember original character
+			; convert to offset and check limits while at it
+			sec
+			sbc #FIRST_CHOICE_CHARACTER
+			bcc ---	; input too low
+			cmp #MODIFIED8:number_of_choices = * - 1
+			bcs ---	; input too high
+		; update situation pointer
+		tax
+		lda target_low, x
+		sta ptr
+		lda target_high, x
+		sta ptr + 1
+		; output entered character
+		tya
+		jsr k_chrout
+		; add two newlines
+		lda #CR
+		jsr k_chrout
+		lda #CR
+		jsr k_chrout
+		; start over
+		jmp mainloop
+
+; entry: ptr points to text
+; exit: ptr points to terminating zero, A=0, X preserved, Y=0
+print_ptr_text	ldy ptr	; get low byte of ptr - 1
+		lda #0	; and zero ptr low, so "(ptr), y" points to text
+		sta ptr
+		beq +++
+		;--
+---			jsr k_chrout
+			iny
+			bne +++
+				inc ptr + 1	; fix high byte
++++			lda (ptr), y
+			bne ---
+		; write updated address
+		sty ptr
+		tay
+		rts
+
+
+
+	MAX_CHOICES		= 9	; 1..9
+	FIRST_CHOICE_CHARACTER	= '1'
+	SEPARATOR		= 0	; after text, after each choice, after situation
+; example situation:
+;name	!tx "description", CR
+;	!tx "description", CR
+;	!tx "description"
+;	!by 0 (end of text, start of choices)
+;	;choices:
+;	!be16 target (where choice leads)
+;	!tx "text of choice", 0
+;	!be16 target (where choice leads)
+;	!tx "text of choice", 0
+;	[...]
+;	!by 0 (end of situation)
+
+	; macro to begin new situation
+	!macro sit ~.name {
+		!if CHOICES = 0 {
+			!error "Previous situation had no choices!"
+		}
+		!set CHOICES = 0
+		!by SEPARATOR, SEPARATOR	; close choice and situation
+.name
+	}
+
+	; macro to add a choice to a situation
+	!macro choice .target {
+		!if CHOICES = MAX_CHOICES {
+			!error "Too many choices"
+		}
+		!set CHOICES = CHOICES + 1
+		!by SEPARATOR	; end previous choice (or description if first choice)
+		!by >.target, <.target	; hi/lo order allows zero to terminate
+	}
+
+	!set CHOICES = 1	; non-null so macro does not complain on first situation
+	!src "situations.a"
+	+sit ~dummy_situation	; make sure last situation is closed
+
+; external storage:
+target_low
+target_high	= target_low + MAX_CHOICES
