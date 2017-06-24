@@ -1,13 +1,13 @@
 #!/bin/cat
 # this file is only called *.py to have python syntax coloring!
-
+ 
 # new file format to describe situations:
 # file is parsed line-by-line
 # hash character indicates comments
 	# leading whitespace is ignored? or use indentation as block delimiter?
 
 # first non-whitespace char determines type of line:
-# +	new situation
+# sit	new situation
 # "	print text (you can use symbolic petscii codes)
 # d	set target for "down"
 # dec	decrement variable	FIXME - allow underrun?
@@ -27,17 +27,17 @@
 
 # example:
 
-# '+' starts a new situation, arg is name (FIXME - just use "no indent" instead of '+'?)
-+ deck4_transporter_room
+# 'sit' starts a new situation, arg is name
+sit deck4_transporter_room
 	# '"' starts text to output (implicit PRINT)
 	"You are in what looks like a transporter room right out of Star Trek.", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
 	# "nsewud" characters indicate target situations for north/south/east/west/up/down
-	# "nsowhr" auf deutsch (nord/süd/ost/west/hoch/runter)
 	n corridor_transp_room
 	e turbolift
 	u deck3_jefferies
 	d deck5_jefferies
+	# FIXME - maybe allow ns, ew, ud to give two targets at once?
 	# => this will make the game display n/e/u/d as possible directions and s/w as impossible
 FIXME - add shorthand command for "alternative action leading to new situation"?
 	# 'a' is for alternative actions, with key, text and result as arguments
@@ -53,3 +53,4 @@ FIXME - add shorthand command for "alternative action leading to new situation"?
 	# endif
 	# "restart" to set vars to default?
 	# call some_assembler_label	# call assembler subroutine (to beep, shake screen, etc.)
+#
