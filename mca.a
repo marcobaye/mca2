@@ -8,6 +8,7 @@
 ;  4 Sep 2016	added some comments and shaved off a byte
 ; 24 Jun 2017	started work to convert from original mca to mca2
 
+	!src <6502/std.a>	; for bit16 macro
 	!src <cbm/c64/petscii.a>
 	!src <cbm/c64/vic.a>
 	!src <cbm/c64/kernal.a>
@@ -16,10 +17,11 @@
 ; helper values
 	CR		= 13
 	MODIFIED8	= $ff
+!addr	MODIFIED16	= $ffff
 
 ; zp variables
-!addr	sitptr		= $fd	; current situation
-!addr	txtptr		= $fb	; text pointer
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
+!addr	primm_ptr	= $fd
 
 ; basic header
 	* = $0801
@@ -36,30 +38,233 @@ line2		!wo 0
 entry ; entry point for SYS
 		; init
 		cld
+		tsx
+		stx sp_buffer
 		lda #0
-		sta addr($d020)
-		sta addr($d021)
-		lda #<welcome_text
-		ldx #>welcome_text
-		jsr print_xxaa_text
+		sta vic_cborder
+		sta vic_cbg
+		jsr my_primm
+		!tx petscii_LOCK, petscii_LOWERCASE, petscii_GREEN, petscii_CLEAR
+		!tx "Welcome to Multiple Choice Adventure 2!", 0
+		jmp engine_new_sit
 
-		jsr init_vars
-		jmp engine
-
-welcome_text	!tx petscii_LOCK, petscii_LOWERCASE, petscii_GREEN, petscii_CLEAR
-		!tx "Welcome to Multiple Choice Adventure 2!", CR, CR, 0
-
-init_vars
-		; let situation ptr point to start situation
-; FIXME - this should be done via some kind of "init-all-vars" loop!
-		lda #<s_start
-		ldx #>s_start
-		sta sitptr
-		stx sitptr + 1
+;internal_error	jsr my_primm
+;		!tx "Internal error!", CR, 0
+exit		ldx #MODIFIED8	: sp_buffer = * - 1
+		txs
 		rts
 
-engine
-mainloop	;
+; print immediate
+my_primm	pla	; get low byte of return address - 1
+		tay	; into Y
+		pla	; get high byte of return address - 1
+		sta primm_ptr + 1	; to ptr high
+		lda #0	; and zero ptr low, so "(ptr), y" points before text
+		sta primm_ptr
+		beq +
+		;--
+---			; fix high byte
+			inc primm_ptr + 1
+			bne +++	; I trust this branch always gets taken
+			;--
+-			jsr k_chrout
++			iny
+			beq ---
++++			lda (primm_ptr), y
+			bne -
+		; push updated address onto stack
+		lda primm_ptr + 1
+		pha
+		tya
+		pha
+		rts	; return to caller (after zero-terminated text)
+
+;=====================================================================
+; engine
+engine_new_sit ; basically the start of the engine's main loop
+		; check "restart" flag:
+		lda #MODIFIED8	: restart_flag = * - 1
+		beq ++
+			; re-init vars with default values
+			; effectively this algo limits game vars to a maximum of 255
+			ldx #gamevars_COUNT
+--				lda gamevars_defaults_lo - 1, x
+				sta gamevars_lo - 1, x
+				lda gamevars_defaults_hi - 1, x
+				sta gamevars_hi - 1, x
+				dex
+			bne --
+			stx restart_flag	; inhibit this until someone requests it again
+++		; okay, here is the real start:
+		; clear directions and choices
+		lda #0
+		ldx #6
+--			sta directions_hi - 1, x	; no need to zero low as well
+			dex
+			bne --
+		sta number_of_alternatives
+		; make some space
+		jsr my_primm	: !tx CR, CR, 0
+		; execute code from current situation
+		lda gamevars_lo + GAMEVAR_CURRENTSIT
+		sta runptr
+		lda gamevars_hi + GAMEVAR_CURRENTSIT
+		sta runptr + 1
+		jsr interpreter_run
+		; now text should be on screen, directions and alternatives in buffers,
+		; so display prompt
+		jsr my_primm	: !tx CR, "Please choose from [", 0
+		ldy #0	; debug counter
+		ldx #0
+--			lda directions_hi, x
+			beq +
+				iny	; count
+				lda direction_keys, x
+				jsr k_chrout
++			inx
+			cpx #6
+			bne --
+		; FIXME - add alternatives as well!
+		jsr my_primm	: !tx "]. Your choice", 0
+		tya
+		beq no_choice
+		; ask user for input
+---			lda #'?'
+			jsr k_chrout
+			; wait for valid input
+-				jsr k_getin
+				beq -
+			ldx #6
+--				cmp direction_keys - 1, x
+				beq .dir_x
+				dex
+				bne --
+			beq ---
+			;---
+.dir_x			lda directions_hi - 1, x
+			beq ---
+		sta gamevars_hi + GAMEVAR_CURRENTSIT
+		lda directions_lo - 1, x
+		sta gamevars_lo + GAMEVAR_CURRENTSIT
+		jmp engine_new_sit
+
+no_choice	jsr my_primm
+		!tx CR, CR, "BUG: no choices left in this situation!", 0
+		jmp exit
+
+unknown_cmd	jsr my_primm
+		!tx CR, CR, "BUG: encountered unknown instruction!", 0
+		jmp exit
+
+interpreter_go_on ; enter with A = offset to add
+		clc
+		adc runptr
+		sta runptr
+		bcc +
+			inc runptr
++
+interpreter_run ; execute bytecode block
+		ldy #0
+		lda (runptr), y
+		cmp #CMDLIMIT
+		bcs unknown_cmd
+		asl
+		tax
+		lda cmd_table, x
+		sta .vector
+		lda cmd_table + 1, x
+		sta .vector + 1
+		jmp MODIFIED16	: .vector = * - 2
+;---------------------------------------
+	; macro magic to assign instruction codes and put pointers into table
+	!macro instruction ~.code, ~.ptr {
+.ptr
+		.code = instruction_enum
+		!set instruction_enum = instruction_enum + 1
+		; if we know where the command table is, write to it
+		.buf = *	; outside of ifdef to make sure locals are counted correctly
+		!ifdef cmd_table {
+			* = cmd_table + 2 * .code
+			!wo .ptr
+			* = .buf	; go back to where we came from
+		}
+	}
+;---------------------------------------
+	!set instruction_enum = 0	; let's go!
+;---------------------------------------
+; all command handlers are entered with runptr pointing to command and Y=0
+;---------------------------------------
+	!macro end_sit		{!by CMD_ENDOFBLOCK	}
++instruction ~CMD_ENDOFBLOCK, ~cmd_endofblock
+		rts
+;---------------------------------------
+	!macro print		{!by CMD_PRINT	}
+	!macro terminate	{!by 0		}
+--			jsr k_chrout
++instruction ~CMD_PRINT, ~cmd_print
+			inc runptr
+			bne +
+				inc runptr + 1
++			lda (runptr), y
+			bne --
+		; FIXME - when adding word wrap, flush buffer here!
+		lda #1
+		jmp interpreter_go_on
+;---------------------------------------
+	!macro north	.target	{!by CMD_NORTH:	!wo .target	}
+	!macro south	.target {!by CMD_SOUTH:	!wo .target	}
+	!macro west	.target {!by CMD_WEST:	!wo .target	}
+	!macro east	.target {!by CMD_EAST:	!wo .target	}
+	!macro up	.target {!by CMD_UP:	!wo .target	}
+	!macro down	.target {!by CMD_DOWN:	!wo .target	}
++instruction ~CMD_NORTH, ~cmd_north
+		ldx #offset_NORTH
+		+bit16
++instruction ~CMD_SOUTH, ~cmd_south
+		ldx #offset_SOUTH
+		+bit16
++instruction ~CMD_WEST, ~cmd_west
+		ldx #offset_WEST
+		+bit16
++instruction ~CMD_EAST, ~cmd_east
+		ldx #offset_EAST
+		+bit16
++instruction ~CMD_UP, ~cmd_up
+		ldx #offset_UP
+		+bit16
++instruction ~CMD_DOWN, ~cmd_down
+		ldx #offset_DOWN
+		iny
+		lda (runptr), y
+		sta directions_lo, x
+		iny
+		lda (runptr), y
+		sta directions_hi, x
+		lda #3
+		jmp interpreter_go_on
+
+direction_keys	!tx "nsweud"
+	offset_NORTH	= 0
+	offset_SOUTH	= 1
+	offset_WEST	= 2
+	offset_EAST	= 3
+	offset_UP	= 4
+	offset_DOWN	= 5
+;---------------------------------------
+	;!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
+;+instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks
+;---------------------------------------
+	; add more instructions here
+;---------------------------------------
+	CMDLIMIT = instruction_enum
+		
+cmd_table
+		; reserve space for command pointers
+		* = * + 2 * CMDLIMIT
+		; table will be filled in by "instruction" macro in later pass!
+
+!if 0 {
+#############
 		jsr print_sit_text	; => Y is 0
 		lda #CR
 		jsr k_chrout
@@ -97,7 +302,7 @@ iter_choices		iny
 			lda (sitptr), y
 			bne next_choice
 		; no more choices
-		stx number_of_choices
+		stx number_of_alternatives
 		; ask user for input
 		lda #'?'
 		jsr k_chrout
@@ -108,7 +313,7 @@ iter_choices		iny
 			sec
 			sbc #FIRST_CHOICE_CHARACTER
 			bcc ---	; input too low
-			cmp #MODIFIED8:number_of_choices = * - 1
+			cmp #MODIFIED8:number_of_alternatives = * - 1
 			bcs ---	; input too high
 		; update situation pointer
 		tax
@@ -127,17 +332,9 @@ iter_choices		iny
 		; start over
 		jmp mainloop
 
-; entry: -
-; exit: txtptr points to terminating zero, A=0, X preserved, Y=0
-print_sit_text	lda sitptr
-		ldx sitptr + 1
-; entry: XXAA points to text
-; exit: txtptr points to terminating zero, A=0, X preserved, Y=0
-print_xxaa_text	sta txtptr
-		stx txtptr + 1
 ; entry: txtptr points to text
 ; exit: txtptr points to terminating zero, A=0, X preserved, Y=0
-print_ptr_text	ldy txtptr	; get low byte of ptr - 1
+print_ptr_text	ldy runptr	; get low byte of ptr - 1
 		lda #0	; and zero ptr low, so "(txtptr), y" points to text
 		sta txtptr
 		beq +++
@@ -152,70 +349,23 @@ print_ptr_text	ldy txtptr	; get low byte of ptr - 1
 		sty txtptr
 		tay
 		rts
+target_low
+	* = * + MAX_CHOICES
+target_high
+#############
+}
 
-	; first command should be 0 of course, but I want to be able to tell it apart from text terminator...
-	CMD_PRINT	= 1
-	CMD_END_OF_SIT	= 2	; end of situation
-	CMD_NORTH	= 3
-	CMD_SOUTH	= 4
-	CMD_EAST	= 5
-	CMD_WEST	= 6
-	CMD_UP		= 7
-	CMD_DOWN	= 8
-	;CMD_GOTO	= 9	; to implement if/else/endif blocks
-!macro print		{!by CMD_PRINT		}
-!macro terminate	{!by 0			}
-!macro end_sit		{!by CMD_END_OF_SIT	}
-!macro north	.target	{!by CMD_NORTH:	!wo .target	}
-!macro south	.target {!by CMD_SOUTH:	!wo .target	}
-!macro east	.target {!by CMD_EAST:	!wo .target	}
-!macro west	.target {!by CMD_WEST:	!wo .target	}
-!macro up	.target {!by CMD_UP:	!wo .target	}
-!macro down	.target {!by CMD_DOWN:	!wo .target	}
-;!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
-	cr		= 13
-
-
-	MAX_CHOICES		= 9	; 1..9
-	FIRST_CHOICE_CHARACTER	= '1'
-	SEPARATOR		= 0	; after text, after each choice, after situation
-; example situation:
-;name	!tx "description", CR
-;	!tx "description", CR
-;	!tx "description"
-;	!by 0 (end of text, start of choices)
-;	;choices:
-;	!be16 target (where choice leads)
-;	!tx "text of choice", 0
-;	!be16 target (where choice leads)
-;	!tx "text of choice", 0
-;	[...]
-;	!by 0 (end of situation)
-
-	; macro to begin new situation
-	!macro sit ~.name {
-		!if CHOICES = 0 {
-			!error "Previous situation had no choices!"
-		}
-		!set CHOICES = 0
-		!by SEPARATOR, SEPARATOR	; close choice and situation
-.name
-	}
-
-	; macro to add a choice to a situation
-	!macro choice .target {
-		!if CHOICES = MAX_CHOICES {
-			!error "Too many choices"
-		}
-		!set CHOICES = CHOICES + 1
-		!by SEPARATOR	; end previous choice (or description if first choice)
-		!by >.target, <.target	; hi/lo order allows zero to terminate
-	}
-
-	!set CHOICES = 1	; non-null so macro does not complain on first situation
+	cr	= 13
 	!src "_autogenerated.a"
-	+sit ~dummy_situation	; make sure last situation is closed
 
 ; external storage:
-target_low
-target_high	= target_low + MAX_CHOICES
+number_of_alternatives
+	* = * + 1
+directions_lo
+	* = * + 6	; n/s/w/e/u/d
+directions_hi
+	* = * + 6	; n/s/w/e/u/d
+gamevars_lo
+	* = * + gamevars_COUNT
+gamevars_hi
+	* = * + gamevars_COUNT

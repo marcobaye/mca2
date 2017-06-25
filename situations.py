@@ -1,5 +1,6 @@
 #!/bin/cat
-# this file is only called *.c to have syntax coloring!
+# this is no python source, the file is only
+# called *.py to have syntax coloring!
  
 # simple file format to describe situations:
 # file is parsed line-by-line
@@ -78,54 +79,72 @@ sit deck4_transporter_room
 # 'sit' starts a new situation, arg is name
 sit start	# <= one situation MUST be called "start", this is where the game begins
 	"Hi! Hit the correct key to begin the game."
-	a corridor2
+	#a corridor2		FIXME - implement "a"!
+	n corridor2
 
-# "forward" rooms
-sit ready_room
-	"You are in the Captain's ready room."
+/* this example file uses a starship,
+here is the floor plan:
 
+         bridge
+           |
+ quart - corr1 - toilet
+           |
+transp - corr2 - airlock
+           |
+ empty - corr3 - storage
+           |
+         drive
+
+all connections use the two-way feature, therefore we only specify connections
+for north and east directions:
+*/
+
+# bridge
 sit bridge
-	"You are on the bridge of the starship. There are doors facing west, east and south."
-	w2 ready_room
-	e2 bathroom
-	s2 corridor1
+	"You are on the bridge of the starship. There is a door facing south."
+	# no need to specify south connection, we do that from the other end!
 
-sit bathroom
-	"You are in a bathroom. There are three sea shells visible."
-
-# corridor, forward
-sit captains_quarters
-	"You are in what looks like the Captain's quarters."
+# forward
+sit quarters
+	"You are in what looks like the Captain's living quarters."
+	e2 corridor1	# connect to corridor and back
 
 sit corridor1
 	"You are at the northern end of a corridor. There are doors to the north, east and west."
-	we2 captains_quarters room1e
+	n2 bridge	# connect to bridge and back
+	e2 toilet	# connect to bathroom and back
 
-sit room1e
-	"An empty room."
+sit toilet
+	"You are in a bathroom. There are three sea shells visible."
+	# no need to specify connection as it is done from the other end
 
-# corridor, middle
-sit room2w
-	"An empty room."
+# middle
+sit transporter_room
+	"You are in a room with what looks like some kind of teleportation pod."
+	e2 corridor2	# connect to corridor and back
 
 sit corridor2
 	"You are in a corridor. There are two doors (east and west)."
-	ns2 corridor1 corridor3
-	we2 room2w room2e
+	n2 corridor1
+	e2 airlock
 
-sit room2e
-	"An empty room."
+sit airlock
+	"You are in a downward-facing airlock. The outer door is closed."
+	# no need to specify connection as it is done from the other end.
 
 # corridor, back
-sit room3w
-	"An empty room."
+sit empty
+	"This room seems to be completely empty."
+	e2 corridor3	# connect to corridor and back
 
 sit corridor3
-	""
-	we2 room3w room3e
+	"You are in a corridor. There are two doors, east and west."
+	n2 corridor2
+	e2 storage
 
-sit room3e
-	"An empty room."
+sit storage
+	"There are some storage containers in this room."
+	# no need to specify connection as it is done from the other end.
 
 # "back" rooms
 sit engine_room
