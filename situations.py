@@ -6,19 +6,57 @@
 # hash character indicates comments
 	# leading whitespace is ignored
 
-# first non-whitespace char determines type of line:
-# sit	new situation
-# "	print text (you can use symbolic petscii codes)
-# d	set target for "down"
+# first word (or character) of each line determines the type of line:
+# "const" defines symbolic constants:
+const DEAD	0
+const ALIVE	1
+const CLOSED	0
+const OPEN	1
+const OFFEN	OPEN	# once they are defined, they can be used like numbers
+const MOOD_IN_LOVE	0
+const MOOD_FRIENDLY	1
+const MOOD_NEUTRAL	2
+const MOOD_GRUMPY	3
+const MOOD_PISSED	4
+# "var" defines a game variable and its start value
+var dragon	ALIVE
+var crocodile	ALIVE
+var secretdoor	CLOSED
+var dwarfmood	MOOD_NEUTRAL
+var lives_left	5
+var cows_killed	0
+# "sit" starts a new situation, basically a location in the game:
+sit deck4_transporter_room
+	# lines beginning with double quotes are text to output (basically a PRINT instruction without the "PRINT"):
+	"You are in what looks like a transporter room right out of Star Trek.", cr	# "cr" adds a carriage return
+	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
+	# "nsewud" characters indicate target situations when player attempts to go north/south/east/west/up/down:
+	n corridor_transp_room	# going north leads to the "corridor outside the transporter room" stuation
+	e turbolift		# going east leads to the turbolift situation
+	u deck3_jefferies	# going up leads to "jefferies tube on deck 3" situation
+	d deck5_jefferies	# going down leads to "jefferies tube on deck 5" situation
+	# ...now the game will display north/east/up/down as possible directions, but neither south nor west
+
+# FIXME - explain this stuff later, do not pile too much on top at once:
+	#	north/south, west/east and up/down targets can be given together using ns/we/ud:
+	# ud deck3_jefferies deck5_jefferies	# this would specify two targets on a single line
+	#	as a convenience function, you can add a "2" to the command to enforce a two-way connection:
+	# n2 corridor_transp_room	# this says "going east leads to corridor_transp_room, and going west
+	# from there would lead back here again! this way
+	#	AND GOING WEST FROM THERE would lead back here again
+#FIXME - add shorthand command for "alternative action leading to new situation"?
+	# 'a' is for alternative actions, with key, text and result as arguments
+	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
+#	a
+
+
+# "TEXT"	print text (you can use symbolic petscii codes)
+# n TARGET	set target for "north" direction
+	# use s/w/e/u/d for south/west/east/up/down
 # dec	decrement variable	FIXME - allow underrun?
-# e	set target for "east"
 # enum TOT, LEBENDIG, UNTOT	define symbolic constants	FIXME - this clashes with telling vars/literals apart!
 # if	start conditional block
 # inc	increment variable	FIXME - allow overrun?
-# n	set target for "north"
-# s	set target for "south"
-# u	set target for "up"
-# w	set target for "west"
 # v	declare uint16 variable and default value ("current_sit" is pre-defined and must be read-only!)
 	# this would allow to load/save current state just by loading/saving var block!
 # VAR=LITERAL	set variable to fixed value
@@ -83,21 +121,6 @@ sit room3e
 sit engine_room
 	"You are in the engine room."
 	n2 corridor3
-
-sit deck4_transporter_room
-	# '"' starts text to output (implicit PRINT)
-	"You are in what looks like a transporter room right out of Star Trek.", cr
-	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
-	# "nsewud" characters indicate target situations for north/south/east/west/up/down
-	n corridor_transp_room
-	e turbolift
-	u deck3_jefferies
-	d deck5_jefferies
-	# => this will make the game display n/e/u/d as possible directions and s/w as impossible
-#FIXME - add shorthand command for "alternative action leading to new situation"?
-	# 'a' is for alternative actions, with key, text and result as arguments
-	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
-#	a
 
 	# still to do:
 	# inc VAR
