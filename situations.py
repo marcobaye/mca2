@@ -124,7 +124,7 @@ sit transporter_room
 	e2 corridor2	# connect to corridor and back
 
 sit corridor2
-	"You are in a corridor. There are two doors (east and west)."
+	"You are in a corridor leading north and south. There are two doors (east and west)."
 	n2 corridor1
 	e2 airlock
 
@@ -138,7 +138,7 @@ sit empty
 	e2 corridor3	# connect to corridor and back
 
 sit corridor3
-	"You are in a corridor. There are two doors, east and west."
+	"You are at the southern end of a corridor. There are doors to the south, east and west."
 	n2 corridor2
 	e2 storage
 
@@ -146,7 +146,7 @@ sit storage
 	"There are some storage containers in this room."
 	# no need to specify connection as it is done from the other end.
 
-# "back" rooms
+# "back" room
 sit engine_room
 	"You are in the engine room."
 	n2 corridor3

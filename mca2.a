@@ -7,6 +7,7 @@
 ;  3 Sep 2016	First try, posted to forum64
 ;  4 Sep 2016	added some comments and shaved off a byte
 ; 24 Jun 2017	started work to convert from original mca to mca2
+; 26 Jun 2017	got it to work
 
 	!src <6502/std.a>	; for bit16 macro
 	!src <cbm/c64/petscii.a>
