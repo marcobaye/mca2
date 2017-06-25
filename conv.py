@@ -44,6 +44,7 @@ class convertor(object):
 	def __init__(self):
 		self.allowed_errors = 10	# convertor stops after this many errors
 		self.line_number = 0	# for error output
+		self.in_comment = False	# for c-style multi-line comments
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
 		self.current_sit = None	# needed so no command is issued outside of situation (and to recall current sit)
 		self.cond_depth = 0	# needed to count nested "if"s
@@ -100,6 +101,7 @@ class convertor(object):
 				num = self.consts[value]
 			else:
 				self.error_line('Cannot determine numerical value of "' + value + '"')
+				num = 0	# make sure script does not crash
 		return num
 	def output(self):
 		print ';ACME 0.96.2'
@@ -277,12 +279,25 @@ class convertor(object):
 		indents, line = self.preprocess(line)
 		#print indents, line
 		#return
+		# handle end of multi-line comment:
+		if self.in_comment:
+			if line.startswith('*/'):
+				self.in_comment = False
+				line = line[2:]
+			else:
+				return
 		# ignore empty lines
 		if line == '':
 			return
-		if line.startswith('"'):
+		if line.startswith('/*'):
+			# start of multi-line comment
+			self.in_comment = True
+			return
+		elif line.startswith('"'):
+			# text output
 			self.process_text_line(line)
 		else:
+			# everything else should start with a keyword...
 			key = line.split()[0]
 			if key == 'sit':
 				self.process_sit_line(line)
@@ -337,6 +352,7 @@ class convertor(object):
 			elif key == 'ud2':
 				self.process_dirs_line('up', 'down', line, two_way=True)
 			else:
+				# ...or is an assignment to a variable
 				self.process_let_line(line)
 		#debug:
 		#self.current_sit.code.append(str(indents) + line)

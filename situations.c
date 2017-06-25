@@ -1,34 +1,44 @@
 #!/bin/cat
-# this file is only called *.py to have python syntax coloring!
+# this file is only called *.c to have syntax coloring!
  
-# new file format to describe situations:
+# simple file format to describe situations:
 # file is parsed line-by-line
 # hash character indicates comments
 	# leading whitespace is ignored
+/*
+you can also use c-style multi-line comment characters
+to quickly disable large portions of this file.
+*/
 
 # first word (or character) of each line determines the type of line:
+
 # "const" defines symbolic constants:
 const DEAD	0
 const ALIVE	1
 const CLOSED	0
 const OPEN	1
-const OFFEN	OPEN	# once they are defined, they can be used like numbers
+const OFFEN	OPEN	# once they are defined, constants can be used like numbers
+# all calculations are done as unsigned 16-bit integers,
+# so numbers must be in 0..65535 range. Negative numbers are not supported, but who needs them anyway?
 const MOOD_IN_LOVE	0
 const MOOD_FRIENDLY	1
 const MOOD_NEUTRAL	2
 const MOOD_GRUMPY	3
 const MOOD_PISSED	4
-# "var" defines a game variable and its start value
+
+# "var" defines a game variable and its start value:
 var dragon	ALIVE
 var crocodile	ALIVE
 var secretdoor	CLOSED
 var dwarfmood	MOOD_NEUTRAL
 var lives_left	5
 var cows_killed	0
+
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room
-	# lines beginning with double quotes are text to output (basically a PRINT instruction without the "PRINT"):
-	"You are in what looks like a transporter room right out of Star Trek.", cr	# "cr" adds a carriage return
+	# lines beginning with double quotes are text to output.
+	# You can use predefined petscii codes. "cr" adds a carriage return.
+	"You are in what looks like a transporter room right out of ", petscii_WHITE, "Star Trek", petscii_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
 	# "nsewud" characters indicate target situations when player attempts to go north/south/east/west/up/down:
 	n corridor_transp_room	# going north leads to the "corridor outside the transporter room" stuation
