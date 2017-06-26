@@ -11,6 +11,7 @@ class situation(dict):
 		self['name'] = name
 		self['code'] = []
 		self['dirs'] = {}
+		self.indents = 2
 	# setters:
 	def set_line_num(self, num):
 		self['line_num'] = num
@@ -21,6 +22,8 @@ class situation(dict):
 		result = dir in self['dirs']
 		self['dirs'][dir] = target
 		return result
+	def change_indentation(self, n):
+		self.indents += n
 	# getters:
 	def referred(self):
 		return 'ref' in self
@@ -32,15 +35,17 @@ class situation(dict):
 	def name(self):
 		return self['name']
 	# actually do something:
+	def add_label(self, line):
+		self['code'].append(line)
 	def add_code(self, line):
-		self['code'].append('\t\t' + line)
+		self['code'].append(self.indents * '\t' + line)
 	def output(self):
 		print sit_label(self.name())
 		for dir in self['dirs']:
-			print '\t\t+' + dir + ' ' + sit_label(self['dirs'][dir])
+			print self.indents * '\t' + '+' + dir + ' ' + sit_label(self['dirs'][dir])
 		for line in self['code']:
 			print line
-		print '\t\t+end_sit'
+		print self.indents * '\t' + '+end_sit'
 
 class convertor(object):
 	'converts MCA2 source to ACME source'
@@ -50,7 +55,7 @@ class convertor(object):
 		self.in_comment = False	# for c-style multi-line comments
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
 		self.current_sit = None	# needed so no command is issued outside of situation (and to recall current sit)
-		self.cond_depth = 0	# needed to count nested "if"s
+		self.cond_state = [0]	# keeps track of "if/elif/else/endif" and nesting
 		self.symbols = dict()	# holds line numbers of const AND var definitions
 		self.consts = dict()	# holds values of symbolic constants
 		# FIXME - maybe add a symbol class and then subclass consts and vars from there?
@@ -198,9 +203,6 @@ class convertor(object):
 		if len(parts) != 3:
 			self.error_line('line does not fit "KEYWORD ARG1 ARG2" format')
 		return parts[1], parts[2]
-# wrapper functions for adding lines:
-	def add_code(self, line):
-		self.code.append('\t\t' + line)
 # helper functions to close logical blocks:
 	def no_text(self):
 		'if we are in text mode, terminate'
@@ -210,7 +212,7 @@ class convertor(object):
 	def no_sit(self):
 		'if we are in situation, terminate'
 		if self.current_sit != None:
-			if self.cond_depth != 0:
+			if self.cond_state != [0]:
 				self.error_line('cannot start new situation, there are "if" blocks left open')
 			self.current_sit = None
 # functions to parse different line types:
@@ -234,7 +236,7 @@ class convertor(object):
 		self.current_sit = sit
 	def process_dir_line(self, direction, line, backdir=None):
 		'allow a direction of movement and specify target, with two-way option'
-		if backdir != None and self.cond_depth:
+		if backdir != None and self.cond_state != [0]:
 			self.error_line('two-way directions cannot be used in "if" blocks')
 		# FIXME - add code for when inside conditional blocks!
 		self.no_text()
@@ -242,7 +244,7 @@ class convertor(object):
 		self.add_sit_dir(direction, target_sit_name, backdir)
 	def process_dirs_line(self, dir1, dir2, line, two_way=False):
 		'allow two directions of movement and specify targets, with two-way option'
-		if two_way and self.cond_depth:
+		if two_way and self.cond_state != [0]:
 			self.error_line('two-way directions cannot be used in "if" blocks')
 		# FIXME - add code for when inside conditional blocks!
 		self.no_text()
@@ -253,14 +255,6 @@ class convertor(object):
 		else:
 			self.add_sit_dir(dir1, target_sit_name1, None)
 			self.add_sit_dir(dir2, target_sit_name2, None)
-	def process_inc_line(self, line):
-		'increment variable'
-		self.no_text()
-		self.error_line('not implemented')
-	def process_dec_line(self, line):
-		'decrement variable'
-		self.no_text()
-		self.error_line('not implemented')
 	def process_const_line(self, line):
 		'symbolic constant definition'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
@@ -277,20 +271,65 @@ class convertor(object):
 		# get actual number for start value
 		num = self.get_num(start_value)
 		self.vars[name] = num
+# if/elif/else/endif helpers:
+	def process_condition(self, line):
+		# FIXME - parse condition
+		self.current_sit.add_code(';+if not (' + line + ') then goto .c_after' + str(self.cond_state[-1]))
+	def end_cond_block(self):
+		self.current_sit.add_code('+goto .c_end')
+		self.current_sit.add_label('.c_after' + str(self.cond_state[-1]))
+# if/elif/else/endif:
 	def process_if_line(self, line):
-		'conditional execution of block'
 		self.no_text()
-		self.error_line('not implemented')
+		self.current_sit.add_code('!zone {')
+		self.cond_state.append(1)	# go deeper, then in 1st block of if/elif/else/endif
+		self.process_condition(line[3:])	# without "if"
+		self.current_sit.change_indentation(1)
+	def process_elif_line(self, line):
+		self.no_text()
+		if self.cond_state[-1] == 0:
+			self.error_line('Used ELIF without IF')
+		if self.cond_state[-1] == -1:
+			self.error_line('Used ELIF after ELSE')
+		self.end_cond_block()
+		self.cond_state[-1] += 1	# in next block of if/elif/else/endif
+		self.current_sit.change_indentation(-1)
+		self.process_condition(line[5:])	# without "elif"
+		self.current_sit.change_indentation(1)
 	def process_else_line(self, line):
-		'ELSE block'
 		self.no_text()
-		self.error_line('not implemented')
+		if line != "else":
+			self.error_line('Garbage after ELSE?!')
+		if self.cond_state[-1] == 0:
+			self.error_line('Used ELSE without IF')
+		if self.cond_state[-1] == -1:
+			self.error_line('Used ELSE after ELSE')
+		self.end_cond_block()
+		self.current_sit.change_indentation(-1)
+		self.current_sit.add_code(';else')
+		self.current_sit.change_indentation(1)
+		self.cond_state[-1] = -1	# in ELSE block of if/elif/else/endif
 	def process_endif_line(self, line):
-		'end of if/else block'
 		self.no_text()
-		self.error_line('not implemented')
+		if self.cond_state[-1] == 0:
+			self.error_line('Used ENDIF without IF')
+		if self.cond_state[-1] != -1:
+			self.current_sit.add_label('.c_after' + str(self.cond_state[-1]))
+		self.current_sit.add_label('.c_end')
+		self.cond_state.pop()	# leave nesting level
+		self.current_sit.change_indentation(-1)
+		self.current_sit.add_code('}; end of zone')
+# var changing:
 	def process_let_line(self, line):
 		'writing to variable'
+		self.no_text()
+		self.error_line('not implemented')
+	def process_inc_line(self, line):
+		'increment variable'
+		self.no_text()
+		self.error_line('not implemented')
+	def process_dec_line(self, line):
+		'decrement variable'
 		self.no_text()
 		self.error_line('not implemented')
 
@@ -332,6 +371,8 @@ class convertor(object):
 				self.process_var_line(line)
 			elif key == 'if':
 				self.process_if_line(line)
+			elif key == 'elif':
+				self.process_elif_line(line)
 			elif key == 'else':
 				self.process_else_line(line)
 			elif key == 'endif':

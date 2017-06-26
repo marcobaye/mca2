@@ -131,6 +131,15 @@ sit corridor2
 sit airlock
 	"You are in a downward-facing airlock. The outer door is closed."
 	# no need to specify connection as it is done from the other end.
+	if dragon == ALIVE
+		" The dragon is alive."
+	elif dwarfmood == MOOD_PISSED
+		" The dwarf is pissed."
+	elif secretdoor == CLOSED
+		" The secret door is closed."
+	else
+		" This is the ELSE block."
+	endif
 
 # corridor, back
 sit empty

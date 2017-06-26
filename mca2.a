@@ -252,8 +252,17 @@ direction_keys	!tx "nsweud"
 	offset_UP	= 4
 	offset_DOWN	= 5
 ;---------------------------------------
-	;!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
-;+instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks
+	!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
++instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks
+		iny
+		lda (runptr), y
+		tax
+		iny
+		lda (runptr), y
+		stx runptr
+		sta runptr + 1
+		lda #0
+		jmp interpreter_go_on
 ;---------------------------------------
 	; add more instructions here
 ;---------------------------------------
