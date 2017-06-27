@@ -107,9 +107,9 @@ engine_new_sit ; basically the start of the engine's main loop
 		; make some space
 		jsr my_primm	: !tx CR, CR, 0
 		; execute code from current situation
-		lda gamevars_lo + GAMEVAR_CURRENTSIT
+		lda gamevars_lo + vo_current_sit
 		sta runptr
-		lda gamevars_hi + GAMEVAR_CURRENTSIT
+		lda gamevars_hi + vo_current_sit
 		sta runptr + 1
 		jsr interpreter_run
 		; now text should be on screen, directions and alternatives in buffers,
@@ -144,9 +144,9 @@ engine_new_sit ; basically the start of the engine's main loop
 			;---
 .dir_x			lda directions_hi - 1, x
 			beq ---
-		sta gamevars_hi + GAMEVAR_CURRENTSIT
+		sta gamevars_hi + vo_current_sit
 		lda directions_lo - 1, x
-		sta gamevars_lo + GAMEVAR_CURRENTSIT
+		sta gamevars_lo + vo_current_sit
 		jmp engine_new_sit
 
 no_choice	jsr my_primm
@@ -262,6 +262,27 @@ direction_keys	!tx "nsweud"
 		stx runptr
 		sta runptr + 1
 		lda #0
+		jmp interpreter_go_on
+;---------------------------------------
+	!macro inc	.var_offset	{!by CMD_INC:	!by .var_offset	}
+	!macro dec	.var_offset	{!by CMD_DEC:	!by .var_offset	}
++instruction ~CMD_INC, ~cmd_inc
+		iny
+		lda (runptr), y
+		tax
+		inc gamevars_lo, x
+		bne +++
+			inc gamevars_hi, x
+			jmp +++
++instruction ~CMD_DEC, ~cmd_dec
+		iny
+		lda (runptr), y
+		tax
+		lda gamevars_lo, x
+		bne +
+			dec gamevars_hi, x
++		dec gamevars_lo, x
++++		lda #2
 		jmp interpreter_go_on
 ;---------------------------------------
 	; add more instructions here

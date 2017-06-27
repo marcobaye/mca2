@@ -117,11 +117,13 @@ sit corridor1
 sit toilet
 	"You are in a bathroom. There are three sea shells visible."
 	# no need to specify connection as it is done from the other end
+	dec lives_left
 
 # middle
 sit transporter_room
 	"You are in a room with what looks like some kind of teleportation pod."
 	e2 corridor2	# connect to corridor and back
+	inc cows_killed
 
 sit corridor2
 	"You are in a corridor leading north and south. There are two doors (east and west)."
