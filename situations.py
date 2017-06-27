@@ -21,11 +21,16 @@ const OPEN	1
 const OFFEN	OPEN	# once they are defined, constants can be used like numbers
 # all calculations are done as unsigned 16-bit integers,
 # so numbers must be in 0..65535 range. Negative numbers are not supported, but who needs them anyway?
-const MOOD_IN_LOVE	0
-const MOOD_FRIENDLY	1
-const MOOD_NEUTRAL	2
-const MOOD_GRUMPY	3
-const MOOD_PISSED	4
+
+# "enum" is a faster way to define several symbolic constants at a time:
+enum FIST, ROCK, KNIFE, PISTOL, LIGHTSABER	# this will assign values 0/1/2/3/4
+enum MOOD_IN_LOVE, MOOD_FRIENDLY, MOOD_NEUTRAL, MOOD_GRUMPY, MOOD_PISSED	# assigns 0/1/2/3/4
+# this does exactly the same thing as these separate lines:
+#const MOOD_IN_LOVE	0
+#const MOOD_FRIENDLY	1
+#const MOOD_NEUTRAL	2
+#const MOOD_GRUMPY	3
+#const MOOD_PISSED	4
 
 # "var" defines a game variable and its start value:
 var dragon	ALIVE
@@ -37,10 +42,12 @@ var cows_killed	0
 
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room
-	# lines beginning with double quotes are text to output.
+	# lines beginning with single or double quotes are text to output.
 	# You can use predefined petscii codes. "cr" adds a carriage return.
 	"You are in what looks like a transporter room right out of ", petscii_WHITE, "Star Trek", petscii_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
+	"To output double quotes, put them in single quotes as a separate string:", '"'
+	"", petscii_REVSON, "<= if you want a line to start with a control code, put an empty string before it."
 	# "nsewud" characters indicate target situations when player attempts to go north/south/east/west/up/down:
 	n corridor_transp_room	# going north leads to the "corridor outside the transporter room" stuation
 	e turbolift		# going east leads to the turbolift situation

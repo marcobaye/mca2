@@ -276,6 +276,16 @@ class convertor(object):
 		# get actual value
 		num = self.get_num(value)
 		self.consts[name] = num
+	def process_enum_line(self, line):
+		'enumerate symbolic constants'
+		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
+		parts = line[4:].split(',')	# remove 'enum' keyword
+		val = 0
+		for name in parts:
+			name = name.split()[0]	# remove spaces
+			self.new_symbol(name)
+			self.consts[name] = val
+			val += 1
 	def process_var_line(self, line):
 		'variable declaration'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
@@ -364,7 +374,7 @@ class convertor(object):
 			# start of multi-line comment
 			self.in_comment = True
 			return
-		elif line.startswith('"'):
+		elif line.startswith('"') or line.startswith("'"):
 			# text output
 			self.process_text_line(line)
 		else:
@@ -372,14 +382,16 @@ class convertor(object):
 			key = line.split()[0]
 			if key == 'sit':
 				self.process_sit_line(line)
+			elif key == 'const':
+				self.process_const_line(line)
+			elif key == 'enum':
+				self.process_enum_line(line)
+			elif key == 'var':
+				self.process_var_line(line)
 			elif key == 'inc':
 				self.process_incdec_line('inc', line)
 			elif key == 'dec':
 				self.process_incdec_line('dec', line)
-			elif key == 'const':
-				self.process_const_line(line)
-			elif key == 'var':
-				self.process_var_line(line)
 			elif key == 'if':
 				self.process_if_line(line)
 			elif key == 'elif':

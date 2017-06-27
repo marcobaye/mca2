@@ -400,3 +400,5 @@ gamevars_lo
 	* = * + gamevars_COUNT
 gamevars_hi
 	* = * + gamevars_COUNT
+
+	!if * >= $a000 { !error "Reached BASIC ROM. Please add code to disable it." }
