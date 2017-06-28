@@ -60,19 +60,14 @@ sit deck4_transporter_room
 	# ud deck3_jefferies deck5_jefferies	# this would specify two targets on a single line
 	#	as a convenience function, you can add a "2" to the command to enforce a two-way connection:
 	# n2 corridor_transp_room	# this says "going east leads to corridor_transp_room, and going west
-	# from there would lead back here again! this way
-	#	AND GOING WEST FROM THERE would lead back here again
+	# from there would lead back here again!
 #FIXME - add shorthand command for "alternative action leading to new situation"?
 	# 'a' is for alternative actions, with key, text and result as arguments
 	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
 #	a
 
 
-# "TEXT"	print text (you can use symbolic petscii codes)
-# n TARGET	set target for "north" direction
-	# use s/w/e/u/d for south/west/east/up/down
 # dec	decrement variable	FIXME - allow underrun?
-# enum TOT, LEBENDIG, UNTOT	define symbolic constants	FIXME - this clashes with telling vars/literals apart!
 # if	start conditional block
 # inc	increment variable	FIXME - allow overrun?
 # v	declare uint16 variable and default value ("current_sit" is pre-defined and must be read-only!)
@@ -142,10 +137,17 @@ sit airlock
 	# no need to specify connection as it is done from the other end.
 	if dragon == ALIVE
 		" The dragon is alive."
-	elif dwarfmood == MOOD_PISSED
+	elif dwarfmood != MOOD_PISSED
 		" The dwarf is pissed."
-	elif secretdoor == CLOSED
-		" The secret door is closed."
+	# FIXME - check all comparisons, make sure they work as intended!
+	elif secretdoor < CLOSED
+		" The secret door < closed."
+	elif secretdoor <= OFFEN
+		" The secret door <= open."
+	elif secretdoor > CLOSED
+		" The secret door > closed."
+	elif secretdoor >= OFFEN
+		" The secret door >= open."
 	else
 		" This is the ELSE block."
 	endif
@@ -154,6 +156,20 @@ sit airlock
 sit empty
 	"This room seems to be completely empty."
 	e2 corridor3	# connect to corridor and back
+	if dwarfmood == MOOD_IN_LOVE
+		" The dwarf is in love!"
+	elif dwarfmood == MOOD_FRIENDLY
+		" The dwarf is friendly."
+	elif dwarfmood == MOOD_NEUTRAL
+		" The dwarf is neutral."
+	elif dwarfmood == MOOD_GRUMPY
+		" The dwarf is grumpy."
+	elif dwarfmood == MOOD_PISSED
+		" The dwarf is pissed."
+	else
+		" The dwarf's mood is off the scale!"
+	endif
+	inc dwarfmood	# var=var+1, dwarf's mood is now worse!
 
 sit corridor3
 	"You are at the southern end of a corridor. There are doors to the south, east and west."
@@ -163,6 +179,7 @@ sit corridor3
 sit storage
 	"There are some storage containers in this room."
 	# no need to specify connection as it is done from the other end.
+	dwarfmood = MOOD_IN_LOVE	# assigment to variable
 
 # "back" room
 sit engine_room
@@ -170,12 +187,6 @@ sit engine_room
 	n2 corridor3
 
 	# still to do:
-	# inc VAR
-	# dec VAR
-	# VAR=LITERAL
-	# if VAR = LITERAL	# or '<' or '>'
-	#	code
-	# endif
 	# "restart" to set vars to default?
 	# call some_assembler_label	# call assembler subroutine (to beep, shake screen, etc.)
 #

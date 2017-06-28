@@ -1,6 +1,15 @@
 #!/usr/bin/python2
 import sys
 
+operators = [
+	['==', 'equal'],
+	['!=', 'not_equal'],
+	['<=', 'smaller_or_equal'],	# these longer
+	['>=', 'greater_or_equal'],	# strings must
+	['<', 'smaller'],	# be in list before these
+	['>', 'greater']	# shorter ones!
+]
+
 def sit_label(name):
 	return 's_' + name
 def var_offset_label(name):
@@ -68,7 +77,6 @@ class convertor(object):
 		start.set_ref()
 		self.situations["start"] = start
 		self.new_var('current_sit', sit_label('start'))	# reserve symbol
-		self.literals.add(982)	# FIXME - remove, this was just for testing!
 	def msg(self, msg):
 		print >> sys.stderr, msg
 	def warning(self, msg):
@@ -114,17 +122,29 @@ class convertor(object):
 	def new_var(self, name, default):
 		self.new_symbol(name)
 		self.vars[name] = default
+	def get_var(self, string):
+		var_name = string.split()[0]	# remove leading/trailing spaces
+		if var_name in self.vars:
+			return var_name
+		self.error_line('Unknown variable "' + var_name + '"')
 	def get_num(self, value):
 		'return value of number literal or symbolic constant'
+		if value in self.consts:
+			return self.consts[value]
 		try:
 			num = int(value)
 		except:
-			if value in self.consts:
-				num = self.consts[value]
-			else:
-				self.error_line('Cannot determine numerical value of "' + value + '"')
-				num = 0	# make sure script does not crash
+			self.error_line('Cannot determine numerical value of "' + value + '"')
+			num = 0	# make sure script does not crash
 		return num
+	def get_exp(self, string):
+		'get name of variable or fake literal'
+		string = string.split()[0]	# remove leading/trailing spaces
+		if string in self.vars:
+			return string
+		num = self.get_num(string)
+		self.literals.add(num)
+		return str(num)
 	def output(self):
 		print ';ACME 0.96.2'
 		print ';'
@@ -295,8 +315,19 @@ class convertor(object):
 		self.new_var(name, num)
 # if/elif/else/endif helpers:
 	def process_condition(self, line):
-		# FIXME - parse condition
+		for cmp in operators:
+			if cmp[0] in line:
+				break
+		else:
+			self.error_line('Comparison not recognised')
+			return
+		parts = line.split(cmp[0])
+		if len(parts) != 2:
+			self.error_line('Error parsing comparison')
+		hinz = self.get_exp(parts[0])
+		kunz = self.get_exp(parts[1])
 		self.current_sit.add_code(';+if not (' + line + ') then goto .c_after' + str(self.cond_state[-1]))
+		self.current_sit.add_code('+if_' + cmp[1] + ' ' + var_offset_label(hinz) + ', ' + var_offset_label(kunz) + ', .c_after' + str(self.cond_state[-1]))
 	def end_cond_block(self):
 		self.current_sit.add_code('+goto .c_end')
 		self.current_sit.add_label('.c_after' + str(self.cond_state[-1]))
@@ -345,15 +376,18 @@ class convertor(object):
 	def process_let_line(self, line):
 		'writing to variable'
 		self.no_text()
-		self.error_line('not implemented')
+		parts = line.split('=')
+		if len(parts) != 2:
+			self.error_line('Line type not recognised')
+		target_var = self.get_var(parts[0])
+		source_name = self.get_exp(parts[1])
+		self.current_sit.add_code('+let ' + var_offset_label(target_var) + ', ' + var_offset_label(source_name))
 	def process_incdec_line(self, what, line):
 		'increment/decrement variable'
-		var_name = self.get2of2(line)
-		if var_name not in self.vars:
-			self.error_line('Unknown variable "' + var_name + '"')
-		else:
-			self.no_text()
-			self.current_sit.add_code('+' + what + ' ' + var_offset_label(var_name))
+		self.no_text()
+		var_name = self.get_var(self.get2of2(line))
+		self.current_sit.add_code('+' + what + ' ' + var_offset_label(var_name))
+# outer stuff:
 	def process_line(self, line):
 		'process a single line of input'
 		self.line_number += 1

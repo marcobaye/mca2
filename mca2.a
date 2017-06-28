@@ -21,6 +21,7 @@
 !addr	MODIFIED16	= $ffff
 
 ; zp variables
+!addr	fac1		= $61	; floating point registers are used for temp storage
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
 !addr	primm_ptr	= $fd
 
@@ -162,7 +163,7 @@ interpreter_go_on ; enter with A = offset to add
 		adc runptr
 		sta runptr
 		bcc +
-			inc runptr
+			inc runptr + 1
 +
 interpreter_run ; execute bytecode block
 		ldy #0
@@ -252,8 +253,71 @@ direction_keys	!tx "nsweud"
 	offset_UP	= 4
 	offset_DOWN	= 5
 ;---------------------------------------
+	; CAUTION! a macro like "if a < b then execute block" is internally
+	; implemented as "if not a < b then goto after block", therefore all
+	; the actual bytecode commands use negated conditions here!
+	!macro if_equal			.vo1, .vo2, .t	{!by CMD_IFNOTEQUAL,		.vo1, .vo2	: !wo .t	}
+	!macro if_not_equal		.vo1, .vo2, .t	{!by CMD_IFEQUAL,		.vo1, .vo2	: !wo .t	}
+	!macro if_smaller		.vo1, .vo2, .t	{!by CMD_IFGREATEROREQUAL,	.vo1, .vo2	: !wo .t	}
+	!macro if_smaller_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo1, .vo2	: !wo .t	}
+	; CAUTION! there is no need to implement "smaller than", as we can just
+	; use "greater than" with swapped operands. Same for "smaller or equal".
+	!macro if_greater		.vo1, .vo2, .t	{!by CMD_IFGREATEROREQUAL,	.vo2, .vo1	: !wo .t	}
+	!macro if_greater_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo2, .vo1	: !wo .t	}
++instruction ~CMD_IFNOTEQUAL,		~cmd_ifnotequal
+		lda #%0000
+		+bit16
++instruction ~CMD_IFEQUAL,		~cmd_ifequal
+		lda #%0100
+		+bit16
++instruction ~CMD_IFGREATER,		~cmd_ifgreater
+		lda #%1000
+		+bit16
++instruction ~CMD_IFGREATEROREQUAL,	~cmd_ifgreaterorequal
+		lda #%1100
+		sta .bitmask
+		iny
+		lda (runptr), y
+		tax
+		lda gamevars_lo, x
+		sta fac1
+		lda gamevars_hi, x
+		sta fac1 + 1
+		iny
+		lda (runptr), y
+		tax
+		sec
+		lda fac1
+		sbc gamevars_lo, x
+		sta fac1
+		lda fac1 + 1
+		sbc gamevars_hi, x	; now C set means: v1 >= v2	C clear means: v1 < v2
+		sta fac1 + 1
+		ora fac1		; now Z set means: v1 == v2	Z clear means: v1 != v2
+		php
+		pla
+;    %NV-BDIZC
+;v1 <  v2: %00
+;v1 >  v2: %01
+;v1 == v2: %11
+		and #3
+		ora #MODIFIED8	: .bitmask = * - 1
+		tax
+		lda .table, x
+		bne cmd_goto
+			lda #5
+			jmp interpreter_go_on
+.table	;   <  >  !  ==
+	!by 1, 1, 9, 0	; not equal
+	!by 0, 0, 9, 1	; equal
+	!by 0, 1, 9, 0	; greater
+	!by 0, 1, 9, 1	; greater or equal
+
+
+;---------------------------------------
 	!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
 +instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks
+; this entry point is used by the four "if" macros as well when they jump!
 		iny
 		lda (runptr), y
 		tax
@@ -285,6 +349,25 @@ direction_keys	!tx "nsweud"
 +++		lda #2
 		jmp interpreter_go_on
 ;---------------------------------------
+	!macro let	.vo_target, .vo_source {!by CMD_LET, .vo_source, .vo_target	}
++instruction ~CMD_LET, ~cmd_let
+		iny
+		lda (runptr), y
+		tax
+		lda gamevars_lo, x
+		pha
+			lda gamevars_hi, x
+			pha
+				iny
+				lda (runptr), y
+				tax
+			pla
+			sta gamevars_hi, x
+		pla
+		sta gamevars_lo, x
+		lda #3
+		jmp interpreter_go_on
+;---------------------------------------
 	; add more instructions here
 ;---------------------------------------
 	CMDLIMIT = instruction_enum
@@ -293,98 +376,6 @@ cmd_table
 		; reserve space for command pointers
 		* = * + 2 * CMDLIMIT
 		; table will be filled in by "instruction" macro in later pass!
-
-!if 0 {
-#############
-		jsr print_sit_text	; => Y is 0
-		lda #CR
-		jsr k_chrout
-		ldx #0	; no choices yet
-		; now iterate over choices
-		beq iter_choices
-		;--
-next_choice		; copy target
-			sta target_high, x
-			iny
-			lda (sitptr), y
-			sta target_low, x
-			lda #' '
-			jsr k_chrout
-			; output choice character
-			txa
-			clc
-			adc #FIRST_CHOICE_CHARACTER
-			jsr k_chrout
-			lda #' '
-			jsr k_chrout
-			; advance pointer
-			sec	; +1
-			tya
-			adc sitptr
-			sta sitptr
-			bcc +
-				inc sitptr + 1
-+			; output choice text
-			jsr print_sit_text
-			lda #CR
-			jsr k_chrout
-			inx	; count this choice
-iter_choices		iny
-			lda (sitptr), y
-			bne next_choice
-		; no more choices
-		stx number_of_alternatives
-		; ask user for input
-		lda #'?'
-		jsr k_chrout
-		; wait for valid input
----			jsr k_getin
-			tay	; remember original character
-			; convert to offset and check limits while at it
-			sec
-			sbc #FIRST_CHOICE_CHARACTER
-			bcc ---	; input too low
-			cmp #MODIFIED8:number_of_alternatives = * - 1
-			bcs ---	; input too high
-		; update situation pointer
-		tax
-		lda target_low, x
-		sta sitptr
-		lda target_high, x
-		sta sitptr + 1
-		; output entered character
-		tya
-		jsr k_chrout
-		; add two newlines
-		lda #CR
-		jsr k_chrout
-		lda #CR
-		jsr k_chrout
-		; start over
-		jmp mainloop
-
-; entry: txtptr points to text
-; exit: txtptr points to terminating zero, A=0, X preserved, Y=0
-print_ptr_text	ldy runptr	; get low byte of ptr - 1
-		lda #0	; and zero ptr low, so "(txtptr), y" points to text
-		sta txtptr
-		beq +++
-		;--
----			jsr k_chrout
-			iny
-			bne +++
-				inc txtptr + 1	; fix high byte
-+++			lda (txtptr), y
-			bne ---
-		; write updated address
-		sty txtptr
-		tay
-		rts
-target_low
-	* = * + MAX_CHOICES
-target_high
-#############
-}
 
 	cr	= 13
 	!src "_autogenerated.a"
