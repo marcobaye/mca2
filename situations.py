@@ -13,7 +13,8 @@ to quickly disable large portions of this file.
 
 # first word (or character) of each line determines the type of line:
 
-# "const" defines symbolic constants:
+# "const" defines symbolic constants
+# (writing them in upper case is just a convention and not required):
 const DEAD	0
 const ALIVE	1
 const CLOSED	0
@@ -23,14 +24,9 @@ const OFFEN	OPEN	# once they are defined, constants can be used like numbers
 # so numbers must be in 0..65535 range. Negative numbers are not supported, but who needs them anyway?
 
 # "enum" is a faster way to define several symbolic constants at a time:
-enum FIST, ROCK, KNIFE, PISTOL, LIGHTSABER	# this will assign values 0/1/2/3/4
+enum FIST, ROCK, KNIFE, SWORD, PISTOL, LIGHTSABER	# this will assign values 0/1/2/3/4/5
 enum MOOD_IN_LOVE, MOOD_FRIENDLY, MOOD_NEUTRAL, MOOD_GRUMPY, MOOD_PISSED	# assigns 0/1/2/3/4
-# this does exactly the same thing as these separate lines:
-#const MOOD_IN_LOVE	0
-#const MOOD_FRIENDLY	1
-#const MOOD_NEUTRAL	2
-#const MOOD_GRUMPY	3
-#const MOOD_PISSED	4
+# (these lines have exactly the same effect as separate "const"-lines would have had)
 
 # "var" defines a game variable and its start value:
 var dragon	ALIVE
@@ -46,22 +42,24 @@ sit deck4_transporter_room
 	# You can use predefined petscii codes. "cr" adds a carriage return.
 	"You are in what looks like a transporter room right out of ", petscii_WHITE, "Star Trek", petscii_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
-	"To output double quotes, put them in single quotes as a separate string:", '"'
+	"To output double quotes, put them in single quotes as a separate character:", '"', cr
 	"", petscii_REVSON, "<= if you want a line to start with a control code, put an empty string before it."
 	# "nsewud" characters indicate target situations when player attempts to go north/south/east/west/up/down:
 	n corridor_transp_room	# going north leads to the "corridor outside the transporter room" stuation
 	e turbolift		# going east leads to the turbolift situation
 	u deck3_jefferies	# going up leads to "jefferies tube on deck 3" situation
 	d deck5_jefferies	# going down leads to "jefferies tube on deck 5" situation
-	# ...now the game will display north/east/up/down as possible directions, but neither south nor west
+	# ...now the game will display north/east/up/down as possible directions,
+	# but neither south nor west.
+	# as a convenience function, you can add a "2" to the command to enforce a two-way connection:
+	# n2 corridor_transp_room	# this says "going east leads to corridor_transp_room,
+	# AND going west from there would lead back here again!
 
-# FIXME - explain this stuff later, do not pile too much on top at once:
+	# FIXME - add a special syntax to _disable_ a direction
+	# FIXME - explain this stuff later, do not pile too much on top at once:
 	#	north/south, west/east and up/down targets can be given together using ns/we/ud:
 	# ud deck3_jefferies deck5_jefferies	# this would specify two targets on a single line
-	#	as a convenience function, you can add a "2" to the command to enforce a two-way connection:
-	# n2 corridor_transp_room	# this says "going east leads to corridor_transp_room, and going west
-	# from there would lead back here again!
-#FIXME - add shorthand command for "alternative action leading to new situation"?
+	#FIXME - add shorthand command for "alternative action leading to new situation"?
 	# 'a' is for alternative actions, with key, text and result as arguments
 	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
 #	a
@@ -80,9 +78,9 @@ sit deck4_transporter_room
 
 # 'sit' starts a new situation, arg is name
 sit start	# <= one situation MUST be called "start", this is where the game begins
-	"Hi! Hit the correct key to begin the game."
+	"Hi! Hit the correct key to begin the game.", cr
 	#a corridor2		FIXME - implement "a"!
-	n corridor2
+	d corridor2
 
 /* this example file uses a starship,
 here is the floor plan:
@@ -167,7 +165,8 @@ sit empty
 	elif dwarfmood == MOOD_PISSED
 		" The dwarf is pissed."
 	else
-		" The dwarf's mood is off the scale!"
+		" The dwarf's mood is off the scale, allowing you to go north!"
+		n transporter_room
 	endif
 	inc dwarfmood	# var=var+1, dwarf's mood is now worse!
 

@@ -1,5 +1,5 @@
 ASSEMBLER6502	= acme
-AS_FLAGS	= -v2 -Wtype-mismatch
+AS_FLAGS	= -v0 -Wtype-mismatch
 RM		= rm
 
 PROGS		= mca2.prg

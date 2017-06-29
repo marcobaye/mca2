@@ -15,13 +15,14 @@
 	!src <cbm/c64/kernal.a>
 	!ct pet
 
+	DEUTSCH	= 1;0	; set to nonzero to make engine use german texts
 ; helper values
 	CR		= 13
 	MODIFIED8	= $ff
 !addr	MODIFIED16	= $ffff
 
 ; zp variables
-!addr	fac1		= $61	; floating point registers are used for temp storage
+;!addr	fac1		= $61	; floating point registers are used for temp storage
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
 !addr	primm_ptr	= $fd
 
@@ -47,7 +48,12 @@ entry ; entry point for SYS
 		sta vic_cbg
 		jsr my_primm
 		!tx petscii_LOCK, petscii_LOWERCASE, petscii_GREEN, petscii_CLEAR
-		!tx "Welcome to Multiple Choice Adventure 2!", 0
+!if DEUTSCH {
+		!tx "Willkommen zu ", cr, '"', "Multiple Choice Adventure 2", '"', "!"
+} else {
+		!tx "Welcome to Multiple Choice Adventure 2!"
+}
+		!tx cr, 0
 		jmp engine_new_sit
 
 ;internal_error	jsr my_primm
@@ -115,7 +121,11 @@ engine_new_sit ; basically the start of the engine's main loop
 		jsr interpreter_run
 		; now text should be on screen, directions and alternatives in buffers,
 		; so display prompt
+!if DEUTSCH {
+		jsr my_primm	: !tx CR, "Zur Wahl stehen [", 0
+} else {
 		jsr my_primm	: !tx CR, "Please choose from [", 0
+}
 		ldy #0	; debug counter
 		ldx #0
 --			lda directions_hi, x
@@ -127,9 +137,13 @@ engine_new_sit ; basically the start of the engine's main loop
 			cpx #6
 			bne --
 		; FIXME - add alternatives as well!
-		jsr my_primm	: !tx "]. Your choice", 0
 		tya
 		beq no_choice
+!if DEUTSCH {
+		jsr my_primm	: !tx "]. Was darf es sein", 0
+} else {
+		jsr my_primm	: !tx "]. Your choice", 0
+}
 		; ask user for input
 ---			lda #'?'
 			jsr k_chrout
@@ -150,12 +164,22 @@ engine_new_sit ; basically the start of the engine's main loop
 		sta gamevars_lo + vo_current_sit
 		jmp engine_new_sit
 
-no_choice	jsr my_primm
+no_choice	dec restart_flag
+		jsr my_primm
+!if DEUTSCH {
+		!tx CR, CR, "BUG: keine Wahlmoeglichkeiten in dieser Situation!", 0
+} else {
 		!tx CR, CR, "BUG: no choices left in this situation!", 0
+}
 		jmp exit
 
-unknown_cmd	jsr my_primm
+unknown_cmd	dec restart_flag
+		jsr my_primm
+!if DEUTSCH {
+		!tx CR, CR, "BUG: unbekannte Byte-Code-Anweisung!", 0
+} else {
 		!tx CR, CR, "BUG: encountered unknown instruction!", 0
+}
 		jmp exit
 
 interpreter_go_on ; enter with A = offset to add
@@ -245,7 +269,12 @@ interpreter_run ; execute bytecode block
 		lda #3
 		jmp interpreter_go_on
 
-direction_keys	!tx "nsweud"
+direction_keys
+!if DEUTSCH {
+	!tx "nswohr"	; ost, hoch, runter
+} else {
+	!tx "nsweud"	; east, up, down
+}
 	offset_NORTH	= 0
 	offset_SOUTH	= 1
 	offset_WEST	= 2
@@ -264,56 +293,49 @@ direction_keys	!tx "nsweud"
 	; use "greater than" with swapped operands. Same for "smaller or equal".
 	!macro if_greater		.vo1, .vo2, .t	{!by CMD_IFGREATEROREQUAL,	.vo2, .vo1	: !wo .t	}
 	!macro if_greater_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo2, .vo1	: !wo .t	}
+; virtual flags	for:	<	>	unused	==
+.flags		!by	%0001,	%1101,	0,	%0110	; bits mean  >   >=   ==   !=
 +instruction ~CMD_IFNOTEQUAL,		~cmd_ifnotequal
-		lda #%0000
+		lda #%0001
 		+bit16
 +instruction ~CMD_IFEQUAL,		~cmd_ifequal
+		lda #%0010
+		+bit16
++instruction ~CMD_IFGREATEROREQUAL,	~cmd_ifgreaterorequal
 		lda #%0100
 		+bit16
 +instruction ~CMD_IFGREATER,		~cmd_ifgreater
 		lda #%1000
-		+bit16
-+instruction ~CMD_IFGREATEROREQUAL,	~cmd_ifgreaterorequal
-		lda #%1100
-		sta .bitmask
+		sta .wanted_bit
+		; get var offsets
 		iny
 		lda (runptr), y
-		tax
-		lda gamevars_lo, x
-		sta fac1
-		lda gamevars_hi, x
-		sta fac1 + 1
+		tax	; X = var offset 1
 		iny
 		lda (runptr), y
-		tax
+		tay	; Y = var offset 2
+		; subtract
 		sec
-		lda fac1
-		sbc gamevars_lo, x
-		sta fac1
-		lda fac1 + 1
-		sbc gamevars_hi, x	; now C set means: v1 >= v2	C clear means: v1 < v2
-		sta fac1 + 1
-		ora fac1		; now Z set means: v1 == v2	Z clear means: v1 != v2
+		lda gamevars_lo, x
+		sbc gamevars_lo, y
+		sta .low
+		lda gamevars_hi, x
+		sbc gamevars_hi, y		; C set means: v1 >= v2, C clear means: v1 < v2
+		ldy #2	; restore Y to be prepared for possible GOTO
+		ora #MODIFIED8	: .low = * - 1	; Z set means: v1 == v2, Z clear means: v1 != v2
+		; convert flags to bit mask
 		php
 		pla
-;    %NV-BDIZC
-;v1 <  v2: %00
-;v1 >  v2: %01
-;v1 == v2: %11
-		and #3
-		ora #MODIFIED8	: .bitmask = * - 1
+		and #%00000011	; of %NV-BDIZC, only keep ZC
+		; %00 means less than, %01 means more than, %10 is impossible, %11 means equal
+		; convert result type to virtual flags
 		tax
-		lda .table, x
+		lda .flags, x
+		; now check for desired flag
+		and #MODIFIED8	: .wanted_bit = * - 1
 		bne cmd_goto
 			lda #5
 			jmp interpreter_go_on
-.table	;   <  >  !  ==
-	!by 1, 1, 9, 0	; not equal
-	!by 0, 0, 9, 1	; equal
-	!by 0, 1, 9, 0	; greater
-	!by 0, 1, 9, 1	; greater or equal
-
-
 ;---------------------------------------
 	!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
 +instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks

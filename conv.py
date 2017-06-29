@@ -15,46 +15,38 @@ def sit_label(name):
 def var_offset_label(name):
 	return 'vo_' + name
 
-class situation(dict):
+class situation(object):
 	'collects data about a situation'
-	# keys: name, ref, line_num, dirs, code
 	def __init__(self, name):
-		self['name'] = name
-		self['code'] = []
-		self['dirs'] = {}
+		self.name = name
+		self.referenced = False
+		self.line_of_def = 0
+		self.dirs = {}
+		self.code = []
 		self.indents = 2
 	# setters:
-	def set_line_num(self, num):
-		self['line_num'] = num
-	def set_ref(self):
-		self['ref'] = True
 	def set_dir(self, dir, target):
 		# this returns whether direction was already possible
-		result = dir in self['dirs']
-		self['dirs'][dir] = target
+		result = dir in self.dirs
+		self.code.append(self.indents * '\t' + '+' + dir + ' ' + sit_label(target))
 		return result
-	def change_indentation(self, n):
+	def set_extdir(self, dir, target):
+		# this returns whether direction was already possible
+		result = dir in self.dirs
+		self.dirs[dir] = target
+		return result
+	def change_indent(self, n):
 		self.indents += n
-	# getters:
-	def referred(self):
-		return 'ref' in self
-	def line_of_def(self):
-		if 'line_num' in self:
-			return self['line_num']
-		else:
-			return None
-	def name(self):
-		return self['name']
 	# actually do something:
 	def add_label(self, line):
-		self['code'].append(line)
+		self.code.append(line)
 	def add_code(self, line):
-		self['code'].append(self.indents * '\t' + line)
+		self.code.append(self.indents * '\t' + line)
 	def output(self):
-		print sit_label(self.name())
-		for dir in self['dirs']:
-			print self.indents * '\t' + '+' + dir + ' ' + sit_label(self['dirs'][dir])
-		for line in self['code']:
+		print sit_label(self.name)
+		for dir in self.dirs:
+			print self.indents * '\t' + '+' + dir + ' ' + sit_label(self.dirs[dir])
+		for line in self.code:
 			print line
 		print self.indents * '\t' + '+end_sit'
 
@@ -74,9 +66,10 @@ class convertor(object):
 		self.literals = set()	# fake vars (constants used in comparisons and assigments)
 		self.situations = dict()	# list of situations
 		start = situation("start")
-		start.set_ref()
+		start.referenced = True
 		self.situations["start"] = start
 		self.new_var('current_sit', sit_label('start'))	# reserve symbol
+		# FIXME - make current_sit var read-only!
 	def msg(self, msg):
 		print >> sys.stderr, msg
 	def warning(self, msg):
@@ -101,21 +94,24 @@ class convertor(object):
 		sit = situation(sit_name)
 		self.situations[sit_name] = sit
 		return sit
-	def add_sit_dir(self, direction, target_sit_name, backdir):
-		# add direction possibility to current situation, with two-way option
-		target = self.get_sit(target_sit_name)
-		target.set_ref()
-		if self.current_sit.set_dir(direction, target_sit_name):
+	def add_sit_dir(self, direction, target_name):
+		# add direction possibility to current situation
+		target_sit = self.get_sit(target_name)
+		target_sit.referenced = True
+		if self.current_sit.set_dir(direction, target_name):
 			self.warning_line('Direction "' + direction + '" was already set')
-		if backdir != None:
-			self.current_sit.set_ref()
-			if target.set_dir(backdir, self.current_sit.name()):
-				self.warning_line('Direction "' + backdir + '" of target was already set')
+	def add_sit_backdir(self, target_name, direction):
+		# add direction possibility to other situation
+		target_sit = self.get_sit(target_name)
+		self.current_sit.referenced = True
+		if target_sit.set_extdir(direction, self.current_sit.name):
+			self.warning_line('Direction "' + direction + '" was already set')
 	def new_symbol(self, name):
 		'if symbol already defined, complain. otherwise create.'
 		if name in self.symbols:
-			if self.symbols[name]:
-				self.error_line('Symbol "' + name + '" has already been defined in line ' + str(self.symbols[name]))
+			defline = self.symbols[name]
+			if defline:
+				self.error_line('Symbol "' + name + '" has already been defined in line ' + str(defline))
 			else:
 				self.error_line('Symbol "' + name + '" has already been defined by game engine')
 		self.symbols[name] = self.line_number
@@ -137,7 +133,7 @@ class convertor(object):
 			self.error_line('Cannot determine numerical value of "' + value + '"')
 			num = 0	# make sure script does not crash
 		return num
-	def get_exp(self, string):
+	def get_expr(self, string):
 		'get name of variable or fake literal'
 		string = string.split()[0]	# remove leading/trailing spaces
 		if string in self.vars:
@@ -170,23 +166,24 @@ class convertor(object):
 			var_index += 1
 		print '\tgamevars_COUNT\t=', var_index	# == len(self.vars) + len(self.literals)
 		print
-		print '; siturations:'
+		print '; situations:'
 		for sit in self.situations:
 			self.situations[sit].output()
-		print ';end of auto-generated file'
+		print '; end of actual data'
 		# compare defined and referenced situations:
-		for sit_name in self.situations:
-			sit = self.situations[sit_name]
-			if sit.line_of_def() != None and not sit.referred():
-				self.warning('situation "' + sit.name() + '" defined but never used')
-			if sit.referred() and sit.line_of_def() == None:
-				self.error('situation "' + sit.name() + '" referenced but not defined')
+		for sit in self.situations:
+			sit = self.situations[sit]
+			if sit.line_of_def and not sit.referenced:
+				self.warning('situation "' + sit.name + '" defined but never used')
+			if sit.referenced and sit.line_of_def == 0:
+				self.error('situation "' + sit.name + '" referenced but not defined')
 		# FIXME - compare "referenced vars" to actual list!
 		print '!eof'
 		#print 'debugging info:'
 		#print 'situations:'
 		#for sit in self.situations:
 		#	print sit, self.situations[sit]
+		print '; end of auto-generated file'
 # helper functions to parse lines:
 	def preprocess(self, line_in):
 		'count and remove indentation characters, remove comments'
@@ -258,36 +255,39 @@ class convertor(object):
 	def process_sit_line(self, line):
 		'new situation'
 		self.no_text()
-		self.no_sit()
+		self.no_sit()	# close previous sit, if there was one
 		# check
 		sit_name = self.get2of2(line)
-		sit = self.get_sit(sit_name)
-		if sit.line_of_def():
+		sit = self.get_sit(sit_name)	# creates sit
+		if sit.line_of_def:
 			self.error_line('cannot create situation "' + sit_name + '", already created in line ' + str(sit.line_of_def))
-		sit.set_line_num(self.line_number)
-		# create
+		sit.line_of_def = self.line_number
+		# make current
 		self.current_sit = sit
 	def process_dir_line(self, direction, line, backdir=None):
 		'allow a direction of movement and specify target, with two-way option'
-		if backdir != None and self.cond_state != [0]:
-			self.error_line('two-way directions cannot be used in "if" blocks')
-		# FIXME - add code for when inside conditional blocks!
 		self.no_text()
 		target_sit_name = self.get2of2(line)
-		self.add_sit_dir(direction, target_sit_name, backdir)
+		# FIXME - add possibility to _forbid_ an existing direction (by setting to zero)!
+		self.add_sit_dir(direction, target_sit_name)
+		if backdir:
+			if self.cond_state != [0]:
+				self.error_line('two-way directions cannot be used in "if" blocks')
+			else:
+				self.add_sit_backdir(target_sit_name, backdir)
 	def process_dirs_line(self, dir1, dir2, line, two_way=False):
 		'allow two directions of movement and specify targets, with two-way option'
-		if two_way and self.cond_state != [0]:
-			self.error_line('two-way directions cannot be used in "if" blocks')
-		# FIXME - add code for when inside conditional blocks!
 		self.no_text()
 		target_sit_name1, target_sit_name2 = self.get2and3of3(line)
+		# FIXME - add possibility to _forbid_ an existing direction (by setting to zero)!
+		self.add_sit_dir(dir1, target_sit_name1)
+		self.add_sit_dir(dir2, target_sit_name2)
 		if two_way:
-			self.add_sit_dir(dir1, target_sit_name1, dir2)
-			self.add_sit_dir(dir2, target_sit_name2, dir1)
-		else:
-			self.add_sit_dir(dir1, target_sit_name1, None)
-			self.add_sit_dir(dir2, target_sit_name2, None)
+			if self.cond_state != [0]:
+				self.error_line('two-way directions cannot be used in "if" blocks')
+			else:
+				self.add_sit_backdir(target_sit_name1, dir2)
+				self.add_sit_backdir(target_sit_name2, dir1)
 	def process_const_line(self, line):
 		'symbolic constant definition'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
@@ -324,9 +324,8 @@ class convertor(object):
 		parts = line.split(cmp[0])
 		if len(parts) != 2:
 			self.error_line('Error parsing comparison')
-		hinz = self.get_exp(parts[0])
-		kunz = self.get_exp(parts[1])
-		self.current_sit.add_code(';+if not (' + line + ') then goto .c_after' + str(self.cond_state[-1]))
+		hinz = self.get_expr(parts[0])
+		kunz = self.get_expr(parts[1])
 		self.current_sit.add_code('+if_' + cmp[1] + ' ' + var_offset_label(hinz) + ', ' + var_offset_label(kunz) + ', .c_after' + str(self.cond_state[-1]))
 	def end_cond_block(self):
 		self.current_sit.add_code('+goto .c_end')
@@ -337,7 +336,7 @@ class convertor(object):
 		self.current_sit.add_code('!zone {')
 		self.cond_state.append(1)	# go deeper, then in 1st block of if/elif/else/endif
 		self.process_condition(line[3:])	# without "if"
-		self.current_sit.change_indentation(1)
+		self.current_sit.change_indent(1)
 	def process_elif_line(self, line):
 		self.no_text()
 		if self.cond_state[-1] == 0:
@@ -346,9 +345,9 @@ class convertor(object):
 			self.error_line('Used ELIF after ELSE')
 		self.end_cond_block()
 		self.cond_state[-1] += 1	# in next block of if/elif/else/endif
-		self.current_sit.change_indentation(-1)
+		self.current_sit.change_indent(-1)
 		self.process_condition(line[5:])	# without "elif"
-		self.current_sit.change_indentation(1)
+		self.current_sit.change_indent(1)
 	def process_else_line(self, line):
 		self.no_text()
 		if line != "else":
@@ -358,9 +357,9 @@ class convertor(object):
 		if self.cond_state[-1] == -1:
 			self.error_line('Used ELSE after ELSE')
 		self.end_cond_block()
-		self.current_sit.change_indentation(-1)
+		self.current_sit.change_indent(-1)
 		self.current_sit.add_code(';else')
-		self.current_sit.change_indentation(1)
+		self.current_sit.change_indent(1)
 		self.cond_state[-1] = -1	# in ELSE block of if/elif/else/endif
 	def process_endif_line(self, line):
 		self.no_text()
@@ -370,7 +369,7 @@ class convertor(object):
 			self.current_sit.add_label('.c_after' + str(self.cond_state[-1]))
 		self.current_sit.add_label('.c_end')
 		self.cond_state.pop()	# leave nesting level
-		self.current_sit.change_indentation(-1)
+		self.current_sit.change_indent(-1)
 		self.current_sit.add_code('}; end of zone')
 # var changing:
 	def process_let_line(self, line):
@@ -380,12 +379,14 @@ class convertor(object):
 		if len(parts) != 2:
 			self.error_line('Line type not recognised')
 		target_var = self.get_var(parts[0])
-		source_name = self.get_exp(parts[1])
+		# FIXME - make sure target var is not read-only!
+		source_name = self.get_expr(parts[1])
 		self.current_sit.add_code('+let ' + var_offset_label(target_var) + ', ' + var_offset_label(source_name))
 	def process_incdec_line(self, what, line):
 		'increment/decrement variable'
 		self.no_text()
 		var_name = self.get_var(self.get2of2(line))
+		# FIXME - make sure var is not read-only!
 		self.current_sit.add_code('+' + what + ' ' + var_offset_label(var_name))
 # outer stuff:
 	def process_line(self, line):
