@@ -1,0 +1,6 @@
+mit Shmendric zu echtem Adventure ausbauen:
+
+- grüne Schrift auf schwarzem Hintergrund
+- Umlaute!
+- add automatic word wrap
+zwei-Wort-Parser? Inventar!
