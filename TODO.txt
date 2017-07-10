@@ -4,3 +4,11 @@ mit Shmendric zu echtem Adventure ausbauen:
 - Umlaute!
 - add automatic word wrap
 zwei-Wort-Parser? Inventar!
+
+split between example and real game
+conv:
+	add "wait" (using 0.1s time units via vblank)
+	add "say"
+	allow "IF var"
+backend:
+	add "ifnonzero"
