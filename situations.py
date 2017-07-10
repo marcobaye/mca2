@@ -36,6 +36,11 @@ var dwarfmood	MOOD_NEUTRAL
 var lives_left	5
 var cows_killed	0
 
+# "asm" lines are passed to assembler backend unchanged:
+asm HINZ	= petscii_YELLOW
+asm KUNZ	= petscii_LRED
+# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL CODE!
+
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room
 	# lines beginning with single or double quotes are text to output.
