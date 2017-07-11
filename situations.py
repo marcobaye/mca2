@@ -44,7 +44,7 @@ asm KUNZ	= petscii_LRED
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room
 	# lines beginning with single or double quotes are text to output.
-	# You can use predefined petscii codes. "cr" adds a carriage return.
+	# You can use predefined petscii codes. "cr" adds a carriage return. Do NOT add null terminator!
 	"You are in what looks like a transporter room right out of ", petscii_WHITE, "Star Trek", petscii_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
 	"To output double quotes, put them in single quotes as a separate character:", '"', cr

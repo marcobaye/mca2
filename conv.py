@@ -10,25 +10,30 @@ operators = [
 	['>', 'greater']	# shorter ones!
 ]
 
-def sit_label(name):
-	return 's_' + name
-def var_offset_label(name):
+def var_offset_label(name):	# FIXME - make var class and call its label() function!
 	return 'vo_' + name
 
-class situation(object):
-	'collects data about a situation'
+class mca2obj(object):
+	'parent class for const, var, sit and maybe later sub'
 	def __init__(self, name):
 		self.name = name
-		self.referenced = False
 		self.line_of_def = 0
+		self.referenced = False
+
+class situation(mca2obj):
+	'collects data about a situation'
+	def __init__(self, name):
+		super(situation, self).__init__(name)
 		self.dirs = {}
 		self.code = []
 		self.indents = 2
+	def label(self):
+		return 's_' + self.name
 	# setters:
 	def set_dir(self, dir, target):
 		# this returns whether direction was already possible
 		result = dir in self.dirs
-		self.code.append(self.indents * '\t' + '+' + dir + ' ' + sit_label(target))
+		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
 		return result
 	def set_extdir(self, dir, target):
 		# this returns whether direction was already possible
@@ -43,9 +48,9 @@ class situation(object):
 	def add_code(self, line):
 		self.code.append(self.indents * '\t' + line)
 	def output(self):
-		print sit_label(self.name)
+		print self.label()
 		for dir in self.dirs:
-			print self.indents * '\t' + '+' + dir + ' ' + sit_label(self.dirs[dir])
+			print self.indents * '\t' + '+' + dir + ' ' + self.dirs[dir].label()
 		for line in self.code:
 			print line
 		print self.indents * '\t' + '+end_sit'
@@ -69,7 +74,7 @@ class convertor(object):
 		start = situation("start")
 		start.referenced = True
 		self.situations["start"] = start
-		self.new_var('current_sit', sit_label('start'))	# reserve symbol
+		self.new_var('current_sit', start.label())	# reserve symbol
 		# FIXME - make current_sit var read-only!
 	def msg(self, msg):
 		print >> sys.stderr, msg
@@ -99,13 +104,13 @@ class convertor(object):
 		# add direction possibility to current situation
 		target_sit = self.get_sit(target_name)
 		target_sit.referenced = True
-		if self.current_sit.set_dir(direction, target_name):
+		if self.current_sit.set_dir(direction, target_sit):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def add_sit_backdir(self, target_name, direction):
 		# add direction possibility to other situation
 		target_sit = self.get_sit(target_name)
 		self.current_sit.referenced = True
-		if target_sit.set_extdir(direction, self.current_sit.name):
+		if target_sit.set_extdir(direction, self.current_sit):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def new_symbol(self, name):
 		'if symbol already defined, complain. otherwise create.'
