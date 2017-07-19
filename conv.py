@@ -20,15 +20,42 @@ class mca2obj(object):
 		self.line_of_def = 0
 		self.referenced = False
 
-class situation(mca2obj):
+class codeseq(mca2obj):
+	'a bytecode sequence'
+	def __init__(self, name):
+		super(codeseq, self).__init__(name)
+		self.code = []
+		self.indents = 2
+	def change_indent(self, n):
+		self.indents += n
+	# actually do something:
+	def add_label(self, line):
+		self.code.append(line)
+	def add_code(self, line):
+		self.code.append(self.indents * '\t' + line)
+
+class procedure(codeseq):
+	'callable code'
+	def label(self):
+		return 'proc_' + self.name
+	# setters:
+	def set_dir(self, dir, target):
+		# this returns whether direction was already possible
+		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
+		return False	# procedures do not have "directions" like situations
+	def output(self):
+		print self.label()
+		for line in self.code:
+			print line
+		print self.indents * '\t' + '+end_proc'
+
+class situation(codeseq):
 	'collects data about a situation'
 	def __init__(self, name):
 		super(situation, self).__init__(name)
 		self.dirs = {}
-		self.code = []
-		self.indents = 2
 	def label(self):
-		return 's_' + self.name
+		return 'sit_' + self.name
 	# setters:
 	def set_dir(self, dir, target):
 		# this returns whether direction was already possible
@@ -40,13 +67,6 @@ class situation(mca2obj):
 		result = dir in self.dirs
 		self.dirs[dir] = target
 		return result
-	def change_indent(self, n):
-		self.indents += n
-	# actually do something:
-	def add_label(self, line):
-		self.code.append(line)
-	def add_code(self, line):
-		self.code.append(self.indents * '\t' + line)
 	def output(self):
 		print self.label()
 		for dir in self.dirs:
@@ -62,7 +82,7 @@ class convertor(object):
 		self.line_number = 0	# for error output
 		self.in_comment = False	# for c-style multi-line comments
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
-		self.current_sit = None	# needed so no command is issued outside of situation (and to recall current sit)
+		self.codeseq = None	# needed to track situations/procedures
 		self.cond_state = [0]	# keeps track of "if/elif/else/endif" and nesting
 		self.symbols = dict()	# holds line numbers of const AND var definitions
 		self.consts = dict()	# holds values of symbolic constants
@@ -70,6 +90,7 @@ class convertor(object):
 		self.vars = dict()	# holds start values of declared variables
 		self.literals = set()	# fake vars (constants used in comparisons and assigments)
 		self.code = []	# for stuff from "asm" lines
+		self.procedures = dict()	# list of procedures
 		self.situations = dict()	# list of situations
 		start = situation("start")
 		start.referenced = True
@@ -92,6 +113,14 @@ class convertor(object):
 	#def err_serious_line(self, msg):
 	#	print >> sys.stderr, 'Serious error in line %d: %s!' % (self.line_number, msg)
 	#	sys.exit(1)
+	def get_proc(self, proc_name):
+		'get procedure by name. if it does not exist, create'
+		#print proc_name
+		if proc_name in self.procedures:
+			return self.procedures[proc_name]
+		proc = procedure(proc_name)
+		self.procedures[proc_name] = proc
+		return proc
 	def get_sit(self, sit_name):
 		'get situation by name. if it does not exist, create'
 		#print sit_name
@@ -104,13 +133,13 @@ class convertor(object):
 		# add direction possibility to current situation
 		target_sit = self.get_sit(target_name)
 		target_sit.referenced = True
-		if self.current_sit.set_dir(direction, target_sit):
+		if self.codeseq.set_dir(direction, target_sit):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def add_sit_backdir(self, target_name, direction):
 		# add direction possibility to other situation
 		target_sit = self.get_sit(target_name)
-		self.current_sit.referenced = True
-		if target_sit.set_extdir(direction, self.current_sit):
+		self.codeseq.referenced = True
+		if target_sit.set_extdir(direction, self.codeseq):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def new_symbol(self, name):
 		'if symbol already defined, complain. otherwise create.'
@@ -179,6 +208,9 @@ class convertor(object):
 		for line in self.code:
 			print line
 		print
+		print '; procedures:'
+		for proc in self.procedures:
+			self.procedures[proc].output()
 		print '; situations:'
 		for sit in self.situations:
 			self.situations[sit].output()
@@ -191,7 +223,7 @@ class convertor(object):
 			if sit.referenced and sit.line_of_def == 0:
 				self.error('situation "' + sit.name + '" referenced but not defined')
 		# FIXME - compare "referenced vars" to actual list!
-		print '}	; end of macro'
+		print '} ; end of macro'
 		print '!eof'
 		#print 'debugging info:'
 		#print 'situations:'
@@ -251,30 +283,30 @@ class convertor(object):
 	def no_text(self):
 		'if we are in text mode, terminate'
 		if self.text_mode:
-			self.current_sit.add_code('+terminate')
+			self.codeseq.add_code('+terminate')
 			self.text_mode = False
-	def no_sit(self):
-		'if we are in situation, terminate'
-		if self.current_sit != None:
+	def new_code(self):
+		'if we are in situation/procedure, terminate'
+		if self.codeseq != None:
 			if self.cond_state != [0]:
-				self.error_line('cannot start new situation, there are "if" blocks left open')
-			self.current_sit = None
+				self.error_line('cannot start new situation/procedure, there are "if" blocks left open')
+			self.codeseq = None
 # functions to parse different line types:
 	def process_asm_line(self, line):
 		'line to pass to assembler unchanged'
-		if self.current_sit != None:
-			self.error_line('Please put "asm" lines before all situations')
+		if self.codeseq != None:
+			self.error_line('Please put "asm" lines before all situations/procedures')
 		self.add_code(line[4:])
 	def process_text_line(self, line):
 		'text line'
 		if self.text_mode == False:
-			self.current_sit.add_code('+print')
+			self.codeseq.add_code('+print')
 			self.text_mode = True
-		self.current_sit.add_code('!tx ' + line)
+		self.codeseq.add_code('!tx ' + line)
 	def process_sit_line(self, line):
 		'new situation'
 		self.no_text()
-		self.no_sit()	# close previous sit, if there was one
+		self.new_code()	# close previous code sequence, if there was one
 		# check
 		sit_name = self.get2of2(line)
 		sit = self.get_sit(sit_name)	# creates sit
@@ -282,7 +314,30 @@ class convertor(object):
 			self.error_line('cannot create situation "' + sit_name + '", already created in line ' + str(sit.line_of_def))
 		sit.line_of_def = self.line_number
 		# make current
-		self.current_sit = sit
+		self.codeseq = sit
+	def process_defproc_line(self, line):
+		'new procedure'
+		self.no_text()
+		self.new_code()	# close previous code sequence, if there was one
+		# check
+		proc_name = self.get2of2(line)
+		proc = self.get_proc(proc_name)	# creates procedure
+		if proc.line_of_def:
+			self.error_line('cannot create procedure "' + proc_name + '", already created in line ' + str(proc.line_of_def))
+		proc.line_of_def = self.line_number
+		# make current
+		self.codeseq = proc
+	def process_callproc_line(self, line):
+		'call procedure'
+		self.no_text()
+		proc_name = self.get2of2(line)
+		proc = self.get_proc(proc_name)
+		self.codeseq.add_code('+gosub ' + proc.label())
+	def process_callasm_line(self, line):
+		'call machine language'
+		self.no_text()
+		asm_name = self.get2of2(line)
+		self.codeseq.add_code('+callasm ' + asm_name)
 	def process_dir_line(self, direction, line, backdir=None):
 		'allow a direction of movement and specify target, with two-way option'
 		self.no_text()
@@ -345,17 +400,17 @@ class convertor(object):
 			self.error_line('Error parsing comparison')
 		hinz = self.get_expr(parts[0])
 		kunz = self.get_expr(parts[1])
-		self.current_sit.add_code('+if_' + cmp[1] + ' ' + var_offset_label(hinz) + ', ' + var_offset_label(kunz) + ', .c_after' + str(self.cond_state[-1]))
+		self.codeseq.add_code('+if_' + cmp[1] + ' ' + var_offset_label(hinz) + ', ' + var_offset_label(kunz) + ', .c_after' + str(self.cond_state[-1]))
 	def end_cond_block(self):
-		self.current_sit.add_code('+goto .c_end')
-		self.current_sit.add_label('.c_after' + str(self.cond_state[-1]))
+		self.codeseq.add_code('+goto .c_end')
+		self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
 # if/elif/else/endif:
 	def process_if_line(self, line):
 		self.no_text()
-		self.current_sit.add_code('!zone {')
+		self.codeseq.add_code('!zone {')
 		self.cond_state.append(1)	# go deeper, then in 1st block of if/elif/else/endif
 		self.process_condition(line[3:])	# without "if"
-		self.current_sit.change_indent(1)
+		self.codeseq.change_indent(1)
 	def process_elif_line(self, line):
 		self.no_text()
 		if self.cond_state[-1] == 0:
@@ -364,9 +419,9 @@ class convertor(object):
 			self.error_line('Used ELIF after ELSE')
 		self.end_cond_block()
 		self.cond_state[-1] += 1	# in next block of if/elif/else/endif
-		self.current_sit.change_indent(-1)
+		self.codeseq.change_indent(-1)
 		self.process_condition(line[5:])	# without "elif"
-		self.current_sit.change_indent(1)
+		self.codeseq.change_indent(1)
 	def process_else_line(self, line):
 		self.no_text()
 		if line != "else":
@@ -376,20 +431,20 @@ class convertor(object):
 		if self.cond_state[-1] == -1:
 			self.error_line('Used ELSE after ELSE')
 		self.end_cond_block()
-		self.current_sit.change_indent(-1)
-		self.current_sit.add_code(';else')
-		self.current_sit.change_indent(1)
+		self.codeseq.change_indent(-1)
+		self.codeseq.add_code(';else')
+		self.codeseq.change_indent(1)
 		self.cond_state[-1] = -1	# in ELSE block of if/elif/else/endif
 	def process_endif_line(self, line):
 		self.no_text()
 		if self.cond_state[-1] == 0:
 			self.error_line('Used ENDIF without IF')
 		if self.cond_state[-1] != -1:
-			self.current_sit.add_label('.c_after' + str(self.cond_state[-1]))
-		self.current_sit.add_label('.c_end')
+			self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
+		self.codeseq.add_label('.c_end')
 		self.cond_state.pop()	# leave nesting level
-		self.current_sit.change_indent(-1)
-		self.current_sit.add_code('}; end of zone')
+		self.codeseq.change_indent(-1)
+		self.codeseq.add_code('} ; end of zone')
 # var changing:
 	def process_let_line(self, line):
 		'writing to variable'
@@ -400,13 +455,13 @@ class convertor(object):
 		target_var = self.get_var(parts[0])
 		# FIXME - make sure target var is not read-only!
 		source_name = self.get_expr(parts[1])
-		self.current_sit.add_code('+let ' + var_offset_label(target_var) + ', ' + var_offset_label(source_name))
+		self.codeseq.add_code('+let ' + var_offset_label(target_var) + ', ' + var_offset_label(source_name))
 	def process_incdec_line(self, what, line):
 		'increment/decrement variable'
 		self.no_text()
 		var_name = self.get_var(self.get2of2(line))
 		# FIXME - make sure var is not read-only!
-		self.current_sit.add_code('+' + what + ' ' + var_offset_label(var_name))
+		self.codeseq.add_code('+' + what + ' ' + var_offset_label(var_name))
 # outer stuff:
 	def process_line(self, line):
 		'process a single line of input'
@@ -456,6 +511,12 @@ class convertor(object):
 				self.process_else_line(line)
 			elif key == 'endif':
 				self.process_endif_line(line)
+			elif key == 'defproc':
+				self.process_defproc_line(line)
+			elif key == 'callproc':
+				self.process_callproc_line(line)
+			elif key == 'callasm':
+				self.process_callasm_line(line)
 			elif key == 'n':
 				self.process_dir_line('north', line)
 			elif key == 'n2':
@@ -496,7 +557,7 @@ class convertor(object):
 				# ...or is an assignment to a variable
 				self.process_let_line(line)
 		#debug:
-		#self.current_sit.code.append(str(indents) + line)
+		#self.codeseq.code.append(str(indents) + line)
 
 	def parse_file(self, filename):
 		with open(filename, 'r') as file:

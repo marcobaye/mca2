@@ -31,6 +31,12 @@
 		!pet $3a, $8f, " saufbox!", $0	; ":rem "
 line2		!wo 0
 
+
+flash_border ; this is used by the example program
+		inc addr($d020)
+		rts
+
+
 ; main program
 entry ; entry point for SYS
 		; init

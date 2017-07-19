@@ -41,6 +41,16 @@ asm HINZ	= petscii_YELLOW
 asm KUNZ	= petscii_LRED
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL CODE!
 
+# "defproc" starts a procedure definition (can be called using "callproc")
+defproc check_lives
+	if lives_left == 0
+		"You are so dead."
+		# "callasm" adds code to call a machine language sub-routine
+		# the argument is an assembler label you must define yourself
+		# in the surrounding asm code!
+		callasm flash_border
+	endif
+
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room
 	# lines beginning with single or double quotes are text to output.
@@ -73,11 +83,10 @@ sit deck4_transporter_room
 # dec	decrement variable	FIXME - allow underrun?
 # if	start conditional block
 # inc	increment variable	FIXME - allow overrun?
-# v	declare uint16 variable and default value ("current_sit" is pre-defined and must be read-only!)
+# var	declare uint16 variable and default value ("current_sit" is pre-defined and must be read-only!)
 	# this would allow to load/save current state just by loading/saving var block!
 # VAR=LITERAL	set variable to fixed value
 # VAR=OTHERVAR	copy var
-# FIXME - internally, convert literals to vars? makes things easier!
 
 # example:
 
@@ -86,6 +95,7 @@ sit start	# <= one situation MUST be called "start", this is where the game begi
 	"Hi! Hit the correct key to begin the game.", cr
 	#a corridor2		FIXME - implement "a"!
 	d corridor2
+	callproc check_lives
 
 /* this example file uses a starship,
 here is the floor plan:

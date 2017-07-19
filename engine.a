@@ -4,11 +4,12 @@
 
 ; helper values
 !addr	MODIFIED16	= $ffff
+	MAX_RECURSIONS	= 64	; ought to be enough for anybody (tm)
 
 ; zp variables
 ;!addr	fac1		= $61	; floating point registers are used for temp storage
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
-
+!addr	recursion_depth	= $fd	; counts recursion levels
 
 ; engine
 engine_new_sit ; basically the start of the engine's main loop
@@ -57,7 +58,7 @@ no_choice ; error handler called if player cannot do anything
 }
 		jmp exit
 
-unknown_cmd ; error handler called on illegal byte code
+!macro unknown_cmd { ; error handler called on illegal byte code
 		dec restart_flag
 		jsr my_primm
 !if DEUTSCH {
@@ -66,23 +67,37 @@ unknown_cmd ; error handler called on illegal byte code
 		!tx CR, CR, "BUG: encountered unknown instruction!", 0
 }
 		jmp exit
+}
 
+!macro too_deep { ; error handler called if recursion too deep
+		dec restart_flag
+		jsr my_primm
+!if DEUTSCH {
+		!tx CR, CR, "BUG: Rekursion zu tief!", 0
+} else {
+		!tx CR, CR, "BUG: recursion too deep!", 0
+}
+		jmp exit
+}
 
 ; bytecode interpreter:
 
+interpreter_run ; execute bytecode block
+		lda #0	; no offset and no recursion
+		sta recursion_depth
 interpreter_go_on ; enter with A = offset to add
 		clc
 		adc runptr
 		sta runptr
 		bcc +
 			inc runptr + 1
-+
-interpreter_run ; execute bytecode block
++		; get byte code and execute
 		ldy #0
 		lda (runptr), y
 		cmp #CMDLIMIT
-		bcs unknown_cmd
-		asl
+		bcc +
+			+unknown_cmd
++		asl
 		tax
 		lda cmd_table, x
 		sta .vector
@@ -108,9 +123,21 @@ interpreter_run ; execute bytecode block
 ;---------------------------------------
 ; all command handlers are entered with runptr pointing to command and Y=0
 ;---------------------------------------
+	!macro end_proc		{!by CMD_ENDOFBLOCK	}
 	!macro end_sit		{!by CMD_ENDOFBLOCK	}
 +instruction ~CMD_ENDOFBLOCK, ~cmd_endofblock
-		rts
+		ldx recursion_depth
+		bne +
+			rts	; no recursion? then return to caller
++		; leave recursion level
+		dex
+		lda softstack_lo, x
+		sta runptr
+		lda softstack_hi, x
+		sta runptr + 1
+		stx recursion_depth
+		lda #3	; skip "GOSUB" command and two parameter bytes
+		jmp interpreter_go_on
 ;---------------------------------------
 	!macro print		{!by CMD_PRINT	}
 	!macro terminate	{!by 0		}
@@ -225,8 +252,27 @@ direction_keys
 			lda #5
 			jmp interpreter_go_on
 ;---------------------------------------
+	!macro gosub	.target {!by CMD_GOSUB:	!wo .target	}
++instruction ~CMD_GOSUB, ~cmd_gosub
+		; recursed too far?
+		ldx recursion_depth
+		cpx #MAX_RECURSIONS
+		bcc +
+			+too_deep
++		; no, then stack current pointer
+		lda runptr
+		sta softstack_lo, x
+		lda runptr + 1
+		sta softstack_hi, x
+		; CAUTION - pointer must be advanced when returning!
+		; change recursion depth
+		inx
+		stx recursion_depth
+		;FALLTHROUGH to "goto"
+;---------------------------------------
 	!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
-+instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks
++instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks and "callproc"
+; this entry point is also used by the "gosub" macro ("callproc")
 ; this entry point is used by the four "if" macros as well when they jump!
 		iny
 		lda (runptr), y
@@ -236,6 +282,18 @@ direction_keys
 		stx runptr
 		sta runptr + 1
 		lda #0
+		jmp interpreter_go_on
+;---------------------------------------
+	!macro callasm	.target	{!by CMD_CALLASM:	!wo .target	}
++instruction ~CMD_CALLASM, ~cmd_callasm
+		iny
+		lda (runptr), y
+		sta .jsr_arg
+		iny
+		lda (runptr), y
+		sta .jsr_arg + 1
+		jsr MODIFIED16	: .jsr_arg = * - 2
+		lda #3
 		jmp interpreter_go_on
 ;---------------------------------------
 	!macro inc	.var_offset	{!by CMD_INC:	!by .var_offset	}
