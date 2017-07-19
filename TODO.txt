@@ -6,10 +6,10 @@ zwei-Wort-Parser? Inventar!
 
 "use 0 as target to explicitly disable a direction"	- or rather use "hidden" location
 add items (mobile and fixed), handle as vars (value is location)
-	mobile/fixed could be distinguished by sorting (first one sort, then
+	mobile/fixed could be distinguished by sorting (first one, then
 		the other, with border value for CMP)
 	put at start of var table, because we need to store more info in
-	tables:
+	further tables:
 		short name to reference (not necessarily the same as the
 			name in description file, for translations) - try to
 			not have umlauts!
@@ -27,7 +27,7 @@ use string with stick
 		# FIXME - or rather current sit? should depend on item's
 		# mobility!
 	"You now have a bow"
-	if carrying arrow
+	if arrow @ inventory
 		" to shoot arrows with."
 	else
 		", pity you do not have arrows."
@@ -37,13 +37,13 @@ use feather with stick
 	hide stick
 	gain arrow
 	"You now have an arrow"
-	if carrying bow
+	if bow @ inventory
 		" to shoot with your bow"
 	else
 		", pity you do not have a bow to shoot it."
 	endif
 
-add subroutines and some sort of "gosub/call"	(call_sub?)
+add subroutines and some sort of "gosub/call"	(def_proc / call_proc?)
 add some sort of "jsr" command for "call external asm routine"	(call_ml?)
 
 split between example and real game

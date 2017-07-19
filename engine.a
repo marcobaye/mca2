@@ -1,0 +1,288 @@
+;ACME 0.96.2
+
+	!src <6502/std.a>	; for bit16 macro
+
+; helper values
+!addr	MODIFIED16	= $ffff
+
+; zp variables
+;!addr	fac1		= $61	; floating point registers are used for temp storage
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
+
+
+; engine
+engine_new_sit ; basically the start of the engine's main loop
+		; check "restart" flag:
+		lda #MODIFIED8	: restart_flag = * - 1
+		beq ++
+			; re-init vars with default values
+			; effectively this algo limits game vars to a maximum of 255
+			ldx #gamevars_COUNT
+--				lda gamevars_defaults_lo - 1, x
+				sta gamevars_lo - 1, x
+				lda gamevars_defaults_hi - 1, x
+				sta gamevars_hi - 1, x
+				dex
+			bne --
+			stx restart_flag	; inhibit this until someone requests it again
+++		; okay, here is the real start:
+		; clear directions and choices
+		lda #0
+		ldx #6
+--			sta directions_hi - 1, x	; no need to zero low as well
+			dex
+			bne --
+		sta number_of_alternatives
+		jsr pre_sit
+		; execute code from current situation
+		lda gamevars_lo + vo_current_sit
+		sta runptr
+		lda gamevars_hi + vo_current_sit
+		sta runptr + 1
+		jsr interpreter_run
+		; now text should be on screen, directions and alternatives in buffers,
+		; so display prompt
+		jsr prompt_for_action	; returns chosen sit in YYAA
+		sty gamevars_hi + vo_current_sit
+		sta gamevars_lo + vo_current_sit
+		jmp engine_new_sit
+
+no_choice ; error handler called if player cannot do anything
+		dec restart_flag
+		jsr my_primm
+!if DEUTSCH {
+		!tx CR, CR, "BUG: keine Wahlmoeglichkeiten in dieser Situation!", 0
+} else {
+		!tx CR, CR, "BUG: no choices left in this situation!", 0
+}
+		jmp exit
+
+unknown_cmd ; error handler called on illegal byte code
+		dec restart_flag
+		jsr my_primm
+!if DEUTSCH {
+		!tx CR, CR, "BUG: unbekannte Byte-Code-Anweisung!", 0
+} else {
+		!tx CR, CR, "BUG: encountered unknown instruction!", 0
+}
+		jmp exit
+
+
+; bytecode interpreter:
+
+interpreter_go_on ; enter with A = offset to add
+		clc
+		adc runptr
+		sta runptr
+		bcc +
+			inc runptr + 1
++
+interpreter_run ; execute bytecode block
+		ldy #0
+		lda (runptr), y
+		cmp #CMDLIMIT
+		bcs unknown_cmd
+		asl
+		tax
+		lda cmd_table, x
+		sta .vector
+		lda cmd_table + 1, x
+		sta .vector + 1
+		jmp MODIFIED16	: .vector = * - 2
+;---------------------------------------
+	; macro magic to assign instruction codes and put pointers into table
+	!macro instruction ~.code, ~.ptr {
+.ptr
+		.code = instruction_enum
+		!set instruction_enum = instruction_enum + 1
+		; if we know where the command table is, write to it
+		.buf = *	; outside of ifdef to make sure locals are counted correctly
+		!ifdef cmd_table {
+			* = cmd_table + 2 * .code
+			!wo .ptr
+			* = .buf	; go back to where we came from
+		}
+	}
+;---------------------------------------
+	!set instruction_enum = 0	; let's go!
+;---------------------------------------
+; all command handlers are entered with runptr pointing to command and Y=0
+;---------------------------------------
+	!macro end_sit		{!by CMD_ENDOFBLOCK	}
++instruction ~CMD_ENDOFBLOCK, ~cmd_endofblock
+		rts
+;---------------------------------------
+	!macro print		{!by CMD_PRINT	}
+	!macro terminate	{!by 0		}
+--			jsr k_chrout
++instruction ~CMD_PRINT, ~cmd_print
+			inc runptr
+			bne +
+				inc runptr + 1
++			lda (runptr), y
+			bne --
+		; FIXME - when adding word wrap, flush buffer here!
+		lda #1
+		jmp interpreter_go_on
+;---------------------------------------
+	!macro north	.target	{!by CMD_NORTH:	!wo .target	}
+	!macro south	.target {!by CMD_SOUTH:	!wo .target	}
+	!macro west	.target {!by CMD_WEST:	!wo .target	}
+	!macro east	.target {!by CMD_EAST:	!wo .target	}
+	!macro up	.target {!by CMD_UP:	!wo .target	}
+	!macro down	.target {!by CMD_DOWN:	!wo .target	}
++instruction ~CMD_NORTH, ~cmd_north
+		ldx #offset_NORTH
+		+bit16
++instruction ~CMD_SOUTH, ~cmd_south
+		ldx #offset_SOUTH
+		+bit16
++instruction ~CMD_WEST, ~cmd_west
+		ldx #offset_WEST
+		+bit16
++instruction ~CMD_EAST, ~cmd_east
+		ldx #offset_EAST
+		+bit16
++instruction ~CMD_UP, ~cmd_up
+		ldx #offset_UP
+		+bit16
++instruction ~CMD_DOWN, ~cmd_down
+		ldx #offset_DOWN
+		iny
+		lda (runptr), y
+		sta directions_lo, x
+		iny
+		lda (runptr), y
+		sta directions_hi, x
+		lda #3
+		jmp interpreter_go_on
+
+direction_keys
+!if DEUTSCH {
+	!tx "nswohr"	; ost, hoch, runter
+} else {
+	!tx "nsweud"	; east, up, down
+}
+	offset_NORTH	= 0
+	offset_SOUTH	= 1
+	offset_WEST	= 2
+	offset_EAST	= 3
+	offset_UP	= 4
+	offset_DOWN	= 5
+;---------------------------------------
+	; CAUTION! a macro like "if a < b then execute block" is internally
+	; implemented as "if not a < b then goto after block", therefore all
+	; the actual bytecode commands use negated conditions here!
+	!macro if_equal			.vo1, .vo2, .t	{!by CMD_IFNOTEQUAL,		.vo1, .vo2	: !wo .t	}
+	!macro if_not_equal		.vo1, .vo2, .t	{!by CMD_IFEQUAL,		.vo1, .vo2	: !wo .t	}
+	!macro if_smaller		.vo1, .vo2, .t	{!by CMD_IFGREATEROREQUAL,	.vo1, .vo2	: !wo .t	}
+	!macro if_smaller_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo1, .vo2	: !wo .t	}
+	; CAUTION! there is no need to implement "smaller than", as we can just
+	; use "greater than" with swapped operands. Same for "smaller or equal".
+	!macro if_greater		.vo1, .vo2, .t	{!by CMD_IFGREATEROREQUAL,	.vo2, .vo1	: !wo .t	}
+	!macro if_greater_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo2, .vo1	: !wo .t	}
+; virtual flags	for:	<	>	unused	==
+.flags		!by	%0001,	%1101,	0,	%0110	; bits mean  >   >=   ==   !=
++instruction ~CMD_IFNOTEQUAL,		~cmd_ifnotequal
+		lda #%0001
+		+bit16
++instruction ~CMD_IFEQUAL,		~cmd_ifequal
+		lda #%0010
+		+bit16
++instruction ~CMD_IFGREATEROREQUAL,	~cmd_ifgreaterorequal
+		lda #%0100
+		+bit16
++instruction ~CMD_IFGREATER,		~cmd_ifgreater
+		lda #%1000
+		sta .wanted_bit
+		; get var offsets
+		iny
+		lda (runptr), y
+		tax	; X = var offset 1
+		iny
+		lda (runptr), y
+		tay	; Y = var offset 2
+		; subtract
+		sec
+		lda gamevars_lo, x
+		sbc gamevars_lo, y
+		sta .low
+		lda gamevars_hi, x
+		sbc gamevars_hi, y		; C set means: v1 >= v2, C clear means: v1 < v2
+		ldy #2	; restore Y to be prepared for possible GOTO
+		ora #MODIFIED8	: .low = * - 1	; Z set means: v1 == v2, Z clear means: v1 != v2
+		; convert flags to bit mask
+		php
+		pla
+		and #%00000011	; of %NV-BDIZC, only keep ZC
+		; %00 means less than, %01 means more than, %10 is impossible, %11 means equal
+		; convert result type to virtual flags
+		tax
+		lda .flags, x
+		; now check for desired flag
+		and #MODIFIED8	: .wanted_bit = * - 1
+		bne cmd_goto
+			lda #5
+			jmp interpreter_go_on
+;---------------------------------------
+	!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
++instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks
+; this entry point is used by the four "if" macros as well when they jump!
+		iny
+		lda (runptr), y
+		tax
+		iny
+		lda (runptr), y
+		stx runptr
+		sta runptr + 1
+		lda #0
+		jmp interpreter_go_on
+;---------------------------------------
+	!macro inc	.var_offset	{!by CMD_INC:	!by .var_offset	}
+	!macro dec	.var_offset	{!by CMD_DEC:	!by .var_offset	}
++instruction ~CMD_INC, ~cmd_inc
+		iny
+		lda (runptr), y
+		tax
+		inc gamevars_lo, x
+		bne +++
+			inc gamevars_hi, x
+			jmp +++
++instruction ~CMD_DEC, ~cmd_dec
+		iny
+		lda (runptr), y
+		tax
+		lda gamevars_lo, x
+		bne +
+			dec gamevars_hi, x
++		dec gamevars_lo, x
++++		lda #2
+		jmp interpreter_go_on
+;---------------------------------------
+	!macro let	.vo_target, .vo_source {!by CMD_LET, .vo_source, .vo_target	}
++instruction ~CMD_LET, ~cmd_let
+		iny
+		lda (runptr), y
+		tax
+		lda gamevars_lo, x
+		pha
+			lda gamevars_hi, x
+			pha
+				iny
+				lda (runptr), y
+				tax
+			pla
+			sta gamevars_hi, x
+		pla
+		sta gamevars_lo, x
+		lda #3
+		jmp interpreter_go_on
+;---------------------------------------
+	; add more instructions here
+;---------------------------------------
+	CMDLIMIT = instruction_enum
+
+cmd_table
+		; reserve space for command pointers
+		* = * + 2 * CMDLIMIT
+		; table will be filled in by "instruction" macro in later pass!
