@@ -1,10 +1,50 @@
 mit Shmendric zu echtem Adventure ausbauen:
 
-- grüne Schrift auf schwarzem Hintergrund
 - Umlaute!
 - add automatic word wrap
 zwei-Wort-Parser? Inventar!
-"use 0 as target to explicitly disable a direction"
+
+"use 0 as target to explicitly disable a direction"	- or rather use "hidden" location
+add items (mobile and fixed), handle as vars (value is location)
+	mobile/fixed could be distinguished by sorting (first one sort, then
+		the other, with border value for CMP)
+	put at start of var table, because we need to store more info in
+	tables:
+		short name to reference (not necessarily the same as the
+			name in description file, for translations) - try to
+			not have umlauts!
+		long name or description for "examine"
+	items declared in situation get that sit as default position, all
+	others are hidden.
+
+add locations: "hidden" and "player's inventory"
+add "drop" command to move item from inventory to current_sit
+add code sections to execute after "use X with Y" command:
+use string with stick
+	hide string	# puts item X to "hidden" location
+	hide stick
+	gain bow	# puts item Z to "inventory" location
+		# FIXME - or rather current sit? should depend on item's
+		# mobility!
+	"You now have a bow"
+	if carrying arrow
+		" to shoot arrows with."
+	else
+		", pity you do not have arrows."
+	endif
+use feather with stick
+	hide feather
+	hide stick
+	gain arrow
+	"You now have an arrow"
+	if carrying bow
+		" to shoot with your bow"
+	else
+		", pity you do not have a bow to shoot it."
+	endif
+
+add subroutines and some sort of "gosub/call"	(call_sub?)
+add some sort of "jsr" command for "call external asm routine"	(call_ml?)
 
 split between example and real game
 conv:
@@ -13,3 +53,12 @@ conv:
 	allow "IF var"
 backend:
 	add "ifnonzero"
+
+vocabulary:
+	north south west east up down
+	take drop inventory
+	use-X-with-Y
+
+	nord süd west ost hoch runter
+	nimm verliere inventar
+	benutze-X-mit-Y

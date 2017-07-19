@@ -24,7 +24,6 @@
 ; zp variables
 ;!addr	fac1		= $61	; floating point registers are used for temp storage
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
-!addr	primm_ptr	= $fd
 
 ; basic header
 	* = $0801
@@ -66,22 +65,17 @@ exit		ldx #MODIFIED8	: sp_buffer = * - 1
 my_primm	pla	; get low byte of return address - 1
 		tay	; into Y
 		pla	; get high byte of return address - 1
-		sta primm_ptr + 1	; to ptr high
-		lda #0	; and zero ptr low, so "(ptr), y" points before text
-		sta primm_ptr
-		beq +
-		;--
----			; fix high byte
-			inc primm_ptr + 1
-			bne +++	; I trust this branch always gets taken
-			;--
--			jsr k_chrout
+		sta .primm_ptr + 1	; to ptr high
+		jmp +
+---			jsr k_chrout
 +			iny
-			beq ---
-+++			lda (primm_ptr), y
-			bne -
+			bne +
+				inc .primm_ptr + 1	; fix high byte
++			; high byte gets MODIFIED, but low byte stays zero!
+			lda addr($ff00), y	: .primm_ptr = * - 2
+			bne ---
 		; push updated address onto stack
-		lda primm_ptr + 1
+		lda .primm_ptr + 1
 		pha
 		tya
 		pha
@@ -112,7 +106,7 @@ engine_new_sit ; basically the start of the engine's main loop
 			bne --
 		sta number_of_alternatives
 		; make some space
-		jsr my_primm	: !tx CR, CR, 0
+		jsr my_primm	: !tx petscii_CLEAR, 0	; was: CR, CR, 0
 		; execute code from current situation
 		lda gamevars_lo + vo_current_sit
 		sta runptr
