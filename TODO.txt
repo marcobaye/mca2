@@ -43,12 +43,7 @@ use feather with stick
 		", pity you do not have a bow to shoot it."
 	endif
 
-add subroutines and some sort of "gosub/call"	(def_proc / call_proc?)
-add some sort of "jsr" command for "call external asm routine"	(call_ml?)
-
-split between example and real game
 conv:
-	add "wait" (using 0.1s time units via vblank)
 	add "say"
 	allow "IF var"
 backend:
