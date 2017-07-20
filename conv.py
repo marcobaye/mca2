@@ -387,6 +387,11 @@ class convertor(object):
 		# get actual number for start value
 		num = self.get_num(start_value)
 		self.new_var(name, num)
+	def process_delay_line(self, line):
+		'wait for given number of .1 seconds'
+		self.no_text()
+		var_name = self.get_expr(self.get2of2(line))	# arg could be var or const or literal
+		self.codeseq.add_code('+delay ' + var_offset_label(var_name))
 # if/elif/else/endif helpers:
 	def process_condition(self, line):
 		for cmp in operators:
@@ -503,6 +508,8 @@ class convertor(object):
 				self.process_incdec_line('inc', line)
 			elif key == 'dec':
 				self.process_incdec_line('dec', line)
+			elif key == 'delay':
+				self.process_delay_line(line)
 			elif key == 'if':
 				self.process_if_line(line)
 			elif key == 'elif':

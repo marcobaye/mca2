@@ -20,6 +20,9 @@
 	CR		= 13
 	MODIFIED8	= $ff
 
+; system memory
+!addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
+
 ; basic header
 	* = $0801
 		!wo line2, 2017
@@ -32,10 +35,39 @@
 line2		!wo 0
 
 
-flash_border ; this is used by the example program
-		inc addr($d020)
+xor_border ; this is used by the example program
+		lda addr($d020)
+		eor #15
+		sta addr($d020)
 		rts
 
+wait_A_tenths ; wait for the number of .1 seconds given in A
+		; convert .1s unit to frames:
+		;	for PAL (50Hz), multiply by 5 (4+1)
+		;	for NTSC (60Hz), multiply by 6 (4+1+1)
+		sta .tenths
+		asl	; *2
+		asl	; *4
+		clc
+		adc #MODIFIED8	: .tenths = * - 1	; *5
+		; for NTSC, add another time
+		ldx is_PAL
+		bne +
+			clc
+			adc .tenths	; *6
++		;FALLTHROUGH
+wait_A_frames ; wait for the number of frames given in A
+		tax
+---
+-			lda vic_controlv
+			bpl -
+		txa	; check for early exit (if called with A zero)
+		beq +	; early exit
+-			lda vic_controlv
+			bmi -
+		dex
+		bne ---
++		rts
 
 ; main program
 entry ; entry point for SYS

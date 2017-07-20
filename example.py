@@ -45,10 +45,12 @@ asm KUNZ	= petscii_LRED
 defproc check_lives
 	if lives_left == 0
 		"You are so dead."
+		# "delay" waits a short time. unit is .1 seconds.
+		delay 10	# wait a full second
 		# "callasm" adds code to call a machine language sub-routine
 		# the argument is an assembler label you must define yourself
 		# in the surrounding asm code!
-		callasm flash_border
+		callasm xor_border
 	endif
 
 # "sit" starts a new situation, basically a location in the game:

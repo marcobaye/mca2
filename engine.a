@@ -296,6 +296,16 @@ direction_keys
 		lda #3
 		jmp interpreter_go_on
 ;---------------------------------------
+	!macro delay	.var_offset	{!by CMD_DELAY:	!by .var_offset	}
++instruction ~CMD_DELAY, ~cmd_delay
+		iny
+		lda (runptr), y
+		tax
+		lda gamevars_lo, x
+		jsr wait_A_tenths
+		lda #2
+		jmp interpreter_go_on
+;---------------------------------------
 	!macro inc	.var_offset	{!by CMD_INC:	!by .var_offset	}
 	!macro dec	.var_offset	{!by CMD_DEC:	!by .var_offset	}
 +instruction ~CMD_INC, ~cmd_inc
