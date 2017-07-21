@@ -19,6 +19,17 @@ class mca2obj(object):
 		self.name = name
 		self.line_of_def = 0
 		self.referenced = False
+	# FIXME - add "define" function to store line number and check for double defines!
+
+class symbol(mca2obj):
+	def offset_name(self):
+		return 'vo_' + name
+
+class var(symbol):
+	pass
+
+class const(symbol):
+	pass
 
 class codeseq(mca2obj):
 	'a bytecode sequence'
