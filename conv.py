@@ -10,32 +10,51 @@ operators = [
 	['>', 'greater']	# shorter ones!
 ]
 
-def var_offset_label(name):	# FIXME - make var class and call its label() function!
-	return 'vo_' + name
+def nospace(string):
+	'helper function to remove leading/trailing spaces'
+	return string.split()[0]
+
+def message(msg):
+	print >> sys.stderr, msg
+def warning(msg):
+	message('Warning: ' + msg)
+
+class mydict(dict):
+	'helper class for object dictionaries'
+	def __init__(self, constructor):
+		super(mydict, self).__init__()
+		self.constructor = constructor
 
 class mca2obj(object):
-	'parent class for const, var, sit and maybe later sub'
+	'parent class for everything defined in situations file'
 	def __init__(self, name):
-		self.name = name
-		self.line_of_def = 0
-		self.referenced = False
-	# FIXME - add "define" function to store line number and check for double defines!
+		self.name = name	# symbolic name
+		self.line_of_def = None	# line number of definition (for "already defined" error)
+		self.referenced = False	# for debugging output ("object XYZ never used!)
+	def reference(self):
+		self.referenced = True
 
 class symbol(mca2obj):
+	'parent class for const, item, var and fakevar'
+	def __init__(self, name):
+		super(symbol, self).__init__(name)
+		self.default = None	# default value at start of game
+		self.readonly = False	# currently only "current_sit" is made read-only
 	def offset_name(self):
-		return 'vo_' + name
+		return 'vo_' + self.name
+	def set_default(self, value):
+		self.default = value
+	def make_readonly(self):
+		self.readonly = True
 
-class var(symbol):
-	pass
-
-class const(symbol):
-	pass
+class item(symbol):
+	pass	# FIXME - needs several private components (short name and description string)
 
 class codeseq(mca2obj):
-	'a bytecode sequence'
+	'parent class for all bytecode sequences'
 	def __init__(self, name):
 		super(codeseq, self).__init__(name)
-		self.code = []
+		self.code = []	# holds lines for assembler
 		self.indents = 2
 	def change_indent(self, n):
 		self.indents += n
@@ -44,6 +63,11 @@ class codeseq(mca2obj):
 		self.code.append(line)
 	def add_code(self, line):
 		self.code.append(self.indents * '\t' + line)
+	def output(self):
+		print self.label()
+		for line in self.code:
+			print line
+		print self.indents * '\t' + '+end_proc'
 
 class procedure(codeseq):
 	'callable code'
@@ -54,34 +78,40 @@ class procedure(codeseq):
 		# this returns whether direction was already possible
 		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
 		return False	# procedures do not have "directions" like situations
-	def output(self):
-		print self.label()
-		for line in self.code:
-			print line
-		print self.indents * '\t' + '+end_proc'
+
+class usage(codeseq):
+	'code to execute when player enters USE A WITH B'
+	def __init__(self, name, hinz, kunz):
+		super(usage, self).__init__(name)
+		self.hinz = hinz
+		self.kunz = kunz
+	def label(self):
+		return 'usage_' + self.hinz + '_' + self.kunz
 
 class situation(codeseq):
-	'collects data about a situation'
+	'code to execute when entering a situation'
 	def __init__(self, name):
 		super(situation, self).__init__(name)
-		self.dirs = {}
+		self.extdirs = {}	# directions given via two-way feature
 	def label(self):
 		return 'sit_' + self.name
 	# setters:
 	def set_dir(self, dir, target):
 		# this returns whether direction was already possible
-		result = dir in self.dirs
+		result = dir in self.extdirs
 		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
 		return result
 	def set_extdir(self, dir, target):
+		'call this for the two-way feature'
 		# this returns whether direction was already possible
-		result = dir in self.dirs
-		self.dirs[dir] = target
+		result = dir in self.extdirs
+		self.extdirs[dir] = target
 		return result
 	def output(self):
 		print self.label()
-		for dir in self.dirs:
-			print self.indents * '\t' + '+' + dir + ' ' + self.dirs[dir].label()
+		# stored directions are the reason this class needs to overwrite the output method:
+		for dir in self.extdirs:
+			print self.indents * '\t' + '+' + dir + ' ' + self.extdirs[dir].label()
 		for line in self.code:
 			print line
 		print self.indents * '\t' + '+end_sit'
@@ -89,104 +119,91 @@ class situation(codeseq):
 class convertor(object):
 	'converts MCA2 source to ACME source'
 	def __init__(self):
-		self.allowed_errors = 10	# convertor stops after this many errors
-		self.line_number = 0	# for error output
+		self.allowed_errors = 5	# convertor stops after this many errors
 		self.in_comment = False	# for c-style multi-line comments
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
-		self.codeseq = None	# needed to track situations/procedures
+		self.codeseq = None	# needed to track situations/procedures/usages
 		self.cond_state = [0]	# keeps track of "if/elif/else/endif" and nesting
-		self.symbols = dict()	# holds line numbers of const AND var definitions
-		self.consts = dict()	# holds values of symbolic constants
-		# FIXME - maybe add a symbol class and then subclass consts and vars from there?
-		self.vars = dict()	# holds start values of declared variables
-		self.literals = set()	# fake vars (constants used in comparisons and assigments)
 		self.code = []	# for stuff from "asm" lines
-		self.procedures = dict()	# list of procedures
-		self.situations = dict()	# list of situations
-		start = situation("start")
-		start.referenced = True
-		self.situations["start"] = start
-		self.new_var('current_sit', start.label())	# reserve symbol
-		# FIXME - make current_sit var read-only!
-	def msg(self, msg):
-		print >> sys.stderr, msg
-	def warning(self, msg):
-		self.msg('Warning: ' + msg)
+		# special dictionaries with constructor for new entries
+		self.procedures = mydict(procedure)	# procedures
+		self.situations = mydict(situation)	# situations
+		self.usages = mydict(usage)		# usages ("use A with B")
+		self.consts = mydict(symbol)	# holds symbolic constants
+		self.items = mydict(item)	# items player can interact with
+		self.vars = mydict(symbol)	# game variables
+		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
+		# make sure "start" sit is marked as referenced to inhibit confusing error
+		start = self.get_object(self.situations, 'start')
+		# create reserved symbol
+		self.line_number = '<predefined>'	# special value for line below
+		current_sit_var = self.get_object(self.vars, 'current_sit', define=True)
+		current_sit_var.set_default(start.label())
+		current_sit_var.make_readonly()
+		self.line_number = 0	# correct start value for later
 	def error(self, msg):
-		self.msg('Error: ' + msg)
+		message('Error: ' + msg)
 		if self.allowed_errors == 0:
 			sys.exit(1)
 		self.allowed_errors -= 1
 	def warning_line(self, msg):
-		self.warning('in line %d: %s!' % (self.line_number, msg))
+		warning('in line %d: %s!' % (self.line_number, msg))
 	def error_line(self, msg):
 		self.error('in line %d: %s!' % (self.line_number, msg))
 	#def err_serious_line(self, msg):
 	#	print >> sys.stderr, 'Serious error in line %d: %s!' % (self.line_number, msg)
 	#	sys.exit(1)
-	def get_proc(self, proc_name):
-		'get procedure by name. if it does not exist, create'
-		#print proc_name
-		if proc_name in self.procedures:
-			return self.procedures[proc_name]
-		proc = procedure(proc_name)
-		self.procedures[proc_name] = proc
-		return proc
-	def get_sit(self, sit_name):
-		'get situation by name. if it does not exist, create'
-		#print sit_name
-		if sit_name in self.situations:
-			return self.situations[sit_name]
-		sit = situation(sit_name)
-		self.situations[sit_name] = sit
-		return sit
+	def get_object(self, dict, name, define = False):
+		'get const/var/proc/sit/whatever by name. if it does not exist, create'
+		'if "define" is given, store current line number.'
+		'otherwise, set "referenced" to True.'
+		name = nospace(name)	# remove spaces before/after
+		if name in dict:
+			obj = dict[name]	# use existing
+		else:
+			obj = dict.constructor(name)	# create new
+			dict[name] = obj	# and store
+		if define:
+			if obj.line_of_def:
+				self.error_line('Object "' + name + '" has already been defined in line ' + obj.line_of_def)
+			else:
+				obj.line_of_def = str(self.line_number)
+		else:
+			obj.reference()
+		return obj
+
 	def add_sit_dir(self, direction, target_name):
 		# add direction possibility to current situation
-		target_sit = self.get_sit(target_name)
+		target_sit = self.get_object(self.situations, target_name)
 		target_sit.referenced = True
 		if self.codeseq.set_dir(direction, target_sit):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def add_sit_backdir(self, target_name, direction):
-		# add direction possibility to other situation
-		target_sit = self.get_sit(target_name)
+		# add current situation as direction possibility to other situation
+		target_sit = self.get_object(self.situations, target_name)
 		self.codeseq.referenced = True
 		if target_sit.set_extdir(direction, self.codeseq):
 			self.warning_line('Direction "' + direction + '" was already set')
-	def new_symbol(self, name):
-		'if symbol already defined, complain. otherwise create.'
-		if name in self.symbols:
-			defline = self.symbols[name]
-			if defline:
-				self.error_line('Symbol "' + name + '" has already been defined in line ' + str(defline))
-			else:
-				self.error_line('Symbol "' + name + '" has already been defined by game engine')
-		self.symbols[name] = self.line_number
-	def new_var(self, name, default):
-		self.new_symbol(name)
-		self.vars[name] = default
-	def get_var(self, string):
-		var_name = string.split()[0]	# remove leading/trailing spaces
-		if var_name in self.vars:
-			return var_name
-		self.error_line('Unknown variable "' + var_name + '"')
-	def get_num(self, value):
+	def get_value(self, string):
 		'return value of number literal or symbolic constant'
-		if value in self.consts:
-			return self.consts[value]
+		if string in self.consts:
+			return self.consts[string].default
 		try:
-			num = int(value)
+			num = int(string)
 		except:
-			self.error_line('Cannot determine numerical value of "' + value + '"')
+			self.error_line('Cannot determine numerical value of "' + string + '"')
 			num = 0	# make sure script does not crash
 		return num
-	def get_expr(self, string):
-		'get name of variable or fake literal'
-		string = string.split()[0]	# remove leading/trailing spaces
+	def get_force2var(self, string):
+		'convert literal/const/var name string to var object'
+		string = nospace(string)
 		if string in self.vars:
-			return string
-		num = self.get_num(string)
-		self.literals.add(num)
-		return str(num)
+			return self.vars[string]	# return var object
+		# const names are converted to number strings
+		value = self.get_value(string)
+		fakevar = self.get_object(self.fakevars, str(value))
+		fakevar.set_default(value)
+		return fakevar
 	def add_code(self, line):
 		self.code.append('\t' + line)
 	def output(self):
@@ -195,25 +212,38 @@ class convertor(object):
 		print '; DO NOT EDIT THIS FILE! THIS FILE IS AUTOMATICALLY GENERATED!'
 		print ';'
 		print '!macro autogenerated {'
-		defaultvaluestrings = [str(value) for value in self.vars.values()]
-		literalvaluestrings = [str(value) for value in self.literals]
+		items_defaults = [str(symbol.default) for symbol in self.items.values()]
+		vars_defaults = [str(symbol.default) for symbol in self.vars.values()]
+		fakevars_defaults = [str(symbol.default) for symbol in self.fakevars.values()]
 		print 'gamevars_defaults_lo'
-		print '\t!by <' + ', <'.join(defaultvaluestrings) + '\t; variables'
-		print '\t!by <' + ', <'.join(literalvaluestrings) + '\t; literals'
+		if len(items_defaults):
+			print '\t!by <' + ', <'.join(items_defaults) + '\t; items'
+		print '\t!by <' + ', <'.join(vars_defaults) + '\t; variables'
+		print '\t!by <' + ', <'.join(fakevars_defaults) + '\t; literals'
 		print 'gamevars_defaults_hi'
-		print '\t!by >' + ', >'.join(defaultvaluestrings) + '\t; variables'
-		print '\t!by >' + ', >'.join(literalvaluestrings) + '\t; literals'
+		if len(items_defaults):
+			print '\t!by >' + ', >'.join(items_defaults) + '\t; items'
+		print '\t!by >' + ', >'.join(vars_defaults) + '\t; variables'
+		print '\t!by >' + ', >'.join(fakevars_defaults) + '\t; literals'
 		var_index = 0
 		print '; var offsets:'
+		print '\t; items:'
+		# FIXME - in future, iterate over items twice and do mobile/fixed items separately!
+		for i in self.items:
+			print type(i)
+			print '\t' + self.items[i].offset_name() + '\t= ' + str(var_index) + '\t; default value is', self.items[i].default
+			var_index += 1
+		print '\tgamevars_ITEMCOUNT\t=', var_index	# == len(self.items)
+		print '\t; game vars:'
 		for v in self.vars:
-			print '\t' + var_offset_label(v) + '\t= ' + str(var_index) + '\t; default value is', self.vars[v]
+			print '\t' + self.vars[v].offset_name() + '\t= ' + str(var_index) + '\t; default value is', self.vars[v].default
 			var_index += 1
-		print '\tgamevars_2SAVE\t=', var_index	# == len(self.vars)
-		print '\t; literals from here on:'
-		for l in self.literals:
-			print '\t' + var_offset_label(str(l)) + '\t= ' + str(var_index)
+		print '\tgamevars_SAVECOUNT\t=', var_index	# == len(self.items) + len(self.vars)
+		print '\t; fake vars (literals):'
+		for f in self.fakevars:
+			print '\t' + self.fakevars[f].offset_name() + '\t= ' + str(var_index)
 			var_index += 1
-		print '\tgamevars_COUNT\t=', var_index	# == len(self.vars) + len(self.literals)
+		print '\tgamevars_COUNT\t=', var_index	# == len(self.items) + len(self.vars) + len(self.fakevars)
 		print
 		print '; stuff generated by "asm" lines:'
 		for line in self.code:
@@ -225,12 +255,15 @@ class convertor(object):
 		print '; situations:'
 		for sit in self.situations:
 			self.situations[sit].output()
+		print '; usages:'
+		for usage in self.usages:
+			self.usages[usage].output()
 		print '; end of actual data'
 		# compare defined and referenced situations:
 		for sit in self.situations:
 			sit = self.situations[sit]
 			if sit.line_of_def and not sit.referenced:
-				self.warning('situation "' + sit.name + '" defined but never used')
+				warning('situation "' + sit.name + '" defined but never used')
 			if sit.referenced and sit.line_of_def == 0:
 				self.error('situation "' + sit.name + '" referenced but not defined')
 		# FIXME - compare "referenced vars" to actual list!
@@ -314,35 +347,20 @@ class convertor(object):
 			self.codeseq.add_code('+print')
 			self.text_mode = True
 		self.codeseq.add_code('!tx ' + line)
-	def process_sit_line(self, line):
-		'new situation'
+	def process_defproc_sit_line(self, line, dict):
+		'new procedure or situation'
 		self.no_text()
 		self.new_code()	# close previous code sequence, if there was one
 		# check
-		sit_name = self.get2of2(line)
-		sit = self.get_sit(sit_name)	# creates sit
-		if sit.line_of_def:
-			self.error_line('cannot create situation "' + sit_name + '", already created in line ' + str(sit.line_of_def))
-		sit.line_of_def = self.line_number
+		name = self.get2of2(line)
+		obj = self.get_object(dict, name, define=True)	# create
 		# make current
-		self.codeseq = sit
-	def process_defproc_line(self, line):
-		'new procedure'
-		self.no_text()
-		self.new_code()	# close previous code sequence, if there was one
-		# check
-		proc_name = self.get2of2(line)
-		proc = self.get_proc(proc_name)	# creates procedure
-		if proc.line_of_def:
-			self.error_line('cannot create procedure "' + proc_name + '", already created in line ' + str(proc.line_of_def))
-		proc.line_of_def = self.line_number
-		# make current
-		self.codeseq = proc
+		self.codeseq = obj
 	def process_callproc_line(self, line):
 		'call procedure'
 		self.no_text()
 		proc_name = self.get2of2(line)
-		proc = self.get_proc(proc_name)
+		proc = self.get_object(self.procedures, proc_name)
 		self.codeseq.add_code('+gosub ' + proc.label())
 	def process_callasm_line(self, line):
 		'call machine language'
@@ -377,10 +395,11 @@ class convertor(object):
 		'symbolic constant definition'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
 		name, value = self.get2and3of3(line)
-		self.new_symbol(name)
+		# FIXME - make sure there is no VAR with that name!
+		const = self.get_object(self.consts, name, define=True)
 		# get actual value
-		num = self.get_num(value)
-		self.consts[name] = num
+		num = self.get_value(value)
+		const.set_default(num)
 	def process_enum_line(self, line):
 		'enumerate symbolic constants'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
@@ -388,21 +407,24 @@ class convertor(object):
 		val = 0
 		for name in parts:
 			name = name.split()[0]	# remove spaces
-			self.new_symbol(name)
-			self.consts[name] = val
+			# FIXME - make sure there is no VAR with that name!
+			const = self.get_object(self.consts, name, define=True)
+			const.set_default(val)
 			val += 1
 	def process_var_line(self, line):
 		'variable declaration'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
 		name, start_value = self.get2and3of3(line)
+		# FIXME - make sure there is no CONST with that name!
+		var = self.get_object(self.vars, name, define=True)
 		# get actual number for start value
-		num = self.get_num(start_value)
-		self.new_var(name, num)
+		num = self.get_value(start_value)
+		var.set_default(num)
 	def process_delay_line(self, line):
 		'wait for given number of .1 seconds'
 		self.no_text()
-		var_name = self.get_expr(self.get2of2(line))	# arg could be var or const or literal
-		self.codeseq.add_code('+delay ' + var_offset_label(var_name))
+		var = self.get_force2var(self.get2of2(line))	# arg could be var or const or literal
+		self.codeseq.add_code('+delay ' + var.offset_name())
 # if/elif/else/endif helpers:
 	def process_condition(self, line):
 		for cmp in operators:
@@ -414,9 +436,9 @@ class convertor(object):
 		parts = line.split(cmp[0])
 		if len(parts) != 2:
 			self.error_line('Error parsing comparison')
-		hinz = self.get_expr(parts[0])
-		kunz = self.get_expr(parts[1])
-		self.codeseq.add_code('+if_' + cmp[1] + ' ' + var_offset_label(hinz) + ', ' + var_offset_label(kunz) + ', .c_after' + str(self.cond_state[-1]))
+		hinz = self.get_force2var(parts[0])
+		kunz = self.get_force2var(parts[1])
+		self.codeseq.add_code('+if_' + cmp[1] + ' ' + hinz.offset_name() + ', ' + kunz.offset_name() + ', .c_after' + str(self.cond_state[-1]))
 	def end_cond_block(self):
 		self.codeseq.add_code('+goto .c_end')
 		self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
@@ -468,16 +490,16 @@ class convertor(object):
 		parts = line.split('=')
 		if len(parts) != 2:
 			self.error_line('Line type not recognised')
-		target_var = self.get_var(parts[0])
+		target_var = self.get_object(self.vars, nospace(parts[0]))
 		# FIXME - make sure target var is not read-only!
-		source_name = self.get_expr(parts[1])
-		self.codeseq.add_code('+let ' + var_offset_label(target_var) + ', ' + var_offset_label(source_name))
+		source_var = self.get_force2var(parts[1])
+		self.codeseq.add_code('+let ' + target_var.offset_name() + ', ' + source_var.offset_name())
 	def process_incdec_line(self, what, line):
 		'increment/decrement variable'
 		self.no_text()
-		var_name = self.get_var(self.get2of2(line))
+		var = self.get_object(self.vars, self.get2of2(line))
 		# FIXME - make sure var is not read-only!
-		self.codeseq.add_code('+' + what + ' ' + var_offset_label(var_name))
+		self.codeseq.add_code('+' + what + ' ' + var.offset_name())
 # outer stuff:
 	def process_line(self, line):
 		'process a single line of input'
@@ -507,8 +529,6 @@ class convertor(object):
 			key = line.split()[0]
 			if key == 'asm':
 				self.process_asm_line(line)
-			elif key == 'sit':
-				self.process_sit_line(line)
 			elif key == 'const':
 				self.process_const_line(line)
 			elif key == 'enum':
@@ -529,8 +549,10 @@ class convertor(object):
 				self.process_else_line(line)
 			elif key == 'endif':
 				self.process_endif_line(line)
+			elif key == 'sit':
+				self.process_defproc_sit_line(line, self.situations)
 			elif key == 'defproc':
-				self.process_defproc_line(line)
+				self.process_defproc_sit_line(line, self.procedures)
 			elif key == 'callproc':
 				self.process_callproc_line(line)
 			elif key == 'callasm':
