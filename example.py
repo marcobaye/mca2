@@ -72,6 +72,9 @@ sit deck4_transporter_room
 	# n2 corridor_transp_room	# this says "going east leads to corridor_transp_room,
 	# AND going west from there would lead back here again!
 
+	# to explicitly disable a direction, you can use the pre-defined pseudo location "NOWHERE" as target:
+	s NOWHERE
+
 	# FIXME - add a special syntax to _disable_ a direction
 	# FIXME - explain this stuff later, do not pile too much on top at once:
 	#	north/south, west/east and up/down targets can be given together using ns/we/ud:

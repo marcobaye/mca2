@@ -12,7 +12,7 @@
 !addr	recursion_depth	= $fd	; counts recursion levels
 
 ; engine
-engine_new_sit ; basically the start of the engine's main loop
+engine_new_location ; basically the start of the engine's main loop
 		; check "restart" flag:
 		lda #MODIFIED8	: restart_flag = * - 1
 		beq ++
@@ -34,19 +34,19 @@ engine_new_sit ; basically the start of the engine's main loop
 			dex
 			bne --
 		sta number_of_alternatives
-		jsr pre_sit
-		; execute code from current situation
-		lda gamevars_lo + vo_current_sit
+		jsr pre_situation
+		; execute code from current location
+		lda gamevars_lo + vo_HERE
 		sta runptr
-		lda gamevars_hi + vo_current_sit
+		lda gamevars_hi + vo_HERE
 		sta runptr + 1
 		jsr interpreter_run
 		; now text should be on screen, directions and alternatives in buffers,
 		; so display prompt
-		jsr prompt_for_action	; returns chosen sit in YYAA
-		sty gamevars_hi + vo_current_sit
-		sta gamevars_lo + vo_current_sit
-		jmp engine_new_sit
+		jsr prompt_for_action	; returns chosen location in YYAA
+		sty gamevars_hi + vo_HERE
+		sta gamevars_lo + vo_HERE
+		jmp engine_new_location
 
 no_choice ; error handler called if player cannot do anything
 		dec restart_flag
@@ -123,8 +123,8 @@ interpreter_go_on ; enter with A = offset to add
 ;---------------------------------------
 ; all command handlers are entered with runptr pointing to command and Y=0
 ;---------------------------------------
-	!macro end_proc		{!by CMD_ENDOFBLOCK	}
-	!macro end_sit		{!by CMD_ENDOFBLOCK	}
+	!macro end_procedure	{!by CMD_ENDOFBLOCK	}
+	!macro end_location	{!by CMD_ENDOFBLOCK	}
 +instruction ~CMD_ENDOFBLOCK, ~cmd_endofblock
 		ldx recursion_depth
 		bne +

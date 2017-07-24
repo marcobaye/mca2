@@ -4,7 +4,6 @@ mit Shmendric zu echtem Adventure ausbauen:
 - add automatic word wrap
 zwei-Wort-Parser? Inventar!
 
-"use 0 as target to explicitly disable a direction"	- or rather use "hidden" location
 add items (mobile and fixed), handle as vars (value is location)
 	mobile/fixed could be distinguished by sorting (first one, then
 		the other, with border value for CMP)
@@ -17,14 +16,13 @@ add items (mobile and fixed), handle as vars (value is location)
 	items declared in situation get that sit as default position, all
 	others are hidden.
 
-add locations: "hidden" and "player's inventory"
-add "drop" command to move item from inventory to current_sit
+add "drop" command to move item from INVENTORY to HERE
 add code sections to execute after "use X with Y" command:
 use string with stick
-	hide string	# puts item X to "hidden" location
+	hide string	# puts item X to "NOWHERE" location
 	hide stick
-	gain bow	# puts item Z to "inventory" location
-		# FIXME - or rather current sit? should depend on item's
+	gain bow	# puts item Z to "INVENTORY" location
+		# FIXME - or rather HERE? should depend on item's
 		# mobility!
 	"You now have a bow"
 	if arrow @ inventory

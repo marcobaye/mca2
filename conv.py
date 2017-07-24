@@ -9,6 +9,7 @@ operators = [
 	['<', 'smaller'],	# be in list before these
 	['>', 'greater']	# shorter ones!
 ]
+# FIXME - add "@" and "!@" for "item at location" and "item not at location"
 
 def nospace(string):
 	'helper function to remove leading/trailing spaces'
@@ -26,7 +27,7 @@ class mydict(dict):
 		self.constructor = constructor
 
 class mca2obj(object):
-	'parent class for everything defined in situations file'
+	'parent class for everything defined in game description file'
 	def __init__(self, name):
 		self.name = name	# symbolic name
 		self.line_of_def = None	# line number of definition (for "already defined" error)
@@ -39,7 +40,7 @@ class symbol(mca2obj):
 	def __init__(self, name):
 		super(symbol, self).__init__(name)
 		self.default = None	# default value at start of game
-		self.readonly = False	# currently only "current_sit" is made read-only
+		self.readonly = False	# currently only "HERE" is made read-only
 	def offset_name(self):
 		return 'vo_' + self.name
 	def set_default(self, value):
@@ -48,7 +49,18 @@ class symbol(mca2obj):
 		self.readonly = True
 
 class item(symbol):
-	pass	# FIXME - needs several private components (short name and description string)
+	'game item player can interact with'
+	def __init__(self, name):
+		super(item, self).__init__(name)
+		self.game_name = None
+		self.description = None
+		self.weight = 0
+	def set_game_name(self, name):
+		self.game_name = name
+	def set_description(self, desc):
+		self.description = desc
+	def set_weight(self, weight):
+		self.weight = weight
 
 class codeseq(mca2obj):
 	'parent class for all bytecode sequences'
@@ -67,7 +79,7 @@ class codeseq(mca2obj):
 		print self.label()
 		for line in self.code:
 			print line
-		print self.indents * '\t' + '+end_proc'
+		print self.indents * '\t' + '+end_procedure'
 
 class procedure(codeseq):
 	'callable code'
@@ -77,7 +89,7 @@ class procedure(codeseq):
 	def set_dir(self, dir, target):
 		# this returns whether direction was already possible
 		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
-		return False	# procedures do not have "directions" like situations
+		return False	# procedures do not have "directions" like locations
 
 class usage(codeseq):
 	'code to execute when player enters USE A WITH B'
@@ -88,13 +100,14 @@ class usage(codeseq):
 	def label(self):
 		return 'usage_' + self.hinz + '_' + self.kunz
 
-class situation(codeseq):
-	'code to execute when entering a situation'
+class location(codeseq):
+	'code to execute when entering a location'
 	def __init__(self, name):
-		super(situation, self).__init__(name)
+		super(location, self).__init__(name)
 		self.extdirs = {}	# directions given via two-way feature
+		self.forced_value = None	# only used for "OFF" and "INVENTORY"
 	def label(self):
-		return 'sit_' + self.name
+		return 'location_' + self.name
 	# setters:
 	def set_dir(self, dir, target):
 		# this returns whether direction was already possible
@@ -107,14 +120,19 @@ class situation(codeseq):
 		result = dir in self.extdirs
 		self.extdirs[dir] = target
 		return result
+	def set_forced_value(self, value):
+		self.forced_value = value
 	def output(self):
-		print self.label()
-		# stored directions are the reason this class needs to overwrite the output method:
-		for dir in self.extdirs:
-			print self.indents * '\t' + '+' + dir + ' ' + self.extdirs[dir].label()
-		for line in self.code:
-			print line
-		print self.indents * '\t' + '+end_sit'
+		if self.forced_value != None:
+			print "!addr\t" + self.label() + " = " + str(self.forced_value) + "\t; pseudo location"
+		else:
+			print self.label()
+			# stored directions are the reason this class needs to overwrite the output method:
+			for dir in self.extdirs:
+				print self.indents * '\t' + '+' + dir + ' ' + self.extdirs[dir].label()
+			for line in self.code:
+				print line
+			print self.indents * '\t' + '+end_location'
 
 class convertor(object):
 	'converts MCA2 source to ACME source'
@@ -122,25 +140,37 @@ class convertor(object):
 		self.allowed_errors = 5	# convertor stops after this many errors
 		self.in_comment = False	# for c-style multi-line comments
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
-		self.codeseq = None	# needed to track situations/procedures/usages
+		self.codeseq = None	# needed to track locations/procedures/usages
 		self.cond_state = [0]	# keeps track of "if/elif/else/endif" and nesting
 		self.code = []	# for stuff from "asm" lines
 		# special dictionaries with constructor for new entries
 		self.procedures = mydict(procedure)	# procedures
-		self.situations = mydict(situation)	# situations
+		self.locations = mydict(location)	# locations
 		self.usages = mydict(usage)		# usages ("use A with B")
 		self.consts = mydict(symbol)	# holds symbolic constants
 		self.items = mydict(item)	# items player can interact with
 		self.vars = mydict(symbol)	# game variables
 		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
-		# make sure "start" sit is marked as referenced to inhibit confusing error
-		start = self.get_object(self.situations, 'start')
-		# create reserved symbol
-		self.line_number = '<predefined>'	# special value for line below
-		current_sit_var = self.get_object(self.vars, 'current_sit', define=True)
-		current_sit_var.set_default(start.label())
-		current_sit_var.make_readonly()
-		self.line_number = 0	# correct start value for later
+		# make sure "start" location is marked as referenced to inhibit confusing error
+		start = self.get_object(self.locations, 'start')
+		# create some reserved names:
+		# special value for lines below
+		self.line_number = '<predefined>'
+		# create pseudo location "NOWHERE" to be able to hide items and disable directions
+		NOWHERE_location = self.get_object(self.locations, 'NOWHERE', define=True)
+		NOWHERE_location.reference()	# suppress warning if never referenced
+		NOWHERE_location.set_forced_value(0)
+		# create pseudo location "INVENTORY" where items can be moved
+		INVENTORY_location = self.get_object(self.locations, 'INVENTORY', define=True)
+		INVENTORY_location.reference()	# suppress warning if never referenced
+		INVENTORY_location.set_forced_value(1)
+		# create pseudo var "HERE" to be able to determine current location
+		HERE_var = self.get_object(self.vars, 'HERE', define=True)
+		HERE_var.reference()	# suppress warning if never referenced
+		HERE_var.set_default(start.label())
+		HERE_var.make_readonly()
+		# correct start value for later
+		self.line_number = 0
 	def error(self, msg):
 		message('Error: ' + msg)
 		if self.allowed_errors == 0:
@@ -154,7 +184,7 @@ class convertor(object):
 	#	print >> sys.stderr, 'Serious error in line %d: %s!' % (self.line_number, msg)
 	#	sys.exit(1)
 	def get_object(self, dict, name, define = False):
-		'get const/var/proc/sit/whatever by name. if it does not exist, create'
+		'get const/var/procedure/location/whatever by name. if it does not exist, create'
 		'if "define" is given, store current line number.'
 		'otherwise, set "referenced" to True.'
 		name = nospace(name)	# remove spaces before/after
@@ -172,17 +202,17 @@ class convertor(object):
 			obj.reference()
 		return obj
 
-	def add_sit_dir(self, direction, target_name):
-		# add direction possibility to current situation
-		target_sit = self.get_object(self.situations, target_name)
-		target_sit.referenced = True
-		if self.codeseq.set_dir(direction, target_sit):
+	def add_location_direction(self, direction, target_name):
+		# add direction possibility to current location
+		target_location = self.get_object(self.locations, target_name)
+		target_location.referenced = True
+		if self.codeseq.set_dir(direction, target_location):
 			self.warning_line('Direction "' + direction + '" was already set')
-	def add_sit_backdir(self, target_name, direction):
-		# add current situation as direction possibility to other situation
-		target_sit = self.get_object(self.situations, target_name)
+	def add_location_backdirection(self, target_name, direction):
+		# add current location as direction possibility to other location
+		target_location = self.get_object(self.locations, target_name)
 		self.codeseq.referenced = True
-		if target_sit.set_extdir(direction, self.codeseq):
+		if target_location.set_extdir(direction, self.codeseq):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def get_value(self, string):
 		'return value of number literal or symbolic constant'
@@ -212,6 +242,7 @@ class convertor(object):
 		print '; DO NOT EDIT THIS FILE! THIS FILE IS AUTOMATICALLY GENERATED!'
 		print ';'
 		print '!macro autogenerated {'
+		# FIXME - prune dicts by removing all unreferenced entries?
 		items_defaults = [str(symbol.default) for symbol in self.items.values()]
 		vars_defaults = [str(symbol.default) for symbol in self.vars.values()]
 		fakevars_defaults = [str(symbol.default) for symbol in self.fakevars.values()]
@@ -236,6 +267,7 @@ class convertor(object):
 		print '\tgamevars_ITEMCOUNT\t=', var_index	# == len(self.items)
 		print '\t; game vars:'
 		for v in self.vars:
+			# FIXME - compare "referenced vars" to actual list!
 			print '\t' + self.vars[v].offset_name() + '\t= ' + str(var_index) + '\t; default value is', self.vars[v].default
 			var_index += 1
 		print '\tgamevars_SAVECOUNT\t=', var_index	# == len(self.items) + len(self.vars)
@@ -252,27 +284,24 @@ class convertor(object):
 		print '; procedures:'
 		for proc in self.procedures:
 			self.procedures[proc].output()
-		print '; situations:'
-		for sit in self.situations:
-			self.situations[sit].output()
+		print
+		print '; locations:'
+		for loc in self.locations:
+			loc = self.locations[loc]
+			if loc.line_of_def and not loc.referenced:
+				warning('location "' + loc.name + '" defined but never used')
+			if loc.referenced and not loc.line_of_def:
+				self.error('location "' + loc.name + '" referenced but not defined')
+			loc.output()
+		print
 		print '; usages:'
 		for usage in self.usages:
 			self.usages[usage].output()
+		print
 		print '; end of actual data'
-		# compare defined and referenced situations:
-		for sit in self.situations:
-			sit = self.situations[sit]
-			if sit.line_of_def and not sit.referenced:
-				warning('situation "' + sit.name + '" defined but never used')
-			if sit.referenced and sit.line_of_def == 0:
-				self.error('situation "' + sit.name + '" referenced but not defined')
-		# FIXME - compare "referenced vars" to actual list!
 		print '} ; end of macro'
 		print '!eof'
 		#print 'debugging info:'
-		#print 'situations:'
-		#for sit in self.situations:
-		#	print sit, self.situations[sit]
 		print '; end of auto-generated file'
 # helper functions to parse lines:
 	def preprocess(self, line_in):
@@ -330,16 +359,16 @@ class convertor(object):
 			self.codeseq.add_code('+terminate')
 			self.text_mode = False
 	def new_code(self):
-		'if we are in situation/procedure, terminate'
+		'if we are in location/procedure/usage, terminate'
 		if self.codeseq != None:
 			if self.cond_state != [0]:
-				self.error_line('cannot start new situation/procedure, there are "if" blocks left open')
+				self.error_line('cannot start new location/procedure/usage, there are "if" blocks left open')
 			self.codeseq = None
 # functions to parse different line types:
 	def process_asm_line(self, line):
 		'line to pass to assembler unchanged'
 		if self.codeseq != None:
-			self.error_line('Please put "asm" lines before all situations/procedures')
+			self.error_line('Please put "asm" lines before all locations/procedures/usages')
 		self.add_code(line[4:])
 	def process_text_line(self, line):
 		'text line'
@@ -347,8 +376,8 @@ class convertor(object):
 			self.codeseq.add_code('+print')
 			self.text_mode = True
 		self.codeseq.add_code('!tx ' + line)
-	def process_defproc_sit_line(self, line, dict):
-		'new procedure or situation'
+	def process_defproc_loc_line(self, line, dict):
+		'new procedure or location'
 		self.no_text()
 		self.new_code()	# close previous code sequence, if there was one
 		# check
@@ -370,27 +399,25 @@ class convertor(object):
 	def process_dir_line(self, direction, line, backdir=None):
 		'allow a direction of movement and specify target, with two-way option'
 		self.no_text()
-		target_sit_name = self.get2of2(line)
-		# FIXME - add possibility to _forbid_ an existing direction (by setting to zero)!
-		self.add_sit_dir(direction, target_sit_name)
+		target_loc_name = self.get2of2(line)
+		self.add_location_direction(direction, target_loc_name)
 		if backdir:
 			if self.cond_state != [0]:
 				self.error_line('two-way directions cannot be used in "if" blocks')
 			else:
-				self.add_sit_backdir(target_sit_name, backdir)
+				self.add_location_backdirection(target_loc_name, backdir)
 	def process_dirs_line(self, dir1, dir2, line, two_way=False):
 		'allow two directions of movement and specify targets, with two-way option'
 		self.no_text()
-		target_sit_name1, target_sit_name2 = self.get2and3of3(line)
-		# FIXME - add possibility to _forbid_ an existing direction (by setting to zero)!
-		self.add_sit_dir(dir1, target_sit_name1)
-		self.add_sit_dir(dir2, target_sit_name2)
+		target_loc_name1, target_loc_name2 = self.get2and3of3(line)
+		self.add_location_direction(dir1, target_loc_name1)
+		self.add_location_direction(dir2, target_loc_name2)
 		if two_way:
 			if self.cond_state != [0]:
 				self.error_line('two-way directions cannot be used in "if" blocks')
 			else:
-				self.add_sit_backdir(target_sit_name1, dir2)
-				self.add_sit_backdir(target_sit_name2, dir1)
+				self.add_location_backdirection(target_loc_name1, dir2)
+				self.add_location_backdirection(target_loc_name2, dir1)
 	def process_const_line(self, line):
 		'symbolic constant definition'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
@@ -549,10 +576,10 @@ class convertor(object):
 				self.process_else_line(line)
 			elif key == 'endif':
 				self.process_endif_line(line)
-			elif key == 'sit':
-				self.process_defproc_sit_line(line, self.situations)
+			elif key == 'sit':	# FIXME - change to "location"
+				self.process_defproc_loc_line(line, self.locations)
 			elif key == 'defproc':
-				self.process_defproc_sit_line(line, self.procedures)
+				self.process_defproc_loc_line(line, self.procedures)
 			elif key == 'callproc':
 				self.process_callproc_line(line)
 			elif key == 'callasm':

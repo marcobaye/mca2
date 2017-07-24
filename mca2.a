@@ -86,7 +86,7 @@ entry ; entry point for SYS
 		!tx "Welcome to Multiple Choice Adventure 2!"
 }
 		!tx cr, 0
-		jmp engine_new_sit
+		jmp engine_new_location
 
 ;internal_error	jsr my_primm
 ;		!tx "Internal error!", CR, 0
@@ -115,12 +115,12 @@ my_primm	pla	; get low byte of return address - 1
 		rts	; return to caller (after zero-terminated text)
 
 
-pre_sit ; called before a new situation (to clear screen?)
+pre_situation ; called before a new situation (to clear screen?)
 		; make some space
 		jsr my_primm	: !tx petscii_CLEAR, 0	; was: CR, CR, 0
 		rts
 
-prompt_for_action ; ask user. returns chosen situation in YYAA
+prompt_for_action ; ask user. returns chosen location in YYAA
 !if DEUTSCH {
 		jsr my_primm	: !tx CR, "Zur Wahl stehen [", 0
 } else {
@@ -161,4 +161,4 @@ prompt_for_action ; ask user. returns chosen situation in YYAA
 			beq ---
 		tay
 		lda directions_lo - 1, x
-		rts	; return YYAA as new sit
+		rts	; return YYAA as new location
