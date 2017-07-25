@@ -36,10 +36,25 @@ var dwarfmood	MOOD_NEUTRAL
 var lives_left	5
 var cows_killed	0
 
+# "item" defines a game item the player can interact with:
+# parameters are size (small/large), start location in game, in-script name, in-game name, in-game description
+# small items can be taken by player (put into inventory), large items can only be moved around by code
+# in-script names must be unique, in-game names can be re-used (so player thinks it's the same item)
+item small NOWHERE		string	Sehne		eine_Bogensehne		#
+item small INVENTORY	bow1	Bogen		kaputter_Bogen		# player starts with a broken bow in inventory
+item small NOWHERE		bow2	Bogen		reparierter_Bogen	# script code can later replace it with this one!
+item large start		hippo	Nilpferd	ein_Nilpferd		# put a hippo into start location
+
 # "asm" passes the remainder of the line to the assembler backend unchanged:
 asm HINZ	= petscii_YELLOW	# puts "HINZ = petscii_YELLOW" into output file
 asm KUNZ	= petscii_LRED
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
+
+# "using" defines what happens if player tries to "use item X with item Y" (and has access to both):
+using bow1 string
+	move bow1 NOWHERE	# broken bow disappears
+	move bow2 INVENTORY	# repaired bow appears
+	"You have successfully repaired your bow!"
 
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room

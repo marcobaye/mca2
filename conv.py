@@ -48,6 +48,7 @@ class symbol(mca2obj):
 	def make_readonly(self):
 		self.readonly = True
 
+item_count = 0
 class item(symbol):
 	'game item player can interact with'
 	def __init__(self, name):
@@ -55,6 +56,9 @@ class item(symbol):
 		self.game_name = None
 		self.description = None
 		self.weight = 0
+		global item_count
+		self.num = item_count
+		item_count += 1
 	def set_game_name(self, name):
 		self.game_name = name
 	def set_description(self, desc):
@@ -93,12 +97,8 @@ class procedure(codeseq):
 
 class usage(codeseq):
 	'code to execute when player enters USE A WITH B'
-	def __init__(self, name, hinz, kunz):
-		super(usage, self).__init__(name)
-		self.hinz = hinz
-		self.kunz = kunz
 	def label(self):
-		return 'usage_' + self.hinz + '_' + self.kunz
+		return 'usage_' + self.name
 
 class location(codeseq):
 	'code to execute when entering a location'
@@ -205,13 +205,12 @@ class convertor(object):
 	def add_location_direction(self, direction, target_name):
 		# add direction possibility to current location
 		target_location = self.get_object(self.locations, target_name)
-		target_location.referenced = True
 		if self.codeseq.set_dir(direction, target_location):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def add_location_backdirection(self, target_name, direction):
 		# add current location as direction possibility to other location
 		target_location = self.get_object(self.locations, target_name)
-		self.codeseq.referenced = True
+		self.codeseq.reference()
 		if target_location.set_extdir(direction, self.codeseq):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def get_value(self, string):
@@ -259,9 +258,10 @@ class convertor(object):
 		var_index = 0
 		print '; var offsets:'
 		print '\t; items:'
+		# FIXME - create tables with pointers to in-game names and descriptions
+		# FIXME - solve weight/size issue: split items into two groups or add extra lookup table?
 		# FIXME - in future, iterate over items twice and do mobile/fixed items separately!
 		for i in self.items:
-			print type(i)
 			print '\t' + self.items[i].offset_name() + '\t= ' + str(var_index) + '\t; default value is', self.items[i].default
 			var_index += 1
 		print '\tgamevars_ITEMCOUNT\t=', var_index	# == len(self.items)
@@ -340,18 +340,14 @@ class convertor(object):
 		if quotes != None:
 			self.error_line('quotes still open at end of line')
 		return indents, line_out
-	def get2of2(self, line):
-		'make sure line consists of two parts and return second one'
+	def get_args(self, line, howmany):
+		'ensure correct number of args and return them'
 		parts = line.split()
-		if len(parts) != 2:
-			self.error_line('line does not fit "KEYWORD ARGUMENT" format')
-		return parts[1]
-	def get2and3of3(self, line):
-		'make sure line consists of three parts and return second and third'
-		parts = line.split()
-		if len(parts) != 3:
-			self.error_line('line does not fit "KEYWORD ARG1 ARG2" format')
-		return parts[1], parts[2]
+		if len(parts) < 1 + howmany:
+			self.error_line('Too few arguments for keyword')
+		elif len(parts) > 1 + howmany:
+			self.error_line('Too many arguments for keyword')
+		return parts[1:(1 + howmany)]
 # helper functions to close logical blocks:
 	def no_text(self):
 		'if we are in text mode, terminate'
@@ -376,30 +372,38 @@ class convertor(object):
 			self.codeseq.add_code('+print')
 			self.text_mode = True
 		self.codeseq.add_code('!tx ' + line)
-	def process_defproc_loc_line(self, line, dict):
-		'new procedure or location'
+	def process_code_line(self, dict, name):
 		self.no_text()
 		self.new_code()	# close previous code sequence, if there was one
 		# check
-		name = self.get2of2(line)
 		obj = self.get_object(dict, name, define=True)	# create
 		# make current
 		self.codeseq = obj
+	def process_usage_line(self, line):
+		'code to call if player wants to use item(s)'
+		item1, item2 = self.get_args(line, 2)
+		item1 = self.get_object(self.items, item1)
+		item2 = self.get_object(self.items, item2)
+		self.process_code_line(self.usages, str(item1.num) + '_' + str(item2.num))
+	def process_defproc_loc_line(self, line, dict):
+		'new procedure or location'
+		name = self.get_args(line, 1)[0]
+		self.process_code_line(dict, name)
 	def process_callproc_line(self, line):
 		'call procedure'
 		self.no_text()
-		proc_name = self.get2of2(line)
+		proc_name = self.get_args(line, 1)[0]
 		proc = self.get_object(self.procedures, proc_name)
 		self.codeseq.add_code('+gosub ' + proc.label())
 	def process_callasm_line(self, line):
 		'call machine language'
 		self.no_text()
-		asm_name = self.get2of2(line)
+		asm_name = self.get_args(line, 1)[0]
 		self.codeseq.add_code('+callasm ' + asm_name)
 	def process_dir_line(self, direction, line, backdir=None):
 		'allow a direction of movement and specify target, with two-way option'
 		self.no_text()
-		target_loc_name = self.get2of2(line)
+		target_loc_name = self.get_args(line, 1)[0]
 		self.add_location_direction(direction, target_loc_name)
 		if backdir:
 			if self.cond_state != [0]:
@@ -409,7 +413,7 @@ class convertor(object):
 	def process_dirs_line(self, dir1, dir2, line, two_way=False):
 		'allow two directions of movement and specify targets, with two-way option'
 		self.no_text()
-		target_loc_name1, target_loc_name2 = self.get2and3of3(line)
+		target_loc_name1, target_loc_name2 = self.get_args(line, 2)
 		self.add_location_direction(dir1, target_loc_name1)
 		self.add_location_direction(dir2, target_loc_name2)
 		if two_way:
@@ -421,7 +425,7 @@ class convertor(object):
 	def process_const_line(self, line):
 		'symbolic constant definition'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
-		name, value = self.get2and3of3(line)
+		name, value = self.get_args(line, 2)
 		# FIXME - make sure there is no VAR with that name!
 		const = self.get_object(self.consts, name, define=True)
 		# get actual value
@@ -441,16 +445,26 @@ class convertor(object):
 	def process_var_line(self, line):
 		'variable declaration'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
-		name, start_value = self.get2and3of3(line)
+		name, start_value = self.get_args(line, 2)
 		# FIXME - make sure there is no CONST with that name!
 		var = self.get_object(self.vars, name, define=True)
 		# get actual number for start value
 		num = self.get_value(start_value)
 		var.set_default(num)
+	def process_item_line(self, line):
+		'declare item for player to interact with'
+		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
+		weight, location, name, game_name, description = self.get_args(line, 5)
+		location = self.get_object(self.locations, location).label()
+		item = self.get_object(self.items, name, define=True)
+		item.set_weight(weight)
+		item.set_default(location)
+		item.set_game_name(game_name)
+		item.set_description(description)
 	def process_delay_line(self, line):
 		'wait for given number of .1 seconds'
 		self.no_text()
-		var = self.get_force2var(self.get2of2(line))	# arg could be var or const or literal
+		var = self.get_force2var(self.get_args(line, 1)[0])	# arg could be var or const or literal
 		self.codeseq.add_code('+delay ' + var.offset_name())
 # if/elif/else/endif helpers:
 	def process_condition(self, line):
@@ -511,6 +525,16 @@ class convertor(object):
 		self.codeseq.change_indent(-1)
 		self.codeseq.add_code('} ; end of zone')
 # var changing:
+	def process_move_line(self, line):
+		'move an item to a different location'
+		self.no_text()
+		item, location = self.get_args(line, 2)
+		item = self.get_object(self.items, item)
+		location = self.get_object(self.locations, location)
+		# FIXME - check for NOWHERE and INVENTORY because they have fixed values
+		# FIXME - check for HERE because its value changes
+		# all other values (locations!) would either have to be put in fakevars, or we use a new "+loadliteral" macro here and let the assembler do the resolution!
+		#self.codeseq.add_code('+let ' + item.offset_name() + ', ' + source_var.offset_name())
 	def process_let_line(self, line):
 		'writing to variable'
 		self.no_text()
@@ -524,7 +548,7 @@ class convertor(object):
 	def process_incdec_line(self, what, line):
 		'increment/decrement variable'
 		self.no_text()
-		var = self.get_object(self.vars, self.get2of2(line))
+		var = self.get_object(self.vars, self.get_args(line, 1)[0])
 		# FIXME - make sure var is not read-only!
 		self.codeseq.add_code('+' + what + ' ' + var.offset_name())
 # outer stuff:
@@ -566,6 +590,10 @@ class convertor(object):
 				self.process_incdec_line('inc', line)
 			elif key == 'dec':
 				self.process_incdec_line('dec', line)
+			elif key == 'item':
+				self.process_item_line(line)
+			elif key == 'move':
+				self.process_move_line(line)
 			elif key == 'delay':
 				self.process_delay_line(line)
 			elif key == 'if':
@@ -578,6 +606,8 @@ class convertor(object):
 				self.process_endif_line(line)
 			elif key == 'sit':	# FIXME - change to "location"
 				self.process_defproc_loc_line(line, self.locations)
+			elif key == 'using':
+				self.process_usage_line(line)
 			elif key == 'defproc':
 				self.process_defproc_loc_line(line, self.procedures)
 			elif key == 'callproc':
