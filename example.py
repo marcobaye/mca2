@@ -36,31 +36,20 @@ var dwarfmood	MOOD_NEUTRAL
 var lives_left	5
 var cows_killed	0
 
-# "asm" lines are passed to assembler backend unchanged:
-asm HINZ	= petscii_YELLOW
+# "asm" passes the remainder of the line to the assembler backend unchanged:
+asm HINZ	= petscii_YELLOW	# puts "HINZ = petscii_YELLOW" into output file
 asm KUNZ	= petscii_LRED
-# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL CODE!
-
-# "defproc" starts a procedure definition (can be called using "callproc")
-defproc check_lives
-	if lives_left == 0
-		"You are so dead."
-		# "delay" waits a short time. unit is .1 seconds.
-		delay 10	# wait a full second
-		# "callasm" adds code to call a machine language sub-routine
-		# the argument is an assembler label you must define yourself
-		# in the surrounding asm code!
-		callasm xor_border
-	endif
+# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room
 	# lines beginning with single or double quotes are text to output.
-	# You can use predefined petscii codes. "cr" adds a carriage return. Do NOT add null terminator!
+	# You can use predefined petscii codes. "cr" adds a carriage return.
+	# Do NOT add null terminators! the converter will do that by itself.
 	"You are in what looks like a transporter room right out of ", petscii_WHITE, "Star Trek", petscii_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
-	"To output double quotes, put them in single quotes as a separate character:", '"', cr
-	"", petscii_REVSON, "<= if you want a line to start with a control code, put an empty string before it."
+	"To output double quotes, put them in single quotes as a separate character, like this:", '"', cr
+	"", petscii_REVSON, "<= if you want a line to start with a control code, put an empty string before it.", cr
 	# "nsewud" characters indicate target situations when player attempts to go north/south/east/west/up/down:
 	n corridor_transp_room	# going north leads to the "corridor outside the transporter room" stuation
 	e turbolift		# going east leads to the turbolift situation
@@ -75,14 +64,22 @@ sit deck4_transporter_room
 	# to explicitly disable a direction, you can use the pre-defined pseudo location "NOWHERE" as target:
 	s NOWHERE
 
-	# FIXME - add a special syntax to _disable_ a direction
-	# FIXME - explain this stuff later, do not pile too much on top at once:
-	#	north/south, west/east and up/down targets can be given together using ns/we/ud:
-	# ud deck3_jefferies deck5_jefferies	# this would specify two targets on a single line
 	#FIXME - add shorthand command for "alternative action leading to new situation"?
 	# 'a' is for alternative actions, with key, text and result as arguments
 	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
 #	a
+
+# "defproc" starts a procedure definition (can be called using "callproc")
+defproc check_lives
+	if lives_left == 0
+		"You are so dead."
+		# "delay" waits a short time. unit is .1 seconds.
+		delay 10	# wait a full second
+		# "callasm" adds code to call a machine language sub-routine
+		# the argument is an assembler label you must define yourself
+		# in the surrounding asm code!
+		callasm xor_border
+	endif
 
 
 # dec	decrement variable	FIXME - allow underrun?
