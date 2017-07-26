@@ -56,6 +56,10 @@ using bow1 string
 	move bow2 INVENTORY	# repaired bow appears
 	"You have successfully repaired your bow!"
 
+using bow2 hippo
+	move hippo NOWHERE
+	"You shoot the hippo with your bow. The hippo vanishes in a puff of smoke."
+
 # "sit" starts a new situation, basically a location in the game:
 sit deck4_transporter_room
 	# lines beginning with single or double quotes are text to output.

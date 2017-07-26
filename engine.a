@@ -123,6 +123,7 @@ interpreter_go_on ; enter with A = offset to add
 ;---------------------------------------
 ; all command handlers are entered with runptr pointing to command and Y=0
 ;---------------------------------------
+	!macro end_usage	{!by CMD_ENDOFBLOCK	}
 	!macro end_procedure	{!by CMD_ENDOFBLOCK	}
 	!macro end_location	{!by CMD_ENDOFBLOCK	}
 +instruction ~CMD_ENDOFBLOCK, ~cmd_endofblock
