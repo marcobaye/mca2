@@ -1,14 +1,14 @@
 #!/usr/bin/python2
 import sys
 
-operators = [
-	['==', 'equal'],
-	['!=', 'not_equal'],
-	['<=', 'smaller_or_equal'],	# these longer
-	['>=', 'greater_or_equal'],	# strings must
-	['<', 'smaller'],	# be in list before these
-	['>', 'greater']	# shorter ones!
-]
+operators = {
+	'==': 'equal',
+	'!=': 'not_equal',
+	'<=': 'smaller_or_equal',
+	'>=': 'greater_or_equal',
+	'<': 'smaller',
+	'>': 'greater'
+}
 # FIXME - add "@" and "!@" for "item at location" and "item not at location"
 
 def nospace(string):
@@ -258,7 +258,12 @@ class convertor(object):
 		var_index = 0
 		print '; var offsets:'
 		print '\t; items:'
+		for i in self.items:
+			i = self.items[i]
+			print 'itemname_' + str(i.num) + '\t!tx ' + i.game_name + ', 0'
+			print 'itemdesc_' + str(i.num) + '\t!tx ' + i.description + ', 0'
 		# FIXME - create tables with pointers to in-game names and descriptions
+		# FIXME - if names/descriptions are identical, only include once!
 		# FIXME - solve weight/size issue: split items into two groups or add extra lookup table?
 		# FIXME - in future, iterate over items twice and do mobile/fixed items separately!
 		for i in self.items:
@@ -306,18 +311,18 @@ class convertor(object):
 # helper functions to parse lines:
 	def preprocess(self, line_in):
 		'count and remove indentation characters, remove comments'
-		indents = 1	# leading prefix for binary space/tab pattern
+		indents = 1	# leading prefix for binary space/tab bit pattern
 		count_indents = True
 		quotes = None
-		line_out = ''
+		line_out = ['']
 		for char in line_in:
 			# count indentation
 			if count_indents:
 				if char == ' ':
-					indents <<= 1
+					indents <<= 1	# append 0 bit
 					continue;
 				elif char == '\t':
-					indents = (indents << 1) + 1
+					indents = (indents << 1) + 1	# append 1 bit
 					continue;
 				else:
 					count_indents = False
@@ -326,28 +331,34 @@ class convertor(object):
 				# we're inside quotes, so check for end of quotes:
 				if char == quotes:
 					quotes = None	# found end of quotes
-				line_out += char
+				line_out[-1] += char
 				continue
 			# we're not inside quotes, so check for quotes:
 			if char == '"' or char == "'":
 				quotes = char
-				line_out += char
+				line_out[-1] += char
 				continue	# do not remove '#' in strings
 			# check for comments:
 			if char == '#':
 				break	# remove comment
-			line_out += char
+			# separator?
+			if char == ' ' or char == '\t':
+				if line_out[-1] != '':
+					line_out.append('')
+				continue
+			line_out[-1] += char
 		if quotes != None:
 			self.error_line('quotes still open at end of line')
+		if line_out[-1] == '':
+			line_out = line_out[:-1]
 		return indents, line_out
 	def get_args(self, line, howmany):
 		'ensure correct number of args and return them'
-		parts = line.split()
-		if len(parts) < 1 + howmany:
+		if len(line) < 1 + howmany:
 			self.error_line('Too few arguments for keyword')
-		elif len(parts) > 1 + howmany:
+		elif len(line) > 1 + howmany:
 			self.error_line('Too many arguments for keyword')
-		return parts[1:(1 + howmany)]
+		return line[1:(1 + howmany)]
 # helper functions to close logical blocks:
 	def no_text(self):
 		'if we are in text mode, terminate'
@@ -365,13 +376,13 @@ class convertor(object):
 		'line to pass to assembler unchanged'
 		if self.codeseq != None:
 			self.error_line('Please put "asm" lines before all locations/procedures/usages')
-		self.add_code(line[4:])
+		self.add_code(' '.join(line[1:]))
 	def process_text_line(self, line):
 		'text line'
 		if self.text_mode == False:
 			self.codeseq.add_code('+print')
 			self.text_mode = True
-		self.codeseq.add_code('!tx ' + line)
+		self.codeseq.add_code('!tx ' + ' '.join(line))
 	def process_code_line(self, dict, name):
 		self.no_text()
 		self.new_code()	# close previous code sequence, if there was one
@@ -434,14 +445,14 @@ class convertor(object):
 	def process_enum_line(self, line):
 		'enumerate symbolic constants'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
-		parts = line[4:].split(',')	# remove 'enum' keyword
-		val = 0
-		for name in parts:
-			name = name.split()[0]	# remove spaces
-			# FIXME - make sure there is no VAR with that name!
-			const = self.get_object(self.consts, name, define=True)
-			const.set_default(val)
-			val += 1
+		value = 0
+		for word in line[1:]:	# remove 'enum' keyword, line is already split at spaces
+			for name in word.split(','):	# enum line allows comma as separator
+				if name != '':
+					# FIXME - make sure there is no VAR with that name!
+					const = self.get_object(self.consts, name, define=True)
+					const.set_default(value)
+					value += 1
 	def process_var_line(self, line):
 		'variable declaration'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
@@ -468,18 +479,15 @@ class convertor(object):
 		self.codeseq.add_code('+delay ' + var.offset_name())
 # if/elif/else/endif helpers:
 	def process_condition(self, line):
-		for cmp in operators:
-			if cmp[0] in line:
-				break
+		hinz, op, kunz = self.get_args(line, 3)
+		if op in operators:
+			op = operators[op]
 		else:
 			self.error_line('Comparison not recognised')
 			return
-		parts = line.split(cmp[0])
-		if len(parts) != 2:
-			self.error_line('Error parsing comparison')
-		hinz = self.get_force2var(parts[0])
-		kunz = self.get_force2var(parts[1])
-		self.codeseq.add_code('+if_' + cmp[1] + ' ' + hinz.offset_name() + ', ' + kunz.offset_name() + ', .c_after' + str(self.cond_state[-1]))
+		hinz = self.get_force2var(hinz)
+		kunz = self.get_force2var(kunz)
+		self.codeseq.add_code('+if_' + op + ' ' + hinz.offset_name() + ', ' + kunz.offset_name() + ', .c_after' + str(self.cond_state[-1]))
 	def end_cond_block(self):
 		self.codeseq.add_code('+goto .c_end')
 		self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
@@ -488,7 +496,7 @@ class convertor(object):
 		self.no_text()
 		self.codeseq.add_code('!zone {')
 		self.cond_state.append(1)	# go deeper, then in 1st block of if/elif/else/endif
-		self.process_condition(line[3:])	# without "if"
+		self.process_condition(line)
 		self.codeseq.change_indent(1)
 	def process_elif_line(self, line):
 		self.no_text()
@@ -499,11 +507,11 @@ class convertor(object):
 		self.end_cond_block()
 		self.cond_state[-1] += 1	# in next block of if/elif/else/endif
 		self.codeseq.change_indent(-1)
-		self.process_condition(line[5:])	# without "elif"
+		self.process_condition(line)
 		self.codeseq.change_indent(1)
 	def process_else_line(self, line):
 		self.no_text()
-		if line != "else":
+		if ' '.join(line) != "else":
 			self.error_line('Garbage after ELSE?!')
 		if self.cond_state[-1] == 0:
 			self.error_line('Used ELSE without IF')
@@ -516,6 +524,8 @@ class convertor(object):
 		self.cond_state[-1] = -1	# in ELSE block of if/elif/else/endif
 	def process_endif_line(self, line):
 		self.no_text()
+		if ' '.join(line) != "endif":
+			self.error_line('Garbage after ENDIF?!')
 		if self.cond_state[-1] == 0:
 			self.error_line('Used ENDIF without IF')
 		if self.cond_state[-1] != -1:
@@ -538,12 +548,10 @@ class convertor(object):
 	def process_let_line(self, line):
 		'writing to variable'
 		self.no_text()
-		parts = line.split('=')
-		if len(parts) != 2:
-			self.error_line('Line type not recognised')
-		target_var = self.get_object(self.vars, nospace(parts[0]))
+		# arg checking was done by caller, to be able to recognize this type of line...
+		target_var = self.get_object(self.vars, nospace(line[0]))
 		# FIXME - make sure target var is not read-only!
-		source_var = self.get_force2var(parts[1])
+		source_var = self.get_force2var(line[2])
 		self.codeseq.add_code('+let ' + target_var.offset_name() + ', ' + source_var.offset_name())
 	def process_incdec_line(self, what, line):
 		'increment/decrement variable'
@@ -558,26 +566,24 @@ class convertor(object):
 		indents, line = self.preprocess(line)
 		#print indents, line
 		#return
+		# ignore empty lines
+		if line == []:
+			return
 		# handle end of multi-line comment:
 		if self.in_comment:
-			if line.startswith('*/'):
+			if line[0].startswith('*/'):
 				self.in_comment = False
-				line = line[2:]
-			else:
-				return
-		# ignore empty lines
-		if line == '':
 			return
-		if line.startswith('/*'):
+		if line[0].startswith('/*'):
 			# start of multi-line comment
 			self.in_comment = True
 			return
-		elif line.startswith('"') or line.startswith("'"):
+		elif line[0].startswith('"') or line[0].startswith("'"):
 			# text output
 			self.process_text_line(line)
 		else:
 			# everything else should start with a keyword...
-			key = line.split()[0]
+			key = line[0]
 			if key == 'asm':
 				self.process_asm_line(line)
 			elif key == 'const':
@@ -650,9 +656,11 @@ class convertor(object):
 				self.process_dirs_line('up', 'down', line)
 			elif key == 'ud2':
 				self.process_dirs_line('up', 'down', line, two_way=True)
-			else:
+			elif len(line) == 3 and line[1] == '=':
 				# ...or is an assignment to a variable
 				self.process_let_line(line)
+			else:
+				self.error_line('Line type not recognised')
 		#debug:
 		#self.codeseq.code.append(str(indents) + line)
 
