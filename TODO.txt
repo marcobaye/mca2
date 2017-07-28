@@ -44,6 +44,7 @@ use feather with stick
 conv:
 	add "say"
 	allow "IF var"
+	change "const" behaviour: just put them in a dict and lookup everything else (and call it "define")
 backend:
 	add "ifnonzero"
 
@@ -55,3 +56,35 @@ vocabulary:
 	nord süd west ost hoch runter
 	nimm verliere inventar
 	benutze-X-mit-Y
+
+
+Im Augenblick benutzt das Spiel PetSCII. Das ist aber ein Problem,
+wenn Umlaute dazu kommen: Insbesondere wenn der Source in UTF8
+vorliegt, weil die Multi-Byte-Zeichen auch durch "!ct" nicht
+vernünftig konvertiert werden.
+
+Lösung: Im Source raw-Encoding wählen und dann zur Laufzeit
+konvertieren. Alle Umlaute haben das gleiche Präfixbyte, das ist also
+schnell gemacht.
+Neues Problem: Was ist mit Steuerzeichen?
+Nötig sind:
+Terminator (bleibt 0)
+CR (bleibt 13)
+sechzehn Farbcodes - bleiben wie bei PetSCII? Ginge!
+evtl. Cursorbewegungen? Könnten auch wie bei PetSCII bleiben...
+
+Zeichensatz:
+Upper/Graphics liegt bei $d000 (1K), revs dahinter ($d400)
+Lower/Upper liegt bei $d800 (1K), revs dahinter ($dc00)
+Screen ausblenden (dabei CLEAR), dann:
+vic: invalid video mode to force black
+cia2: highest vic bank
+vic: screen-ptr und charset-ptr umsetzen
+"bank 14"
+copy d800..dc00 to d800..dc00
+fix umlauts
+xor-copy d800..dc00 to dc00
+"bank 15"
+zp: screen-ptr umsetzen
+output: LOCK und CLEAR
+vic: valid video mode to enable display
