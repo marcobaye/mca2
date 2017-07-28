@@ -4,6 +4,7 @@
 
 # simple file format to describe situations:
 # file is parsed line-by-line
+# keywords and symbols are delimited by whitespace
 # hash character indicates comments
 	# leading whitespace is ignored
 /*
@@ -13,20 +14,20 @@ to quickly disable large portions of this file.
 
 # first word (or character) of each line determines the type of line:
 
-# "const" defines symbolic constants
+# "define" defines symbolic constants (actually the line just registers a text substitution)
 # (writing them in upper case is just a convention and not required):
-const DEAD	0
-const ALIVE	1
-const CLOSED	0
-const OPEN	1
-const OFFEN	OPEN	# once they are defined, constants can be used like numbers
+define DEAD	0
+define ALIVE	1
+define CLOSED	0
+define OPEN	1
+define OFFEN	OPEN	# once they are defined, constants can be used like numbers
 # all calculations are done as unsigned 16-bit integers,
 # so numbers must be in 0..65535 range. Negative numbers are not supported, but who needs them anyway?
 
 # "enum" is a faster way to define several symbolic constants at a time:
-enum FIST, ROCK, KNIFE, SWORD, PISTOL, LIGHTSABER	# this will assign values 0/1/2/3/4/5
-enum MOOD_IN_LOVE, MOOD_FRIENDLY, MOOD_NEUTRAL, MOOD_GRUMPY, MOOD_PISSED	# assigns 0/1/2/3/4
-# (these lines have exactly the same effect as separate "const"-lines would have had)
+enum FIST	ROCK	KNIFE	SWORD	PISTOL	LIGHTSABER	# this will assign values 0/1/2/3/4/5
+enum MOOD_IN_LOVE	MOOD_FRIENDLY	MOOD_NEUTRAL	MOOD_GRUMPY	MOOD_PISSED	# assigns 0/1/2/3/4
+# (these lines have exactly the same effect as separate "define"-lines would have had)
 
 # "var" defines a game variable and its start value:
 var dragon	ALIVE

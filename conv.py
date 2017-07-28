@@ -68,13 +68,12 @@ class mca2obj(object):
 	'parent class for everything defined in game description file'
 	def __init__(self, name):
 		self.name = name	# symbolic name
-		self.line_of_def = None	# line number of definition (for "already defined" error)
 		self.referenced = False	# for debugging output ("object XYZ never used!)
 	def reference(self):
 		self.referenced = True
 
 class symbol(mca2obj):
-	'parent class for const, item, var and fakevar'
+	'parent class for item, var and fakevar'
 	def __init__(self, name):
 		super(symbol, self).__init__(name)
 		self.default = None	# default value at start of game
@@ -189,12 +188,13 @@ class convertor(object):
 		self.codeseq = None	# needed to track locations/procedures/usages
 		self.cond_state = [0]	# keeps track of "if/elif/else/endif" and nesting
 		self.code = []	# for stuff from "asm" lines
+		self.subst = dict()	# dictionary for "define/enum" substitutions
 		self.stringcoll = stringcoll()
+		self.line_of_def = dict()	# object name to line of definition
 		# special dictionaries with constructor for new entries
 		self.procedures = mydict(procedure)	# procedures
 		self.locations = mydict(location)	# locations
 		self.usages = mydict(usage)		# usages ("use A with B")
-		self.consts = mydict(symbol)	# holds symbolic constants
 		self.items = mydict(item)	# items player can interact with
 		self.vars = mydict(symbol)	# game variables
 		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
@@ -252,10 +252,10 @@ class convertor(object):
 			dict[name] = obj	# and store
 			just_created = True
 		if define:
-			if obj.line_of_def:
-				self.error_line('Object "' + name + '" has already been defined in line ' + obj.line_of_def)
+			if name in self.line_of_def:
+				self.error_line('Object "' + name + '" has already been defined in line ' + self.line_of_def[name])
 			else:
-				obj.line_of_def = str(self.line_number)
+				self.line_of_def[name] = str(self.line_number)
 				dict.define(obj)
 		else:
 			obj.reference()
@@ -275,9 +275,7 @@ class convertor(object):
 		if target_location.set_extdir(direction, self.codeseq):
 			self.warning_line('Direction "' + direction + '" was already set')
 	def get_value(self, string):
-		'return value of number literal or symbolic constant'
-		if string in self.consts:
-			return self.consts[string].default
+		'return value of number literal'
 		try:
 			num = int(string)
 		except:
@@ -285,12 +283,12 @@ class convertor(object):
 			num = 0	# make sure script does not crash
 		return num
 	def get_force2var(self, string):
-		'convert literal/const/var name string to var object'
+		'convert literal/var name string to var object'
 		string = nospace(string)
 		if string in self.vars:
 			self.vars[string].reference()
 			return self.vars[string]	# return var object
-		# const names are converted to number strings
+		# if no var, must be literal - convert to number strings
 		value = self.get_value(string)
 		fakevar = self.get_object(self.fakevars, str(value))
 		fakevar.set_default(value)
@@ -375,10 +373,10 @@ class convertor(object):
 		print '; locations:'
 		for loc in self.locations.get_defd_and_refd():
 			# FIXME - move these lines elsewhere (because here they will never trigger) and copy for other dicts!
-			if loc.line_of_def and not loc.referenced:
-				warning('location "' + loc.name + '" defined but never used')
-			if loc.referenced and not loc.line_of_def:
-				self.error('location "' + loc.name + '" referenced but not defined')
+			#if loc.line_of_def and not loc.referenced:
+			#	warning('location "' + loc.name + '" defined but never used')
+			#if loc.referenced and not loc.line_of_def:
+			#	self.error('location "' + loc.name + '" referenced but not defined')
 			loc.output()
 			print
 		print '; end of actual data'
@@ -430,6 +428,10 @@ class convertor(object):
 			self.error_line('quotes still open at end of line')
 		if line_out[-1] == '':
 			line_out = line_out[:-1]
+		# subst
+		for idx in range(0, len(line_out)):
+			if line_out[idx] in self.subst:
+				line_out[idx] = self.subst[line_out[idx]]
 		return indents, line_out
 	def get_args(self, line, howmany):
 		'ensure correct number of args and return them'
@@ -514,31 +516,28 @@ class convertor(object):
 			else:
 				self.add_location_backdirection(target_loc_name1, dir2)
 				self.add_location_backdirection(target_loc_name2, dir1)
-	def process_const_line(self, line):
-		'symbolic constant definition'
+	def add_substitution(self, name, value):
+		'helper function for "define" and "enum" lines'
+		if name in self.line_of_def:
+			self.error_line('Name "' + name + '" has already been assigned to an object in line ' + self.line_of_def[name])
+		else:
+			self.subst[name] = value
+	def process_define_line(self, line):
+		'definition for text substitution (basically symbolic constants)'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
 		name, value = self.get_args(line, 2)
-		# FIXME - make sure there is no VAR with that name!
-		const = self.get_object(self.consts, name, define=True)
-		# get actual value
-		num = self.get_value(value)
-		const.set_default(num)
+		self.add_substitution(name, value)
 	def process_enum_line(self, line):
 		'enumerate symbolic constants'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
 		value = 0
 		for word in line[1:]:	# remove 'enum' keyword, line is already split at spaces
-			for name in word.split(','):	# enum line allows comma as separator
-				if name != '':
-					# FIXME - make sure there is no VAR with that name!
-					const = self.get_object(self.consts, name, define=True)
-					const.set_default(value)
-					value += 1
+			self.add_substitution(word, str(value))
+			value += 1
 	def process_var_line(self, line):
 		'variable declaration'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
 		name, start_value = self.get_args(line, 2)
-		# FIXME - make sure there is no CONST with that name!
 		var = self.get_object(self.vars, name, define=True)
 		# get actual number for start value
 		num = self.get_value(start_value)
@@ -670,8 +669,8 @@ class convertor(object):
 			key = line[0]
 			if key == 'asm':
 				self.process_asm_line(line)
-			elif key == 'const':
-				self.process_const_line(line)
+			elif key == 'define':
+				self.process_define_line(line)
 			elif key == 'enum':
 				self.process_enum_line(line)
 			elif key == 'var':

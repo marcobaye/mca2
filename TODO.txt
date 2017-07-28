@@ -7,17 +7,11 @@ zwei-Wort-Parser? Inventar!
 add items (mobile and fixed), handle as vars (value is location)
 	mobile/fixed could be distinguished by sorting (first one, then
 		the other, with border value for CMP)
-	put at start of var table, because we need to store more info in
-	further tables:
-		short name to reference (not necessarily the same as the
-			name in description file, for translations) - try to
-			not have umlauts!
-		long name or description for "examine"
 	items declared in situation get that sit as default position, all
 	others are hidden.
 
 add "drop" command to move item from INVENTORY to HERE
-add code sections to execute after "use X with Y" command:
+
 use string with stick
 	hide string	# puts item X to "NOWHERE" location
 	hide stick
@@ -44,7 +38,6 @@ use feather with stick
 conv:
 	add "say"
 	allow "IF var"
-	change "const" behaviour: just put them in a dict and lookup everything else (and call it "define")
 backend:
 	add "ifnonzero"
 
