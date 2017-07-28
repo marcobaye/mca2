@@ -150,7 +150,7 @@ class location(codeseq):
 	def __init__(self, name):
 		super(location, self).__init__(name)
 		self.extdirs = {}	# directions given via two-way feature
-		self.forced_value = None	# only used for "OFF" and "INVENTORY"
+		self.forced_value = None	# only used for "NOWHERE" and "INVENTORY"
 	def label(self):
 		return 'location_' + self.name
 	# setters:
@@ -693,7 +693,7 @@ class convertor(object):
 				self.process_else_line(line)
 			elif key == 'endif':
 				self.process_endif_line(line)
-			elif key == 'sit':	# FIXME - change to "location"
+			elif key == 'loc':
 				self.process_defproc_loc_line(line, self.locations)
 			elif key == 'using':
 				self.process_usage_line(line)
