@@ -29,8 +29,8 @@ asm KUNZ	= petscii_LRED
 
 # locations:
 loc start
-	"Das Spiel start hier, weil dieser Ort 'start' heisst."
-	s2 anderso
+	"Das Spiel startet hier, weil dieser Ort 'start' heisst."
+	s2 anderswo
 
-loc anderso
-	"This is another location."
+loc anderswo
+	"Dies ist ein anderer Ort."

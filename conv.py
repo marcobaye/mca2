@@ -448,6 +448,7 @@ class convertor(object):
 			self.text_mode = False
 	def new_code(self):
 		'if we are in location/procedure/usage, terminate'
+		self.no_text()
 		if self.codeseq != None:
 			if self.cond_state != [0]:
 				self.error_line('cannot start new location/procedure/usage, there are "if" blocks left open')
@@ -465,7 +466,6 @@ class convertor(object):
 			self.text_mode = True
 		self.codeseq.add_code('!tx ' + ' '.join(line))
 	def process_code_line(self, dict, name):
-		self.no_text()
 		self.new_code()	# close previous code sequence, if there was one
 		# check
 		obj = self.get_object(dict, name, define=True)	# create
@@ -753,6 +753,7 @@ class convertor(object):
 				if line[-1] == '\n':
 					line = line[:-1]
 				self.process_line(line)
+			self.new_code()	# make sure last text/code sequence is terminated
 
 def main():
 	if len(sys.argv) != 2:
