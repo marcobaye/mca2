@@ -209,9 +209,6 @@ direction_keys
 	; use "greater than" with swapped operands. Same for "smaller or equal".
 	!macro if_greater		.vo1, .vo2, .t	{!by CMD_IFGREATEROREQUAL,	.vo2, .vo1	: !wo .t	}
 	!macro if_greater_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo2, .vo1	: !wo .t	}
-	; FIXME - add:
-	;!macro if_at			.vo1, .lit, .t
-	; ...or rather implement a +loadliteral macro and use a special var for it?
 ; virtual flags	for:	<	>	unused	==
 .flags		!by	%0001,	%1101,	0,	%0110	; bits mean  >   >=   ==   !=
 +instruction ~CMD_IFNOTEQUAL,		~cmd_ifnotequal
@@ -310,9 +307,9 @@ direction_keys
 		lda #2
 		jmp interpreter_go_on
 ;---------------------------------------
-	!macro inc	.var_offset	{!by CMD_INC, .var_offset	}
-	!macro dec	.var_offset	{!by CMD_DEC, .var_offset	}
-+instruction ~CMD_INC, ~cmd_inc
+	!macro varinc	.var_offset	{!by CMD_VARINC, .var_offset	}
+	!macro vardec	.var_offset	{!by CMD_VARDEC, .var_offset	}
++instruction ~CMD_VARINC, ~cmd_varinc
 		iny
 		lda (runptr), y
 		tax
@@ -320,7 +317,7 @@ direction_keys
 		bne +++
 			inc gamevars_hi, x
 			jmp +++
-+instruction ~CMD_DEC, ~cmd_dec
++instruction ~CMD_VARDEC, ~cmd_vardec
 		iny
 		lda (runptr), y
 		tax
@@ -331,8 +328,8 @@ direction_keys
 +++		lda #2
 		jmp interpreter_go_on
 ;---------------------------------------
-	!macro let	.vo_target, .vo_source {!by CMD_LET, .vo_source, .vo_target	}
-+instruction ~CMD_LET, ~cmd_let
+	!macro varcopy	.vo_target, .vo_source {!by CMD_VARCOPY, .vo_source, .vo_target	}
++instruction ~CMD_VARCOPY, ~cmd_varcopy
 		iny
 		lda (runptr), y
 		tax
@@ -350,8 +347,8 @@ direction_keys
 		lda #3
 		jmp interpreter_go_on
 ;---------------------------------------
-	!macro move	.vo_target, .literal {!by CMD_MOVE, .vo_target: !wo .literal	}
-+instruction ~CMD_MOVE, ~cmd_move
+	!macro varloadimm	.vo_target, .literal {!by CMD_VARLOADIMM, .vo_target: !wo .literal	}
++instruction ~CMD_VARLOADIMM, ~cmd_varloadimm
 		; get target offset
 		iny
 		lda (runptr), y

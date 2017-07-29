@@ -36,6 +36,8 @@ var secretdoor	CLOSED
 var dwarfmood	MOOD_NEUTRAL
 var lives_left	5
 var cows_killed	0
+# the engine pre-defines a variable called __TMP__, this is needed for internal
+# calculations, so DO NOT USE IT YOURSELF!
 
 # "item" defines a game item the player can interact with:
 # parameters are size (small/large), start location in game, in-script name, in-game name, in-game description
@@ -106,8 +108,11 @@ some_var = other_var_or_literal
 
 if some_var == some_value
 #	start conditional block
-#	possible comparisons: "==", "!=", "<", ">", "<=", ">=", "@"
-#	"@" is a special operator for "item @ location" check.
+#	possible comparisons: "==", "!=", "<", ">", "<=", ">=", "@", "!@"
+#	"@" and "!@" are special operators for "item at location" and
+#	"item not at location" check. Instead of a location, another
+#	item can be given, then this checks if both items' location
+#	are equal / not equal.
 elif some_var == other_value
 #	any number of "else if" blocks
 else
@@ -118,6 +123,11 @@ endif
 move some_item some_location
 #	move an item to a different location
 #	use special location NOWHERE to hide item
+#	use special location INVENTORY to put item into player's inventory
+# alternative:
+move some_item some_other_item
+#	move an item to the same location where the other item is
+#	use special item PLAYER to move item to current location
 
 */ (end of comment)
 
@@ -266,6 +276,11 @@ loc storage
 # "back" room
 loc engine_room
 	"You are in the engine room."
+	if hippo @ PLAYER
+		"You see a hippo."
+	elif hippo @ corridor3
+		"You can hear a hippo outside the door."
+	endif
 	n2 corridor3
 
 	# still to do:
