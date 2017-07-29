@@ -206,7 +206,7 @@ class convertor(object):
 		PLAYER_item.reference()	# suppress warning if never referenced
 		PLAYER_item.set_game_name('nullstring')
 		PLAYER_item.set_description('nullstring')
-		PLAYER_item.set_weight('large')
+		PLAYER_item.set_weight('$80')	# make sure player cannot put player into inventory ;)
 		PLAYER_item.set_default(start.label())
 		# create pseudo location "NOWHERE" to be able to hide items and disable directions
 		NOWHERE_location = self.get_object(self.locations, 'NOWHERE', define=True)
@@ -217,7 +217,7 @@ class convertor(object):
 		INVENTORY_location.reference()	# suppress warning if never referenced
 		INVENTORY_location.set_forced_value(1)
 		# create pseudo var "HERE" to be able to determine current location
-		# FIXME - change this to "literal"?
+		# FIXME - change this to "TEMPORARY"?
 		#HERE_var = self.get_object(self.vars, 'HERE', define=True)
 		#HERE_var.reference()	# suppress warning if never referenced
 		#HERE_var.set_default(start.label())
@@ -337,6 +337,10 @@ class convertor(object):
 		print '\tgamevars_COUNT\t=', var_index	# == len(self.items) + len(self.vars) + len(self.fakevars)
 		print
 
+		# item weights
+		print '; item weights:'
+		items_weights = [item.weight for item in self.items.get_defd_and_refd()]
+		print 'item_weight\t!by ' + ', '.join(items_weights)
 		# pointer arrays and actual strings
 		print '; string pointers:'
 		items_names = [item.game_name for item in self.items.get_defd_and_refd()]
@@ -548,7 +552,12 @@ class convertor(object):
 		item = self.get_object(self.items, name, define=True)
 		game_name = self.stringcoll.add(game_name)
 		description = self.stringcoll.add(description)
-		item.set_weight(weight)
+		if weight == 'small':
+			item.set_weight('0')
+		elif weight == 'large':
+			item.set_weight('$80')
+		else:
+			self.error_line('Item size must be "small" or "large"')
 		item.set_default(location)
 		item.set_game_name(game_name)
 		item.set_description(description)
