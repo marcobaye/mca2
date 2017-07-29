@@ -4,12 +4,13 @@ import sys
 operators = {
 	'==': 'equal',
 	'!=': 'not_equal',
+	'<': 'smaller',
+	'>': 'greater',
 	'<=': 'smaller_or_equal',
 	'>=': 'greater_or_equal',
-	'<': 'smaller',
-	'>': 'greater'
+	'@': 'at'
 }
-# FIXME - add "@" and "!@" for "item at location" and "item not at location"
+# FIXME - add "!@" for "item not at location"?
 
 def nospace(string):
 	'helper function to remove leading/trailing spaces'
@@ -77,13 +78,10 @@ class symbol(mca2obj):
 	def __init__(self, name):
 		super(symbol, self).__init__(name)
 		self.default = None	# default value at start of game
-		self.readonly = False	# currently only "HERE" is made read-only
 	def offset_name(self):
 		return 'vo_' + self.name
 	def set_default(self, value):
 		self.default = value
-	def make_readonly(self):
-		self.readonly = True
 
 class item(symbol):
 	'game item player can interact with'
@@ -210,7 +208,6 @@ class convertor(object):
 		PLAYER_item.set_description('nullstring')
 		PLAYER_item.set_weight('large')
 		PLAYER_item.set_default(start.label())
-		# FIXME - "move" could be used as pseudo-goto
 		# create pseudo location "NOWHERE" to be able to hide items and disable directions
 		NOWHERE_location = self.get_object(self.locations, 'NOWHERE', define=True)
 		NOWHERE_location.reference()	# suppress warning if never referenced
@@ -220,11 +217,10 @@ class convertor(object):
 		INVENTORY_location.reference()	# suppress warning if never referenced
 		INVENTORY_location.set_forced_value(1)
 		# create pseudo var "HERE" to be able to determine current location
-		# FIXME - remove this now that there is "PLAYER"?
-		HERE_var = self.get_object(self.vars, 'HERE', define=True)
-		HERE_var.reference()	# suppress warning if never referenced
-		HERE_var.set_default(start.label())
-		HERE_var.make_readonly()
+		# FIXME - change this to "literal"?
+		#HERE_var = self.get_object(self.vars, 'HERE', define=True)
+		#HERE_var.reference()	# suppress warning if never referenced
+		#HERE_var.set_default(start.label())
 		# correct start value for later
 		self.line_number = 0
 	def error(self, msg):
@@ -308,12 +304,14 @@ class convertor(object):
 		fakevars_defaults = [str(symbol.default) for symbol in self.fakevars.get_referenced()]
 		print 'gamevars_defaults_lo'
 		print '\t!by <' + ', <'.join(items_defaults) + '\t; items'
-		print '\t!by <' + ', <'.join(vars_defaults) + '\t; variables'
+		if len(vars_defaults):
+			print '\t!by <' + ', <'.join(vars_defaults) + '\t; variables'
 		if len(fakevars_defaults):
 			print '\t!by <' + ', <'.join(fakevars_defaults) + '\t; literals'
 		print 'gamevars_defaults_hi'
 		print '\t!by >' + ', >'.join(items_defaults) + '\t; items'
-		print '\t!by >' + ', >'.join(vars_defaults) + '\t; variables'
+		if len(vars_defaults):
+			print '\t!by >' + ', >'.join(vars_defaults) + '\t; variables'
 		if len(fakevars_defaults):
 			print '\t!by >' + ', >'.join(fakevars_defaults) + '\t; literals'
 		print
@@ -567,9 +565,14 @@ class convertor(object):
 		else:
 			self.error_line('Comparison not recognised')
 			return
-		hinz = self.get_force2var(hinz)
-		kunz = self.get_force2var(kunz)
-		self.codeseq.add_code('+if_' + op + ' ' + hinz.offset_name() + ', ' + kunz.offset_name() + ', .c_after' + str(self.cond_state[-1]))
+		if op == 'at':
+			item = self.get_object(self.items, hinz)
+			loc = self.get_object(self.locations, kunz)
+			self.codeseq.add_code('+if_' + op + ' ' + item.offset_name() + ', ' + loc.label() + ', .c_after' + str(self.cond_state[-1]))
+		else:
+			var1 = self.get_force2var(hinz)
+			var2 = self.get_force2var(kunz)
+			self.codeseq.add_code('+if_' + op + ' ' + var1.offset_name() + ', ' + var2.offset_name() + ', .c_after' + str(self.cond_state[-1]))
 	def end_cond_block(self):
 		self.codeseq.add_code('+goto .c_end')
 		self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
@@ -620,14 +623,17 @@ class convertor(object):
 	def process_move_line(self, line):
 		'move an item to a different location'
 		self.no_text()
-		item, location = self.get_args(line, 2)
+		item, target = self.get_args(line, 2)
 		item = self.get_object(self.items, item)
-		location = self.get_object(self.locations, location)
-		self.codeseq.add_code(';+move\tFIXME - missing')
-		# FIXME - check for NOWHERE and INVENTORY because they have fixed values
-		# FIXME - check for HERE because its value changes
-		# all other values (locations!) would either have to be put in fakevars, or we use a new "+loadliteral" macro here and let the assembler do the resolution!
-		#self.codeseq.add_code('+let ' + item.offset_name() + ', ' + source_var.offset_name())
+		if target in self.items:
+			itemsrc = self.get_object(self.items, target)
+			self.codeseq.add_code('+let ' + item.offset_name() + ', ' + itemsrc.offset_name())
+		else:
+		#elif target in self.locations:
+			location = self.get_object(self.locations, target)
+			self.codeseq.add_code('+move ' + item.offset_name() + ', ' + location.label())
+		#else:
+		#	self.error_line('Target is neither location nor item')
 	def process_let_line(self, line):
 		'writing to variable'
 		self.no_text()

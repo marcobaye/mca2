@@ -36,16 +36,16 @@ engine_new_location ; basically the start of the engine's main loop
 		sta number_of_alternatives
 		jsr pre_situation
 		; execute code from current location
-		lda gamevars_lo + vo_HERE
+		lda gamevars_lo + vo_PLAYER
 		sta runptr
-		lda gamevars_hi + vo_HERE
+		lda gamevars_hi + vo_PLAYER
 		sta runptr + 1
 		jsr interpreter_run
 		; now text should be on screen, directions and alternatives in buffers,
 		; so display prompt
 		jsr prompt_for_action	; returns chosen location in YYAA
-		sty gamevars_hi + vo_HERE
-		sta gamevars_lo + vo_HERE
+		sty gamevars_hi + vo_PLAYER
+		sta gamevars_lo + vo_PLAYER
 		jmp engine_new_location
 
 no_choice ; error handler called if player cannot do anything
@@ -209,6 +209,9 @@ direction_keys
 	; use "greater than" with swapped operands. Same for "smaller or equal".
 	!macro if_greater		.vo1, .vo2, .t	{!by CMD_IFGREATEROREQUAL,	.vo2, .vo1	: !wo .t	}
 	!macro if_greater_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo2, .vo1	: !wo .t	}
+	; FIXME - add:
+	;!macro if_at			.vo1, .lit, .t
+	; ...or rather implement a +loadliteral macro and use a special var for it?
 ; virtual flags	for:	<	>	unused	==
 .flags		!by	%0001,	%1101,	0,	%0110	; bits mean  >   >=   ==   !=
 +instruction ~CMD_IFNOTEQUAL,		~cmd_ifnotequal
@@ -297,7 +300,7 @@ direction_keys
 		lda #3
 		jmp interpreter_go_on
 ;---------------------------------------
-	!macro delay	.var_offset	{!by CMD_DELAY:	!by .var_offset	}
+	!macro delay	.var_offset	{!by CMD_DELAY, .var_offset	}
 +instruction ~CMD_DELAY, ~cmd_delay
 		iny
 		lda (runptr), y
@@ -307,8 +310,8 @@ direction_keys
 		lda #2
 		jmp interpreter_go_on
 ;---------------------------------------
-	!macro inc	.var_offset	{!by CMD_INC:	!by .var_offset	}
-	!macro dec	.var_offset	{!by CMD_DEC:	!by .var_offset	}
+	!macro inc	.var_offset	{!by CMD_INC, .var_offset	}
+	!macro dec	.var_offset	{!by CMD_DEC, .var_offset	}
 +instruction ~CMD_INC, ~cmd_inc
 		iny
 		lda (runptr), y
@@ -345,6 +348,23 @@ direction_keys
 		pla
 		sta gamevars_lo, x
 		lda #3
+		jmp interpreter_go_on
+;---------------------------------------
+	!macro move	.vo_target, .literal {!by CMD_MOVE, .vo_target: !wo .literal	}
++instruction ~CMD_MOVE, ~cmd_move
+		; get target offset
+		iny
+		lda (runptr), y
+		tax
+		; copy low byte
+		iny
+		lda (runptr), y
+		sta gamevars_lo, x
+		; copy high byte
+		iny
+		lda (runptr), y
+		sta gamevars_hi, x
+		lda #4
 		jmp interpreter_go_on
 ;---------------------------------------
 	; add more instructions here

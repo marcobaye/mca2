@@ -29,7 +29,7 @@ enum	FIST	ROCK	KNIFE	SWORD	PISTOL	LIGHTSABER	# this will assign values 0/1/2/3/4
 enum	MOOD_IN_LOVE	MOOD_FRIENDLY	MOOD_NEUTRAL	MOOD_GRUMPY	MOOD_PISSED	# assigns 0/1/2/3/4
 # (these lines have exactly the same effect as separate "define"-lines would have had)
 
-# "var" defines a game variable and its start value:
+# "var" defines a game variable (16 bit unsigned int) and its start value:
 var dragon	ALIVE
 var crocodile	ALIVE
 var secretdoor	CLOSED
@@ -45,70 +45,117 @@ item small NOWHERE	string	"Sehne"		"eine Bogensehne"	#
 item small INVENTORY	bow1	"Bogen"		"kaputter Bogen"	# player starts with a broken bow in inventory
 item small NOWHERE	bow2	"Bogen"		"reparierter Bogen"	# script code can later replace it with this one!
 item large start	hippo	"Nilpferd"	"ein Nilpferd"		# put a hippo into start location
+# There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
+# be moved around by the script (to move the player).
 
 # "asm" passes the remainder of the line to the assembler backend unchanged:
 asm HINZ	= petscii_YELLOW	# puts "HINZ = petscii_YELLOW" into output file
 asm KUNZ	= petscii_LRED
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
+/* (comment out the following docs)
+
+# the remainder of the description file consists of code sequences in the actual
+# script language:
+
+loc location_name
+#	defines a location in the game. the code sequence is executed whenever
+#	the player enters that location.
+#	one location MUST be called "start", this is where the game begins.
+using itemA itemB
+#	defines what happens if the player uses two items together. the code
+#	sequence is executed whenever the player enters "use X with Y" and has
+#	access to both items.
+defproc proc_name
+#	starts a procedure definition. the named procedure can then be
+#	called from other code sequences.
+# a code sequence ends where the next one begins, or at end-of-file.
+
+# "instructions" of the actual script language:
+"This is some text"
+#	lines beginning with single or double quotes are text to output.
+#	You can use predefined petscii codes. "cr" adds a carriage return.
+#	Do NOT add null terminators! the converter will do that by itself.
+n some_location
+s other_location
+#	"nsewud" characters indicate target locations when player attempts
+#	to go north/south/east/west/up/down from current location.
+s NOWHERE
+#	you can use the pre-defined pseudo location "NOWHERE" as target to
+#	explicitly disable a direction at runtime.
+n2 some_location
+#	as a convenience function, you can add a "2" to the direction command
+#	to enforce a two-way connection:
+#	this example line says "going north leads to "some_location",
+#	and going south from there leads back here again!
+callproc proc_name
+#	calls the named procedure
+callasm player_has_won
+#	this adds code to call a machine language sub-routine. the argument is
+#	an assembler label you must define yourself in the surrounding asm code.
+delay 5
+#	waits a short time. unit is .1 seconds, so 5 would be half a second.
+#	wait times of more than a few seconds will not work (because of
+#	internal overflow), but those shouldn't be put in a game anyway. :)
+dec some_var
+#	decrement game variable (subtract 1)
+inc other_var
+#	increment game variable (add 1)
+some_var = other_var_or_literal
+#	assign value (in this case, the line's "keyword" is the '=' character)
+
+if some_var == some_value
+#	start conditional block
+#	possible comparisons: "==", "!=", "<", ">", "<=", ">=", "@"
+#	"@" is a special operator for "item @ location" check.
+elif some_var == other_value
+#	any number of "else if" blocks
+else
+#	optional "else" block
+endif
+#	end of if/elif/else structure
+
+move some_item some_location
+#	move an item to a different location
+#	use special location NOWHERE to hide item
+
+*/ (end of comment)
+
 # "using" defines what happens if player tries to "use item X with item Y" (and has access to both):
 using bow1 string
 	move bow1 NOWHERE	# broken bow disappears
 	move bow2 INVENTORY	# repaired bow appears
-	"You have successfully repaired your bow!"
+	"Der Bogen ist nun funktionsbereit!"
 
 using bow2 hippo
 	move hippo NOWHERE
-	"You shoot the hippo with your bow. The hippo vanishes in a puff of smoke."
+	"Der Pfeil geht durch das Nilpferd hindurch, welches sich in Luft auflöst."
 
 # "loc" starts a new location description:
 loc deck4_transporter_room
-	# lines beginning with single or double quotes are text to output.
-	# You can use predefined petscii codes. "cr" adds a carriage return.
-	# Do NOT add null terminators! the converter will do that by itself.
 	"You are in what looks like a transporter room right out of ", petscii_WHITE, "Star Trek", petscii_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
 	"To output double quotes, put them in single quotes as a separate character, like this:", '"', cr
 	"", petscii_REVSON, "<= if you want a line to start with a control code, put an empty string before it.", cr
-	# "nsewud" characters indicate target locations when player attempts to go north/south/east/west/up/down:
 	n corridor_transp_room	# going north leads to the "corridor outside the transporter room" stuation
 	e turbolift		# going east leads to the turbolift location
 	u deck3_jefferies	# going up leads to "jefferies tube on deck 3" location
 	d deck5_jefferies	# going down leads to "jefferies tube on deck 5" location
 	# ...now the game will display north/east/up/down as possible directions,
 	# but neither south nor west.
-	# as a convenience function, you can add a "2" to the command to enforce a two-way connection:
-	# n2 corridor_transp_room	# this says "going east leads to corridor_transp_room,
-	# AND going west from there would lead back here again!
-
-	# to explicitly disable a direction, you can use the pre-defined pseudo location "NOWHERE" as target:
-	s NOWHERE
 
 	#FIXME - add shorthand command for "alternative action leading to new location"?
 	# 'a' is for alternative actions, with key, text and result as arguments
 	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
-#	a
 
 # "defproc" starts a procedure definition (can be called using "callproc")
 defproc check_lives
 	if lives_left == 0
 		"You are so dead."
-		# "delay" waits a short time. unit is .1 seconds.
 		delay 10	# wait a full second
-		# "callasm" adds code to call a machine language sub-routine
-		# the argument is an assembler label you must define yourself
-		# in the surrounding asm code!
 		callasm xor_border
 	endif
 
-
-# dec	decrement variable	FIXME - allow underrun?
-# if	start conditional block
-# inc	increment variable	FIXME - allow overrun?
-# var	declare uint16 variable and default value ("HERE" is pre-defined and must be read-only!)
-	# this would allow to load/save current state just by loading/saving var block!
-# VAR = LITERAL	set variable to fixed value
-# VAR = OTHERVAR	copy var
 
 # example:
 
