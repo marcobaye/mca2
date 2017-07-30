@@ -6,8 +6,6 @@ softstack_lo
 	* = * + MAX_RECURSIONS
 softstack_hi
 	* = * + MAX_RECURSIONS
-number_of_alternatives
-	* = * + 1
 directions_lo
 	* = * + 6	; n/s/w/e/u/d
 directions_hi

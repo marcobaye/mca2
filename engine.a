@@ -33,7 +33,6 @@ engine_new_location ; basically the start of the engine's main loop
 --			sta directions_hi - 1, x	; no need to zero low as well
 			dex
 			bne --
-		sta number_of_alternatives
 		jsr pre_situation
 		; execute code from current location
 		lda gamevars_lo + vo_PLAYER
@@ -41,7 +40,9 @@ engine_new_location ; basically the start of the engine's main loop
 		lda gamevars_hi + vo_PLAYER
 		sta runptr + 1
 		jsr interpreter_run
-		; now text should be on screen, directions and alternatives in buffers,
+		; now text should be on screen and possible directions in buffers.
+		jsr show_items_at_location
+		jsr show_directions
 		; so display prompt
 		jsr prompt_for_action	; returns chosen location in YYAA
 		sty gamevars_hi + vo_PLAYER
@@ -57,6 +58,34 @@ no_choice ; error handler called if player cannot do anything
 		!tx CR, CR, "BUG: no choices left in this situation!", 0
 }
 		jmp exit
+
+show_items_at_location
+		jsr my_primm
+!if DEUTSCH {	!tx cr, "Dinge:", 0	} else {	!tx cr, "Items:", 0	}
+		ldx #1	; skip PLAYER
+		bne +++
+		;--
+---			lda gamevars_lo, x
+			cmp gamevars_lo	; PLAYER
+			bne +
+			lda gamevars_hi, x
+			cmp gamevars_hi	; PLAYER
+			bne +
+			lda #' '
+			jsr k_chrout
+			ldy item_name_lo, x
+			lda item_name_hi, x
+			jsr print_AAYY
++			inx
++++			cpx #gamevars_ITEMCOUNT
+			bne ---
+		rts
+		
+
+show_directions
+		jsr my_primm
+!if DEUTSCH {	!tx cr, "Richtungen:", 0	} else {	!tx cr, "Directions:", 0	}
+		rts
 
 !macro unknown_cmd { ; error handler called on illegal byte code
 		dec restart_flag
