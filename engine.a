@@ -59,9 +59,10 @@ no_choice ; error handler called if player cannot do anything
 }
 		jmp exit
 
-show_items_at_location
+show_items_at_location ; output list of accessible items
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "Dinge:", 0	} else {	!tx cr, "Items:", 0	}
+!if DEUTSCH {	!tx cr, "Dinge:"	} else {	!tx cr, "Items:"	}
+		!tx " [", 0
 		ldx #1	; skip PLAYER
 		bne +++
 		;--
@@ -72,20 +73,37 @@ show_items_at_location
 			cmp gamevars_hi	; PLAYER
 			bne +
 			lda #' '
-			jsr k_chrout
+			jsr my_chrout
 			ldy item_name_lo, x
 			lda item_name_hi, x
 			jsr print_AAYY
 +			inx
 +++			cpx #gamevars_ITEMCOUNT
 			bne ---
+		jsr my_primm:	!tx " ]", 0
 		rts
 		
-
-show_directions
+show_directions ; output list of possible directions
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "Richtungen:", 0	} else {	!tx cr, "Directions:", 0	}
-		rts
+!if DEUTSCH {	!tx cr, "Richtungen:", cr, " ", 0	} else {	!tx cr, "Directions:", cr, " ", 0	}
+		ldx #0
+---			ldy #petscii_GRAY1
+			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
+			beq +
+				ldy #petscii_LGREEN
++			tya
+			jsr my_chrout
+			lda #' '
+			jsr my_chrout
+			lda dirs_lo, x
+			tay
+			lda dirs_hi, x
+			jsr print_AAYY
+			inx
+			cpx #6
+			bne ---
+		lda #petscii_GREEN
+		jmp my_chrout
 
 !macro unknown_cmd { ; error handler called on illegal byte code
 		dec restart_flag
@@ -171,7 +189,7 @@ interpreter_go_on ; enter with A = offset to add
 ;---------------------------------------
 	!macro print		{!by CMD_PRINT	}
 	!macro terminate	{!by 0		}
---			jsr k_chrout
+--			jsr my_chrout
 +instruction ~CMD_PRINT, ~cmd_print
 			inc runptr
 			bne +
@@ -214,12 +232,23 @@ interpreter_go_on ; enter with A = offset to add
 		lda #3
 		jmp interpreter_go_on
 
-direction_keys
 !if DEUTSCH {
-	!tx "nswohr"	; ost, hoch, runter
+north	!tx "Nord", 0
+south	!tx "Süd", 0
+west	!tx "West", 0
+east	!tx "Ost", 0
+up	!tx "Hoch", 0
+down	!tx "Runter", 0
 } else {
-	!tx "nsweud"	; east, up, down
+north	!tx "North", 0
+south	!tx "South", 0
+west	!tx "West", 0
+east	!tx "East", 0
+up	!tx "Up", 0
+down	!tx "Down", 0
 }
+dirs_lo	!by <north, <south, <west, <east, <up, <down	; FIXME - use offsets to build table?
+dirs_hi	!by >north, >south, >west, >east, >up, >down
 	offset_NORTH	= 0
 	offset_SOUTH	= 1
 	offset_WEST	= 2

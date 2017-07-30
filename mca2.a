@@ -9,10 +9,11 @@
 ; 24 Jun 2017	started work to convert from original mca to mca2
 ; 26 Jun 2017	got it to work
 
+	!src <6502/std.a>	; for +bit16
 	!src <cbm/c64/petscii.a>
 	!src <cbm/c64/vic.a>
 	!src <cbm/c64/kernal.a>
-	!ct pet
+	;!ct pet	; disabled, strings are now in UTF8
 
 	DEUTSCH	= 1;0	; set to nonzero to make engine use german texts
 
@@ -92,7 +93,66 @@ entry ; entry point for SYS
 ;		!tx "Internal error!", CR, 0
 exit		ldx #MODIFIED8	: sp_buffer = * - 1
 		txs
+.rts		rts
+
+; wrapper for CHROUT (to convert UTF8 to PetSCII)
+my_chrout ; must keep X/Y!
+		; check for A..Z
+		cmp #'A'
+		bcc +++	; $00..$40 are kept
+		cmp #'Z' + 1
+		bcs +
+			; convert A..Z
+			ora #$80
+			jmp k_chrout
++		; check for a..z
+		cmp #'a'
+		bcc +++	; [\]^_` are kept
+		cmp #'z' + 1
+		bcs +
+			; convert a..z
+			and #$df
+			jmp k_chrout
++		; check for äöüßÄÖÜ and replace
+;encoded as 0xc3 0x80 .. 0xc3 0x9f:
+;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß
+;encoded as 0xc3 0xa0 .. 0xc3 0xbf:
+;	àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
+		; CAUTION - three codes clash with color codes. Make new color codes and convert them here as well?
+		; Codes 21, 22 and 23 are available...
+		cmp #$84	; "HELP", so forget it
+		beq .Ä
+		cmp #$96	; LIGHT RED!
+		beq .Ö
+		cmp #$9c	; PURPLE!
+		beq .Ü
+		cmp #$9f	; CYAN!
+		beq .ß
+; äöü codes are kept, because they are graphics characters anyway (put glyphs at correct position in charset!)
+;		cmp #$a4
+;		beq .ä
+;		cmp #$a6
+;		beq .ö
+;		cmp #$ac
+;		beq .ü
+		cmp #$c3	; prefix code? drop! (horizontal bar)
+		bne +++
 		rts
+		; FIXME - replace äöüßÄÖÜ with correct codes for chosen charset!
+.Ä		lda #$a1
+		+bit16
+.Ö		lda #$a2
+		+bit16
+.Ü		lda #$a3
+		+bit16
+.ß		lda #$a5
+;		+bit16
+;.ä		lda #$a5
+;		+bit16
+;.ö		lda #$a6
+;		+bit16
+;.ü		lda #$a7
++++		jmp k_chrout
 
 ; print immediate
 my_primm	pla	; get low byte of return address - 1
@@ -100,7 +160,7 @@ my_primm	pla	; get low byte of return address - 1
 		pla	; get high byte of return address - 1
 		sta .primm_ptr + 1	; to ptr high
 		jmp +
----			jsr k_chrout
+---			jsr my_chrout
 +			iny
 			bne +
 				inc .primm_ptr + 1	; fix high byte
@@ -119,7 +179,7 @@ print_AAYY ; print zero-terminated string. keeps X.
 		sta .print_ptr + 1
 		; high byte gets MODIFIED, but low byte stays zero!
 		jmp +
----			jsr k_chrout
+---			jsr my_chrout
 			iny
 			bne +
 				inc .print_ptr + 1	; fix high byte
@@ -133,32 +193,10 @@ pre_situation ; called before a new situation (to clear screen?)
 		rts
 
 prompt_for_action ; ask user. returns chosen location in YYAA
-!if DEUTSCH {
-		jsr my_primm	: !tx CR, "Zur Wahl stehen [", 0
-} else {
-		jsr my_primm	: !tx CR, "Please choose from [", 0
-}
-		ldy #0	; debug counter
-		ldx #0
---			lda directions_hi, x
-			beq +
-				iny	; count
-				lda direction_keys, x
-				jsr k_chrout
-+			inx
-			cpx #6
-			bne --
-		; FIXME - add alternatives as well!
-		tya
-		beq no_choice
-!if DEUTSCH {
-		jsr my_primm	: !tx "]. Was darf es sein", 0
-} else {
-		jsr my_primm	: !tx "]. Your choice", 0
-}
+		jsr my_primm	: !tx CR, ">", 0
 		; ask user for input
 ---			lda #'?'
-			jsr k_chrout
+			jsr my_chrout
 			; wait for valid input
 -				jsr k_getin
 				beq -
@@ -174,3 +212,9 @@ prompt_for_action ; ask user. returns chosen location in YYAA
 		tay
 		lda directions_lo - 1, x
 		rts	; return YYAA as new location
+
+!if DEUTSCH {
+direction_keys	!pet "nswohr"	; FIXME - still needed?
+} else {
+direction_keys	!pet "nsweud"	; FIXME - still needed?
+}
