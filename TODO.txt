@@ -49,17 +49,16 @@ vocabulary:
 
 
 Zeichensatz:
-Upper/Graphics liegt bei $d000 (1K), revs dahinter ($d400)
-Lower/Upper liegt bei $d800 (1K), revs dahinter ($dc00)
 Screen ausblenden (dabei CLEAR), dann:
 vic: invalid video mode to force black
 cia2: highest vic bank
 vic: screen-ptr und charset-ptr umsetzen
-"bank 14"
-copy d800..dc00 to d800..dc00
-fix umlauts
-xor-copy d800..dc00 to dc00
-"bank 15"
+SEI
+"io off"
+copy charset to d800 and
+reversed to dc00
+"io on"
+CLI
 zp: screen-ptr umsetzen
 output: LOCK und CLEAR
 vic: valid video mode to enable display

@@ -122,43 +122,31 @@ my_chrout ; must keep X/Y!
 .rts			rts
 +		; check for äöüßÄÖÜ and replace
 ;encoded as 0xc3 0x80 .. 0xc3 0x9f:
-;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß
+;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß	ÄÖÜß are $84, $96, $9c, $9f
 ;encoded as 0xc3 0xa0 .. 0xc3 0xbf:
-;	àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
-		; CAUTION - three codes clash with color codes. Make new color codes and convert them here as well?
-		; Codes 21, 22 and 23 are available...
-		cmp #$84	; "HELP", so forget it
+;	àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	äöü are $a4, $b6, $bc
+		; three of these clash with original petscii color codes, therefore this game now uses its own set of color codes (see above)
+		cmp #$84	; petscii_HELP (so forget it)
 		beq .Ä
-		cmp #$96	; LIGHT RED!
+		cmp #$96	; petscii_LRED
 		beq .Ö
-		cmp #$9c	; PURPLE!
+		cmp #$9c	; petscii_PURPLE
 		beq .Ü
-		cmp #$9f	; CYAN!
+		cmp #$9f	; petscii_CYAN
 		beq .ß
-; äöü codes are kept, because they are graphics characters anyway (put glyphs at correct position in charset!)
-;		cmp #$a4
-;		beq .ä
-;		cmp #$a6
-;		beq .ö
-;		cmp #$ac
-;		beq .ü
+; äöü codes are kept, because they are mapped to graphics characters anyway (put glyphs at correct position in charset!)
 		cmp #$c3	; prefix code? drop! (horizontal bar)
 		bne +++
 		rts
-		; FIXME - replace äöüßÄÖÜ with correct codes for chosen charset!
-.Ä		lda #$a1
+		; FIXME - replace ÄÖÜß with correct codes for chosen charset!
+		; good candidates: ac, b5, bb, be
+.Ä		lda #$ac
 		+bit16
-.Ö		lda #$a2
+.Ö		lda #$b5
 		+bit16
-.Ü		lda #$a3
+.Ü		lda #$bb
 		+bit16
-.ß		lda #$a5
-;		+bit16
-;.ä		lda #$a5
-;		+bit16
-;.ö		lda #$a6
-;		+bit16
-;.ü		lda #$a7
+.ß		lda #$be
 +++		jmp k_chrout
 
 ; print immediate

@@ -47,6 +47,7 @@ item small NOWHERE	string	"Sehne"		"eine Bogensehne"	#
 item small INVENTORY	bow1	"Bogen"		"kaputter Bogen"	# player starts with a broken bow in inventory
 item small NOWHERE	bow2	"Bogen"		"reparierter Bogen"	# script code can later replace it with this one!
 item large start	hippo	"Nilpferd"	"ein Nilpferd"		# put a hippo into start location
+item small start	umlauts	"äöüßÄÖÜ"	"Umlaute"
 # There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
 # be moved around by the script (to move the player).
 
