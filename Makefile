@@ -3,15 +3,15 @@ AS_FLAGS	= -v0 -Wtype-mismatch
 RM		= rm
 
 PROGS		= game.prg example.prg
-SRCS		= mca2.a engine.a tail.a
+SRCS		= mca2.a output.a charset.a engine.a tail.a
 
 all: $(PROGS)
 
 game.prg: $(SRCS) _game.tmp.a
-	$(ASSEMBLER6502) $(AS_FLAGS) --outfile game.prg --format cbm _game.tmp.a mca2.a engine.a tail.a
+	$(ASSEMBLER6502) $(AS_FLAGS) --outfile game.prg --format cbm _game.tmp.a $(SRCS)
 
 example.prg: $(SRCS) _example.tmp.a
-	$(ASSEMBLER6502) $(AS_FLAGS) --outfile example.prg --format cbm _example.tmp.a mca2.a engine.a tail.a
+	$(ASSEMBLER6502) $(AS_FLAGS) --outfile example.prg --format cbm _example.tmp.a $(SRCS)
 
 _game.tmp.a: conv.py game.py
 	./conv.py game.py > _game.tmp.a

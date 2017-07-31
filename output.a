@@ -1,0 +1,157 @@
+;ACME 0.96.2
+
+	!src <cbm/c64/petscii.a>
+	!src <cbm/c64/vic.a>
+	!src <cbm/c64/kernal.a>
+
+; helper values
+	CR		= 13
+	cr		= 13
+	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
+	color_BLACK	= $f0
+	color_WHITE	= $f1
+	color_RED	= $f2
+	color_CYAN	= $f3
+	color_PURPLE	= $f4
+	color_GREEN	= $f5
+	color_BLUE	= $f6
+	color_YELLOW	= $f7
+	color_ORANGE	= $f8
+	color_BROWN	= $f9
+	color_LRED	= $fa
+	color_GRAY1	= $fb
+	color_GRAY2	= $fc
+	color_LGREEN	= $fd
+	color_LBLUE	= $fe
+	color_GRAY3	= $ff
+
+; system memory
+!addr	currentcolor	= $0286
+!addr	screenpage	= $0288
+!addr	cbmshift	= $0291
+
+output_init ; setup own charset, vic registers, etc.
+		; ECB + bitmap + disable => all black
+		lda #%.##.#.##
+		sta vic_controlv
+		; forbid cbm/shift
+		lda #$80
+		sta cbmshift
+		; highest vic bank
+		lda #%#..#.#..
+		sta addr($dd00)
+		; screen at $cc00, charset at $d000
+		lda #%..##.#..
+		sta vic_ram
+		; copy charset
+		lda #$31	; ram and charset
+		ldx #0
+		sei
+			sta addr(1)
+---				!for i, 0, 3 {
+					lda charset + i * 256, x
+					sta addr($d000 + i * 256), x
+					eor #$ff
+					sta addr($d400 + i * 256), x
+				}
+				inx
+				bne ---
+			lda #$36	; ram, i/o, kernal
+			sta addr(1)
+		cli
+		; tell kernal where screen is
+		lda #$cc
+		sta screenpage
+		; now CLEAR to init screen
+		jsr my_primm
+		!tx color_GREEN, petscii_CLEAR, 0
+		; re-enable vic display
+		lda #%...##.##
+		sta vic_controlv
+		rts
+
+; wrapper for CHROUT (to convert UTF8 to PetSCII)
+my_chrout ; must keep X/Y!
+		; check for A..Z
+		cmp #'A'
+		bcc +++	; $00..$40 are kept
+		cmp #'Z' + 1
+		bcs +
+			; convert A..Z
+			ora #$80
+			jmp k_chrout
++		; check for a..z
+		cmp #'a'
+		bcc +++	; [\]^_` are kept
+		cmp #'z' + 1
+		bcs +
+			; convert a..z
+			and #$df
+			jmp k_chrout
++		; check for (own) color codes ($fX)
+		cmp #$f0
+		bcc +
+			; set color
+			sta currentcolor
+.rts			rts
++		; check for äöüßÄÖÜ and replace
+;encoded as 0xc3 0x80 .. 0xc3 0x9f:
+;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß	ÄÖÜß are $84, $96, $9c, $9f
+;encoded as 0xc3 0xa0 .. 0xc3 0xbf:
+;	àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	äöü are $a4, $b6, $bc
+		; three of these clash with original petscii color codes, therefore this game now uses its own set of color codes (see above)
+		cmp #$84	; petscii_HELP (so forget it)
+		beq .Ä
+		cmp #$96	; petscii_LRED
+		beq .Ö
+		cmp #$9c	; petscii_PURPLE
+		beq .Ü
+		cmp #$9f	; petscii_CYAN
+		beq .ß
+; äöü codes are kept, because they are mapped to graphics characters anyway (put glyphs at correct position in charset!)
+		cmp #$c3	; prefix code? drop! (horizontal bar)
+		bne +++
+		rts
+		; FIXME - replace ÄÖÜß with correct codes for chosen charset!
+		; good candidates: ac, b5, bb, be
+.Ä		lda #$ac
+		+bit16
+.Ö		lda #$b5
+		+bit16
+.Ü		lda #$bb
+		+bit16
+.ß		lda #$be
++++		jmp k_chrout
+
+; print immediate
+my_primm	pla	; get low byte of return address - 1
+		tay	; into Y
+		pla	; get high byte of return address - 1
+		sta .primm_ptr + 1	; to ptr high
+		jmp +
+---			jsr my_chrout
++			iny
+			bne +
+				inc .primm_ptr + 1	; fix high byte
++			; high byte gets MODIFIED, but low byte stays zero!
+			lda addr($ff00), y	: .primm_ptr = * - 2
+			bne ---
+		; push updated address onto stack
+		lda .primm_ptr + 1
+		pha
+		tya
+		pha
+		rts	; return to caller (after zero-terminated text)
+
+
+print_AAYY ; print zero-terminated string. keeps X.
+		sta .print_ptr + 1
+		; high byte gets MODIFIED, but low byte stays zero!
+		jmp +
+---			jsr my_chrout
+			iny
+			bne +
+				inc .print_ptr + 1	; fix high byte
++			lda addr($ff00), y	: .print_ptr = * - 2
+			bne ---
+		rts

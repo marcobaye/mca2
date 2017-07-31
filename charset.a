@@ -2,9 +2,7 @@
 ; original patterns taken from US charset of C128
 ; then added äöüßÄÖÜ
 
-
-
-
+charset
 	!by %..####..
 	!by %.##..##.
 	!by %.##.###.
