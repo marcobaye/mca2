@@ -87,10 +87,10 @@ show_directions ; output list of possible directions
 		jsr my_primm
 !if DEUTSCH {	!tx cr, "Richtungen:", cr, " ", 0	} else {	!tx cr, "Directions:", cr, " ", 0	}
 		ldx #0
----			ldy #petscii_GRAY1
+---			ldy #color_GRAY1
 			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
 			beq +
-				ldy #petscii_LGREEN
+				ldy #color_LGREEN
 +			tya
 			jsr my_chrout
 			lda #' '
@@ -102,7 +102,7 @@ show_directions ; output list of possible directions
 			inx
 			cpx #6
 			bne ---
-		lda #petscii_GREEN
+		lda #color_GREEN
 		jmp my_chrout
 
 !macro unknown_cmd { ; error handler called on illegal byte code

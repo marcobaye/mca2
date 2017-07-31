@@ -22,6 +22,7 @@
 	MODIFIED8	= $ff
 
 ; system memory
+!addr	currentcolor	= $0286
 !addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
 
 ; basic header
@@ -80,7 +81,7 @@ entry ; entry point for SYS
 		sta vic_cborder
 		sta vic_cbg
 		jsr my_primm
-		!tx petscii_LOCK, petscii_LOWERCASE, petscii_GREEN, petscii_CLEAR
+		!tx petscii_LOCK, petscii_LOWERCASE, color_GREEN, petscii_CLEAR
 !if DEUTSCH {
 		!tx "Willkommen zu ", cr, '"', "Multiple Choice Adventure 2", '"', "!"
 } else {
@@ -93,7 +94,7 @@ entry ; entry point for SYS
 ;		!tx "Internal error!", CR, 0
 exit		ldx #MODIFIED8	: sp_buffer = * - 1
 		txs
-.rts		rts
+		rts
 
 ; wrapper for CHROUT (to convert UTF8 to PetSCII)
 my_chrout ; must keep X/Y!
@@ -113,6 +114,12 @@ my_chrout ; must keep X/Y!
 			; convert a..z
 			and #$df
 			jmp k_chrout
++		; check for (own) color codes ($fX)
+		cmp #$f0
+		bcc +
+			; set color
+			sta currentcolor
+.rts			rts
 +		; check for äöüßÄÖÜ and replace
 ;encoded as 0xc3 0x80 .. 0xc3 0x9f:
 ;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß

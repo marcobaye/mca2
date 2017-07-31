@@ -51,8 +51,8 @@ item large start	hippo	"Nilpferd"	"ein Nilpferd"		# put a hippo into start locat
 # be moved around by the script (to move the player).
 
 # "asm" passes the remainder of the line to the assembler backend unchanged:
-asm HINZ	= petscii_YELLOW	# puts "HINZ = petscii_YELLOW" into output file
-asm KUNZ	= petscii_LRED
+asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
+asm KUNZ	= color_LRED
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
 /* (comment out the following docs)
@@ -74,9 +74,11 @@ defproc proc_name
 # a code sequence ends where the next one begins, or at end-of-file.
 
 # "instructions" of the actual script language:
-"This is some text"
+"This is some text", petscii_REVSON, "!", petscii_REVSOFF, cr
 #	lines beginning with single or double quotes are text to output.
-#	You can use predefined petscii codes. "cr" adds a carriage return.
+#	You can use predefined petscii codes like petscii_CLEAR or petscii_REVSON,
+#	but do NOT use petscii codes for colors! Use "color_WHITE" etc. instead.
+#	"cr" adds a carriage return.
 #	Do NOT add null terminators! the converter will do that by itself.
 n some_location
 s other_location
@@ -143,7 +145,7 @@ using bow2 hippo
 
 # "loc" starts a new location description:
 loc deck4_transporter_room
-	"You are in what looks like a transporter room right out of ", petscii_WHITE, "Star Trek", petscii_GREEN, ".", cr
+	"You are in what looks like a transporter room right out of ", color_WHITE, "Star Trek", color_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
 	"To output double quotes, put them in single quotes as a separate character, like this:", '"', cr
 	"", petscii_REVSON, "<= if you want a line to start with a control code, put an empty string before it.", cr

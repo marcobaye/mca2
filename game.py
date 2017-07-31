@@ -17,8 +17,8 @@ item small start palawaum "Palawaum" "ein normaler Palawaum aus sieben Banuzen"
 
 # "asm" passes the remainder of the line to the assembler backend unchanged:
 # these two are used for colored text output
-asm HINZ	= petscii_YELLOW	# puts "HINZ = petscii_YELLOW" into output file
-asm KUNZ	= petscii_LRED
+asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
+asm KUNZ	= color_LRED
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
 # usages:
