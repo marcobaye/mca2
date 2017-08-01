@@ -61,49 +61,50 @@ no_choice ; error handler called if player cannot do anything
 
 show_items_at_location ; output list of accessible items
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "Dinge:"	} else {	!tx cr, "Items:"	}
-		!tx " [", 0
+!if DEUTSCH {	!tx cr, "Dinge: [", 0	} else {	!tx cr, "Items: [", 0	}
+		lda #color_LGREEN
 		ldx #1	; skip PLAYER
 		bne +++
 		;--
----			lda gamevars_lo, x
-			cmp gamevars_lo	; PLAYER
+---			ldy gamevars_lo, x
+			cpy gamevars_lo	; PLAYER
 			bne +
-			lda gamevars_hi, x
-			cmp gamevars_hi	; PLAYER
+			ldy gamevars_hi, x
+			cpy gamevars_hi	; PLAYER
 			bne +
-			lda #' '
-			jsr my_chrout
+			jsr my_chrout	; output color or separator
 			ldy item_name_lo, x
 			lda item_name_hi, x
 			jsr print_AAYY
+			lda #' '
 +			inx
 +++			cpx #gamevars_ITEMCOUNT
 			bne ---
-		jsr my_primm:	!tx " ]", 0
+		jsr my_primm:	!tx color_GREEN, "]", 0
 		rts
 		
 show_directions ; output list of possible directions
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "Richtungen:", cr, " ", 0	} else {	!tx cr, "Directions:", cr, " ", 0	}
+!if DEUTSCH {	!tx cr, "Wege: ", 0	} else {	!tx cr, "Paths: ", 0	}
+		lda #'['
 		ldx #0
----			ldy #color_GRAY1
+---			jsr my_chrout	; output '[' or ' '
+			ldy #color_GRAY1
 			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
 			beq +
 				ldy #color_LGREEN
 +			tya
 			jsr my_chrout
-			lda #' '
-			jsr my_chrout
 			lda dirs_lo, x
 			tay
 			lda dirs_hi, x
 			jsr print_AAYY
+			lda #' '
 			inx
 			cpx #6
 			bne ---
-		lda #color_GREEN
-		jmp my_chrout
+		jsr my_primm	: !tx color_GREEN, ']', 0
+		rts
 
 !macro unknown_cmd { ; error handler called on illegal byte code
 		dec restart_flag
