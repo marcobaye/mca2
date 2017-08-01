@@ -116,6 +116,8 @@ if some_var == some_value
 #	"item not at location" check. Instead of a location, another
 #	item can be given, then this checks if both items' location
 #	are equal / not equal.
+#	it is also possible to give only one argument:
+#	"if somevar" is equivalent to "if somevar != 0"
 elif some_var == other_value
 #	any number of "else if" blocks
 else
@@ -124,20 +126,24 @@ endif
 #	end of if/elif/else structure
 
 move some_item some_location
-#	move an item to a different location
-#	use special location NOWHERE to hide item
-#	use special location INVENTORY to put item into player's inventory
+#	move an item to a different location.
+#	use special location NOWHERE to hide item.
+#	use special location INVENTORY to put item into player's inventory.
 # alternative:
 move some_item some_other_item
-#	move an item to the same location where the other item is
-#	use special item PLAYER to move item to current location
+#	move an item to the same location where the other item is.
+#	use special item PLAYER to move item to current location.
+hide some_item
+#	shortcut for "move some_item NOWHERE"
+gain some_item
+#	shortcut for "move some_item INVENTORY"
 
 */ (end of comment)
 
 # "using" defines what happens if player tries to "use item X with item Y" (and has access to both):
 using bow1 string
-	move bow1 NOWHERE	# broken bow disappears
-	move bow2 INVENTORY	# repaired bow appears
+	hide bow1	# broken bow disappears
+	gain bow2	# repaired bow appears
 	"Der Bogen ist nun funktionsbereit!"
 
 using bow2 hippo

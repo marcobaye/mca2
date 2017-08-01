@@ -1,20 +1,17 @@
 mit Shmendric zu echtem Adventure ausbauen:
 
-- Umlaute!
 - add automatic word wrap
 zwei-Wort-Parser? Inventar!
 
 	mobile/fixed could be distinguished by sorting (first one, then
 		the other, with border value for CMP)
 
-add "drop" command to move item from INVENTORY to HERE
+add "drop" command to move item from INVENTORY to HERE?
 
 use string with stick
-	hide string	# puts item X to "NOWHERE" location
+	hide string
 	hide stick
-	gain bow	# puts item Z to "INVENTORY" location
-		# FIXME - or rather HERE? should depend on item's
-		# mobility!
+	gain bow
 	"You now have a bow"
 	if arrow @ inventory
 		" to shoot arrows with."
@@ -34,31 +31,30 @@ use feather with stick
 
 conv:
 	add "say"
-	allow "IF var"
-backend:
-	add "ifnonzero"
 
 vocabulary:
-	north south west east up down
-	take drop inventory
-	use-X-with-Y
+	Down
+!	drop/dump	(Lose? Throw?)
+	East
+!	examine		(Look?)
+	Help
+	Inventory/Items	(Go from here to USE!)
+	North
+	South
+	Take
+	Up
+!	use X with Y
+	West
 
-	nord süd west ost hoch runter
-	nimm verliere inventar
-	benutze-X-mit-Y
-
-
-Zeichensatz:
-Screen ausblenden (dabei CLEAR), dann:
-vic: invalid video mode to force black
-cia2: highest vic bank
-vic: screen-ptr und charset-ptr umsetzen
-SEI
-"io off"
-copy charset to d800 and
-reversed to dc00
-"io on"
-CLI
-zp: screen-ptr umsetzen
-output: LOCK und CLEAR
-vic: valid video mode to enable display
+	?		(for Help)
+	Hoch
+	Inventar	(von hier zu Benutze X mit Y!)
+	Ost
+	Nord
+!	nimm
+	Runter
+	Süd
+	Untersuche
+	Verliere
+	West
+oder vielleicht: "Items" -> und dann Nimm/Verliere/Untersuche/Benutze

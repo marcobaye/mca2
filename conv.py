@@ -565,7 +565,12 @@ class convertor(object):
 		self.codeseq.add_code('+delay ' + var.offset_name())
 # if/elif/else/endif helpers:
 	def process_condition(self, line):
-		hinz, op, kunz = self.get_args(line, 3)
+		if len(line) == 2:
+			hinz = self.get_args(line, 1)[0]
+			op = '!='
+			kunz = '0'
+		else:
+			hinz, op, kunz = self.get_args(line, 3)
 		if op in operators:
 			oper = operators[op]
 		else:
@@ -643,9 +648,19 @@ class convertor(object):
 		else:
 		#elif target in self.locations:
 			location = self.get_object(self.locations, target)
+			# FIXME - check for "large" item and "INVENTORY" target and complain?
+			# but still the problem remains if moving large item @ small item in INV!
 			self.codeseq.add_code('+varloadimm ' + item.offset_name() + ', ' + location.label())
 		#else:
 		#	self.error_line('Target is neither location nor item')
+	def process_gain_line(self, line):
+		'move an item to INVENTORY'
+		item = self.get_args(line, 1)[0]
+		self.process_move_line(['move', item, 'INVENTORY'])
+	def process_hide_line(self, line):
+		'move an item to NOWHERE'
+		item = self.get_args(line, 1)[0]
+		self.process_move_line(['move', item, 'NOWHERE'])
 	def process_let_line(self, line):
 		'writing to variable'
 		self.no_text()
@@ -701,6 +716,10 @@ class convertor(object):
 				self.process_item_line(line)
 			elif key == 'move':
 				self.process_move_line(line)
+			elif key == 'gain':
+				self.process_gain_line(line)
+			elif key == 'hide':
+				self.process_hide_line(line)
 			elif key == 'delay':
 				self.process_delay_line(line)
 			elif key == 'if':
