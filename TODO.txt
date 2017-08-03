@@ -51,7 +51,7 @@ vocabulary:
 	Inventar	(von hier zu Benutze X mit Y!)
 	Ost
 	Nord
-!	nimm
+!	nimm		(grabsch?)
 	Runter
 	Süd
 	Untersuche

@@ -65,6 +65,7 @@ loc location_name
 #	defines a location in the game. the code sequence is executed whenever
 #	the player enters that location.
 #	one location MUST be called "start", this is where the game begins.
+#	the first text line (see below) will be the "title" of this location.
 using itemA itemB
 #	defines what happens if the player uses two items together. the code
 #	sequence is executed whenever the player enters "use X with Y" and has
@@ -152,6 +153,7 @@ using bow2 hippo
 
 # "loc" starts a new location description:
 loc deck4_transporter_room
+	"Transporter room", cr	# first line is "title"
 	"You are in what looks like a transporter room right out of ", color_WHITE, "Star Trek", color_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
 	"To output double quotes, put them in single quotes as a separate character, like this:", '"', cr
@@ -180,6 +182,7 @@ defproc check_lives
 
 # 'loc' starts a new location, arg is name
 loc start	# <= one location MUST be called "start", this is where the game begins
+	"Start location", cr	# "title"
 	"Hi! Hit the correct key to begin the game.", cr
 	#a corridor2		FIXME - implement "a"!
 	d corridor2
@@ -204,36 +207,43 @@ for north and east directions:
 
 # bridge
 loc bridge
+	"Bridge", cr
 	"You are on the bridge of the starship. There is a door facing south."
 	# no need to specify south connection, we do that from the other end!
 
 # forward
 loc quarters
+	"Captain's quarters", cr
 	"You are in what looks like the Captain's living quarters."
 	e2 corridor1	# connect to corridor and back
 
 loc corridor1
+	"Corridor", cr
 	"You are at the northern end of a corridor. There are doors to the north, east and west."
 	n2 bridge	# connect to bridge and back
 	e2 toilet	# connect to bathroom and back
 
 loc toilet
+	"Toilet", cr
 	"You are in a bathroom. There are three sea shells visible."
 	# no need to specify connection as it is done from the other end
 	dec lives_left
 
 # middle
 loc transporter_room
+	"Transporter room", cr
 	"You are in a room with what looks like some kind of teleportation pod."
 	e2 corridor2	# connect to corridor and back
 	inc cows_killed
 
 loc corridor2
+	"Corridor", cr
 	"You are in a corridor leading north and south. There are two doors (east and west)."
 	n2 corridor1
 	e2 airlock
 
 loc airlock
+	"Airlock", cr
 	"You are in a downward-facing airlock. The outer door is closed."
 	# no need to specify connection as it is done from the other end.
 	if dragon == ALIVE
@@ -254,6 +264,7 @@ loc airlock
 
 # corridor, back
 loc empty
+	"Empty room", cr
 	"This room seems to be completely empty."
 	e2 corridor3	# connect to corridor and back
 	if dwarfmood == MOOD_IN_LOVE
@@ -273,17 +284,20 @@ loc empty
 	inc dwarfmood	# var=var+1, dwarf's mood is now worse!
 
 loc corridor3
+	"Corridor", cr
 	"You are at the southern end of a corridor. There are doors to the south, east and west."
 	n2 corridor2
 	e2 storage
 
 loc storage
+	"Storage room", cr
 	"There are some storage containers in this room."
 	# no need to specify connection as it is done from the other end.
 	dwarfmood = MOOD_IN_LOVE	# assigment to variable
 
 # "back" room
 loc engine_room
+	"Engine room", cr
 	"You are in the engine room."
 	if hippo @ PLAYER
 		"You see a hippo."

@@ -95,7 +95,12 @@ exit		ldx #MODIFIED8	: sp_buffer = * - 1
 
 pre_situation ; called before a new situation (to clear screen?)
 		; make some space
-		jsr my_primm	: !tx petscii_CLEAR, 0	; was: CR, CR, 0
+		jsr my_primm	: !tx petscii_CLEAR, petscii_REVSON, 0
+		ldx #39
+		lda #160
+--			sta SCREEN, x
+			dex
+			bpl --
 		rts
 
 prompt_for_action ; ask user. returns chosen location in YYAA

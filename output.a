@@ -41,7 +41,8 @@ output_init ; setup own charset, vic registers, etc.
 		lda #%#..#.#..
 		sta addr($dd00)
 		; screen at $cc00, charset at $d000
-		lda #%..##.#..
+!addr	SCREEN = $cc00
+		lda #((SCREEN & $3c00) >> 6) | %0100
 		sta vic_ram
 		; copy charset
 		lda #$31	; ram and charset
@@ -60,7 +61,7 @@ output_init ; setup own charset, vic registers, etc.
 			sta addr(1)
 		cli
 		; tell kernal where screen is
-		lda #$cc
+		lda #>SCREEN
 		sta screenpage
 		; now CLEAR to init screen
 		jsr my_primm

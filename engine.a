@@ -10,6 +10,7 @@
 ;!addr	fac1		= $61	; floating point registers are used for temp storage
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
 !addr	recursion_depth	= $fd	; counts recursion levels
+!addr	tmp		= $fe
 
 ; engine
 engine_new_location ; basically the start of the engine's main loop
@@ -61,8 +62,9 @@ no_choice ; error handler called if player cannot do anything
 
 show_items_at_location ; output list of accessible items
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "Dinge: [", 0	} else {	!tx cr, "Items: [", 0	}
-		lda #color_LGREEN
+!if DEUTSCH {	!tx cr, "Dinge:", 0	} else {	!tx cr, "Items:", 0	}
+		lda #0	; dummy separator
+		sta tmp	; no items yet
 		ldx #1	; skip PLAYER
 		bne +++
 		;--
@@ -72,23 +74,31 @@ show_items_at_location ; output list of accessible items
 			ldy gamevars_hi, x
 			cpy gamevars_hi	; PLAYER
 			bne +
-			jsr my_chrout	; output color or separator
+			jsr my_chrout	; output separator (dummy or comma)
+			jsr my_primm	: !tx " ", color_LGREEN, 0
 			ldy item_name_lo, x
 			lda item_name_hi, x
 			jsr print_AAYY
-			lda #' '
+			inc tmp
+			lda #color_GREEN
+			jsr my_chrout
+			lda #','
 +			inx
 +++			cpx #gamevars_ITEMCOUNT
 			bne ---
-		jsr my_primm:	!tx color_GREEN, "]", 0
-		rts
+		lda tmp
+		bne +
+			jsr my_primm
+!if DEUTSCH {	!tx " (keine)", 0	} else {	!tx " (none)", 0	}
++		rts
 		
 show_directions ; output list of possible directions
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "Wege: ", 0	} else {	!tx cr, "Paths: ", 0	}
-		lda #'['
+!if DEUTSCH {	!tx cr, "Wege:", 0	} else {	!tx cr, "Paths:", 0	}
 		ldx #0
----			jsr my_chrout	; output '[' or ' '
+---
+			lda #' '
+			jsr my_chrout	; output '[' or ' '
 			ldy #color_GRAY1
 			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
 			beq +
@@ -99,11 +109,10 @@ show_directions ; output list of possible directions
 			tay
 			lda dirs_hi, x
 			jsr print_AAYY
-			lda #' '
 			inx
 			cpx #6
 			bne ---
-		jsr my_primm	: !tx color_GREEN, ']', 0
+		jsr my_primm	: !tx color_GREEN, 0
 		rts
 
 !macro unknown_cmd { ; error handler called on illegal byte code
