@@ -8,22 +8,43 @@
 	CR		= 13
 	cr		= 13
 	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
-	color_BLACK	= $f0
-	color_WHITE	= $f1
-	color_RED	= $f2
-	color_CYAN	= $f3
-	color_PURPLE	= $f4
-	color_GREEN	= $f5
-	color_BLUE	= $f6
-	color_YELLOW	= $f7
-	color_ORANGE	= $f8
-	color_BROWN	= $f9
-	color_LRED	= $fa
-	color_GRAY1	= $fb
-	color_GRAY2	= $fc
-	color_LGREEN	= $fd
-	color_LBLUE	= $fe
-	color_GRAY3	= $ff
+!if ISO {
+	; ISO8859/1
+	in_ä		= $e4
+	in_ö		= $f6
+	in_ü		= $fc
+	in_ß		= $df
+	in_Ä		= $c4
+	in_Ö		= $d6
+	in_Ü		= $dc
+	colorbase	= $b0
+} else {
+	; UTF8
+	in_ä		= $a4
+	in_ö		= $b6
+	in_ü		= $bc
+	in_ß		= $9f
+	in_Ä		= $84
+	in_Ö		= $96
+	in_Ü		= $9c
+	colorbase	= $f0
+}
+	color_BLACK	= colorbase + $0
+	color_WHITE	= colorbase + $1
+	color_RED	= colorbase + $2
+	color_CYAN	= colorbase + $3
+	color_PURPLE	= colorbase + $4
+	color_GREEN	= colorbase + $5
+	color_BLUE	= colorbase + $6
+	color_YELLOW	= colorbase + $7
+	color_ORANGE	= colorbase + $8
+	color_BROWN	= colorbase + $9
+	color_LRED	= colorbase + $a
+	color_GRAY1	= colorbase + $b
+	color_GRAY2	= colorbase + $c
+	color_LGREEN	= colorbase + $d
+	color_LBLUE	= colorbase + $e
+	color_GRAY3	= colorbase + $f
 
 ; system memory
 !addr	currentcolor	= $0286
@@ -89,13 +110,15 @@ my_chrout ; must keep X/Y!
 			; convert a..z
 			and #$df
 			jmp k_chrout
-+		; check for (own) color codes ($fX)
-		cmp #$f0
-		bcc +
-			; set color
-			sta currentcolor
-.rts			rts
 +		; check for äöüßÄÖÜ and replace
+!if ISO {
+		cmp #in_ä
+		beq .ä
+		cmp #in_ö
+		beq .ö
+		cmp #in_ü
+		beq .ü
+}
 ;encoded as 0xc3 0x80 .. 0xc3 0x9f:
 ;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß	ÄÖÜß are $84, $96, $9c, $9f
 ;encoded as 0xc3 0xa0 .. 0xc3 0xbf:
@@ -111,10 +134,22 @@ my_chrout ; must keep X/Y!
 		beq .ß
 ; äöü codes are kept, because they are mapped to graphics characters anyway (put glyphs at correct position in charset!)
 		cmp #$c3	; prefix code? drop! (horizontal bar)
-		bne +++
-		rts
-		; FIXME - replace ÄÖÜß with correct codes for chosen charset!
-		; good candidates: ac, b5, bb, be
+		beq .rts
+		; check for own color codes ($bX or $fX)
+		cmp #colorbase
+		bcc +++
+			; set color
+			sta currentcolor
+.rts			rts
+		; replace ÄÖÜß with correct codes for chosen charset
+!if ISO {
+.ä		lda #$a4
+		+bit16
+.ö		lda #$b6
+		+bit16
+.ü		lda #$bc
+		+bit16
+}
 .Ä		lda #$ac
 		+bit16
 .Ö		lda #$b5
