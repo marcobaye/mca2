@@ -787,8 +787,12 @@ class convertor(object):
 	def parse_file(self, filename):
 		with open(filename, 'r') as file:
 			for line in file:
-				if line[-1] == '\n':
-					line = line[:-1]
+				if len(line):
+					if line[-1] == '\n':
+						line = line[:-1]
+				if len(line):
+					if line[-1] == '\r':
+						line = line[:-1]
 				self.process_line(line)
 			self.new_code()	# make sure last text/code sequence is terminated
 
