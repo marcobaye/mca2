@@ -88,8 +88,9 @@ show_items_at_location ; output list of accessible items
 			bne ---
 		lda tmp
 		bne +
-			jsr my_primm
-!if DEUTSCH {	!tx " (keine)", 0	} else {	!tx " (none)", 0	}
+			jsr my_primm	: !tx color_GRAY1
+!if DEUTSCH {	!tx " (keine)"	} else {	!tx " (none)"	}
+			!tx color_GREEN, 0
 +		rts
 		
 show_directions ; output list of possible directions
