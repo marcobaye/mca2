@@ -15,6 +15,8 @@ gamevars_lo
 	* = * + gamevars_COUNT
 gamevars_hi
 	* = * + gamevars_COUNT
+itemlist
+	* = * + gamevars_ITEMCOUNT
 
 	; commented out, because Basic ROM is now off anyway:
 	;!if * >= $a000 { !error "Reached BASIC ROM. Please add code to disable it." }

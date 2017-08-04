@@ -116,10 +116,10 @@ entry ; entry point for SYS
 		jmp .get
 
 help		jsr my_primm
-!if DEUTSCH {	!tx "M", in_ö, "gliche Befehle:", cr
+!if DEUTSCH {	!tx cr, "M", in_ö, "gliche Befehle:", cr, color_LGREEN
 		!tx "  Nord S", in_ü, "d West Ost Hoch Runter", cr
 		!tx "  Inventar Grabsch Verliere", cr
-		!tx "  Untersuche Benutze", cr
+		!tx "  Untersuche Benutze", cr, color_GREEN
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
 } else {	!tx "Allowed commands:", cr
 		!tx "  North South West East Up Down", cr
@@ -163,9 +163,12 @@ go_d		ldx #offset_DOWN
 		rts
 
 inventory	jsr my_primm
-!if DEUTSCH {	!tx "Inventar:", cr, 0
-} else {	!tx "Inventory:", cr, 0	}
-		rts
+!if DEUTSCH {	!tx "Dinge im Inventar:", cr, 0
+} else {	!tx "Things in inventory:", cr, 0	}
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		jmp itemlist_list
 
 take		jsr my_primm
 		!tx "FIXME - take is not yet implemented", cr, 0
