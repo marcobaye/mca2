@@ -66,6 +66,11 @@ wait_A_frames ; wait for the number of frames given in A
 		bne ---
 +		rts
 
+get_key ; wait for user to press key
+---			jsr k_getin
+			beq ---
+		rts
+
 ; main program
 entry ; entry point for SYS
 		; init
@@ -80,12 +85,103 @@ entry ; entry point for SYS
 		; FIXME - fade in!
 		jsr my_primm
 !if DEUTSCH {
-		!tx "Willkommen zu ", cr, '"', "Multiple Choice Adventure 2", '"', "!"
+		!tx "Willkommen zu ", cr, '"', "Multiple Choice Adventure 2", '"', "!", cr, cr
+		!tx "Bitte eine Taste..."
 } else {
-		!tx "Welcome to Multiple Choice Adventure 2!"
+		!tx "Welcome to Multiple Choice Adventure 2!", cr, cr
+		!tx "Press any key..."
 }
-		!tx cr, 0
+		!tx 0
+		jsr get_key
+; now enter actual main loop:
+---		jsr engine_new_location	; includes "restart" etc.
+		; now wait for command
+.get			jsr get_key
+			ldx #0
+--				cmp keys_start, x
+				beq .found
+				inx
+				cpx #keys_end - keys_start
+				bne --
+			jsr my_primm
+!if DEUTSCH {	!tx "(falsche Taste, dr", in_ü, "ck '?' f", in_ü, "r Hilfe)", cr, 0
+} else {	!tx "(wrong key, press '?' for help)", cr, 0 }
+			jmp .get
+.found ; call action handler
+		lda action_lo, x
+		sta .call
+		lda action_hi, x
+		sta .call + 1
+		jsr MODIFIED16	: .call = * - 2
+		jmp .get
+
+help		jsr my_primm
+!if DEUTSCH {	!tx "M", in_ö, "gliche Befehle:", cr
+		!tx "  Nord S", in_ü, "d West Ost Hoch Runter", cr
+		!tx "  Inventar Grabsch Verliere", cr
+		!tx "  Untersuche Benutze", cr
+		!tx "Immer nur den ersten Buchstaben tippen!", cr
+} else {	!tx "Allowed commands:", cr
+		!tx "  North South West East Up Down", cr
+		!error "Inventory Take Lose", cr
+		!error "Examine Use", cr
+		!tx "Type the first character only!", cr
+}
+		!tx 0
+		rts
+
+keys_start
+!if DEUTSCH {	!pet "?nswohrigvub"
+} else {	!pet "?nsweuditdEU"	}
+keys_end
+
+action_lo	!by <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <drop, <examine, <use
+action_hi	!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >drop, >examine, >use
+
+go_n		ldx #offset_NORTH
+		+bit16
+go_s		ldx #offset_SOUTH
+		+bit16
+go_w		ldx #offset_WEST
+		+bit16
+go_e		ldx #offset_EAST
+		+bit16
+go_u		ldx #offset_UP
+		+bit16
+go_d		ldx #offset_DOWN
+		lda directions_hi, x
+		beq .illegal
+		tay
+		lda directions_lo, x
+		sty gamevars_hi + vo_PLAYER
+		sta gamevars_lo + vo_PLAYER
 		jmp engine_new_location
+.illegal ; player chose an illegal direction
+		jsr my_primm
+!if DEUTSCH {	!tx "Richtung nicht m", in_ö, "glich, bitte eine andere w", in_ä, "hlen.", cr, 0
+} else {	!tx "Illegal direction, please choose another.", cr, 0	}
+		rts
+
+inventory	jsr my_primm
+!if DEUTSCH {	!tx "Inventar:", cr, 0
+} else {	!tx "Inventory:", cr, 0	}
+		rts
+
+take		jsr my_primm
+		!tx "FIXME - take is not yet implemented", cr, 0
+		rts
+
+drop		jsr my_primm
+		!tx "FIXME - drop is not yet implemented", cr, 0
+		rts
+
+examine		jsr my_primm
+		!tx "FIXME - examine is not yet implemented", cr, 0
+		rts
+
+use		jsr my_primm
+		!tx "FIXME - use is not yet implemented", cr, 0
+		rts
 
 ;internal_error	jsr my_primm
 ;		!tx "Internal error!", CR, 0
@@ -96,36 +192,10 @@ exit		ldx #MODIFIED8	: sp_buffer = * - 1
 pre_situation ; called before a new situation (to clear screen?)
 		; make some space
 		jsr my_primm	: !tx petscii_CLEAR, petscii_REVSON, 0
+		; invert first line for title
 		ldx #39
 		lda #160
 --			sta SCREEN, x
 			dex
 			bpl --
 		rts
-
-prompt_for_action ; ask user. returns chosen location in YYAA
-		jsr my_primm	: !tx CR, ">", 0
-		; ask user for input
----			lda #'?'
-			jsr my_chrout
-			; wait for valid input
--				jsr k_getin
-				beq -
-			ldx #6
---				cmp direction_keys - 1, x
-				beq .dir_x
-				dex
-				bne --
-			beq ---
-			;---
-.dir_x			lda directions_hi - 1, x
-			beq ---
-		tay
-		lda directions_lo - 1, x
-		rts	; return YYAA as new location
-
-!if DEUTSCH {
-direction_keys	!pet "nswohr"	; FIXME - still needed?
-} else {
-direction_keys	!pet "nsweud"	; FIXME - still needed?
-}

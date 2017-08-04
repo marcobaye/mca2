@@ -28,27 +28,21 @@ engine_new_location ; basically the start of the engine's main loop
 			bne --
 			stx restart_flag	; inhibit this until someone requests it again
 ++		; okay, here is the real start:
-		; clear directions and choices
+		; clear directions
 		lda #0
 		ldx #6
 --			sta directions_hi - 1, x	; no need to zero low as well
 			dex
 			bne --
-		jsr pre_situation
+		jsr pre_situation	; clear screen and invert title bar,
+		; so next line output will become title
 		; execute code from current location
 		lda gamevars_lo + vo_PLAYER
-		sta runptr
-		lda gamevars_hi + vo_PLAYER
-		sta runptr + 1
-		jsr interpreter_run
+		ldy gamevars_hi + vo_PLAYER
+		jsr interpreter_run_YYAA
 		; now text should be on screen and possible directions in buffers.
 		jsr show_items_at_location
-		jsr show_directions
-		; so display prompt
-		jsr prompt_for_action	; returns chosen location in YYAA
-		sty gamevars_hi + vo_PLAYER
-		sta gamevars_lo + vo_PLAYER
-		jmp engine_new_location
+		jmp show_directions
 
 no_choice ; error handler called if player cannot do anything
 		dec restart_flag
@@ -113,7 +107,7 @@ show_directions ; output list of possible directions
 			inx
 			cpx #6
 			bne ---
-		jsr my_primm	: !tx color_GREEN, 0
+		jsr my_primm	: !tx color_GREEN, cr, 0
 		rts
 
 !macro unknown_cmd { ; error handler called on illegal byte code
@@ -140,7 +134,9 @@ show_directions ; output list of possible directions
 
 ; bytecode interpreter:
 
-interpreter_run ; execute bytecode block
+interpreter_run_YYAA ; execute bytecode block
+		sta runptr
+		sty runptr + 1
 		lda #0	; no offset and no recursion
 		sta recursion_depth
 interpreter_go_on ; enter with A = offset to add
