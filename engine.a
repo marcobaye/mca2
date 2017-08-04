@@ -13,9 +13,12 @@
 ;!addr	tmp		= $fe
 
 itemlist_at_YYAA ; make list of items at a given place
+		ldx #0
+itemlist_plus_at_YYAA ; extend current list (size in X) with list of items at a given place
+		stx .old_size
 		sty .hi
 		sta .lo
-		ldy #0	; no items yet
+		ldy #MODIFIED8	: .old_size = * - 1
 		ldx #1	; skip PLAYER
 		bne +++
 		;--
@@ -139,8 +142,7 @@ engine_new_location ; basically the start of the engine's main loop
 				ldy #color_LGREEN
 +			tya
 			jsr my_chrout
-			lda dirs_lo, x
-			tay
+			ldy dirs_lo, x
 			lda dirs_hi, x
 			jsr print_AAYY
 			inx

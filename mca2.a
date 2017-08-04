@@ -115,7 +115,9 @@ entry ; entry point for SYS
 		jsr MODIFIED16	: .call = * - 2
 		jmp .get
 
-help		jsr my_primm
+
+help ; "?" command
+		jsr my_primm
 !if DEUTSCH {	!tx cr, "M", in_ö, "gliche Befehle:", cr, color_LGREEN
 		!tx "  Nord S", in_ü, "d West Ost Hoch Runter", cr
 		!tx "  Inventar Grabsch Verliere", cr
@@ -142,6 +144,7 @@ action_hi	!by >redisp, >redisp, >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d,
 
 	redisp = engine_new_location
 
+; direction commands
 go_n		ldx #offset_NORTH
 		+bit16
 go_s		ldx #offset_SOUTH
@@ -166,7 +169,8 @@ go_d		ldx #offset_DOWN
 } else {	!tx "Illegal direction, please choose another.", cr, 0	}
 		rts
 
-inventory	jsr my_primm
+inventory ; "inventory" command
+		jsr my_primm
 !if DEUTSCH {	!tx "Dinge im Inventar:", cr, 0
 } else {	!tx "Things in inventory:", cr, 0	}
 		ldy #>location_INVENTORY
@@ -174,7 +178,8 @@ inventory	jsr my_primm
 		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
 		jmp itemlist_list
 
-take		jsr my_primm
+take ; "take" command
+		jsr my_primm
 !if DEUTSCH {	!tx "Grabsch:", cr, 0
 } else {	!tx "Take:", cr, 0	}
 		ldy gamevars_hi + vo_PLAYER
@@ -203,7 +208,8 @@ take		jsr my_primm
 } else {	!tx " - nothing taken!", cr, 0	}
 		rts
 
-drop		jsr my_primm
+drop ; "drop" command
+		jsr my_primm
 !if DEUTSCH {	!tx "Verliere:", cr, 0
 } else {	!tx "Drop:", cr, 0	}
 		ldy #>location_INVENTORY
@@ -231,6 +237,42 @@ drop		jsr my_primm
 !if DEUTSCH {	!tx " - nichts verloren!", cr, 0
 } else {	!tx " - nothing dropped!", cr, 0	}
 		rts
+
+examine ; "examine" command
+		jsr my_primm
+!if DEUTSCH {	!tx "Untersuche:", cr, 0
+} else {	!tx "Examine:", cr, 0	}
+		; get list of items at location
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		; extend list with items in inventory
+		tax
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_plus_at_YYAA	; returns number in Y, A and Z ;)
+		bne +
+			jsr my_primm
+!if DEUTSCH {		!tx " Nichts da zum Untersuchen!", cr, 0
+} else {		!tx " There is nothing to examine!", cr, 0	}
+			rts
++		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr select	; returns status in C and maybe index in X
+		bcs .no_examine
+		; examine: display item's description string
+		jsr my_primm	: !tx ":", cr, " ", color_LGREEN, 0
+		ldy item_desc_lo, x
+		lda item_desc_hi, x
+		jsr print_AAYY
+		jsr my_primm	: !tx color_GREEN, cr, 0
+		rts
+
+.no_examine	jsr my_primm
+!if DEUTSCH {	!tx " - nichts untersucht!", cr, 0
+} else {	!tx " - nothing examined!", cr, 0	}
+		rts
+
+
 !zone
 select ; ask user to select one of the items in the current list (A must be first illegal char)
 		sta .limit
@@ -253,10 +295,6 @@ select ; ask user to select one of the items in the current list (A must be firs
 		clc	; ok
 		rts
 .illegal_key	sec	; fail
-		rts
-
-examine		jsr my_primm
-		!tx "FIXME - examine is not yet implemented", cr, 0
 		rts
 
 use		jsr my_primm

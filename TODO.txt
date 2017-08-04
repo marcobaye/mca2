@@ -6,8 +6,6 @@ zwei-Wort-Parser? Inventar!
 	mobile/fixed could be distinguished by sorting (first one, then
 		the other, with border value for CMP)
 
-add "drop" command to move item from INVENTORY to HERE?
-
 use string with stick
 	hide string
 	hide stick
