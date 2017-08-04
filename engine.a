@@ -10,7 +10,7 @@
 ;!addr	fac1		= $61	; floating point registers are used for temp storage
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
 !addr	recursion_depth	= $fd	; counts recursion levels
-!addr	tmp		= $fe
+;!addr	tmp		= $fe
 
 itemlist_at_YYAA ; make list of items at a given place
 		sty .hi
@@ -62,8 +62,6 @@ none ; show string instead of empty item list
 			!tx color_GREEN, cr, 0
 		rts
 
-		
-
 ; engine
 engine_new_location ; basically the start of the engine's main loop
 		; check "restart" flag:
@@ -93,53 +91,16 @@ engine_new_location ; basically the start of the engine's main loop
 		ldy gamevars_hi + vo_PLAYER
 		jsr interpreter_run_YYAA
 		; now text should be on screen and possible directions in buffers.
-		jsr show_items_at_location
-		jmp show_directions
-
-no_choice ; error handler called if player cannot do anything
-		dec restart_flag
-		jsr my_primm
-!if DEUTSCH {
-		!tx CR, CR, "BUG: keine Wahlmoeglichkeiten in dieser Situation!", 0
-} else {
-		!tx CR, CR, "BUG: no choices left in this situation!", 0
-}
-		jmp exit
-
-show_items_at_location ; output list of accessible items
+		; show local items:
 		jsr my_primm
 !if DEUTSCH {	!tx cr, "Dinge:", 0	} else {	!tx cr, "Items:", 0	}
-		lda #0	; dummy separator
-		sta tmp	; no items yet
-		ldx #1	; skip PLAYER
-		bne +++
-		;--
----			ldy gamevars_lo, x
-			cpy gamevars_lo	; PLAYER
-			bne +
-			ldy gamevars_hi, x
-			cpy gamevars_hi	; PLAYER
-			bne +
-			jsr my_chrout	; output separator (dummy or comma)
-			jsr my_primm	: !tx " ", color_LGREEN, 0
-			ldy item_name_lo, x
-			lda item_name_hi, x
-			jsr print_AAYY
-			inc tmp
-			lda #color_GREEN
-			jsr my_chrout
-			lda #','
-+			inx
-+++			cpx #gamevars_ITEMCOUNT
-			bne ---
-		lda tmp
-		bne +
-			jsr none
-+		rts
-		
-show_directions ; output list of possible directions
+		lda gamevars_lo	; PLAYER
+		ldy gamevars_hi	; PLAYER
+		jsr itemlist_at_YYAA	; scan items
+		jsr itemlist_list
+		; output list of possible directions:
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "Wege:", 0	} else {	!tx cr, "Paths:", 0	}
+!if DEUTSCH {	!tx "Wege:", 0	} else {	!tx cr, "Paths:", 0	}
 		ldx #0
 ---
 			lda #' '
