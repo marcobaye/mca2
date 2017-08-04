@@ -87,7 +87,7 @@ itemlist_numbered ; list up to nine items and enumerate (nonzero number must be 
 			ldx .idx
 			cpx #MODIFIED8	: .limit = * - 1
 			bne ---
-		lda .digit	; returns highest allowed character
+		lda .digit	; returns limit character (illegal!)
 		rts
 
 ; engine
@@ -122,8 +122,8 @@ engine_new_location ; basically the start of the engine's main loop
 		; show local items:
 		jsr my_primm
 !if DEUTSCH {	!tx cr, "Dinge:", 0	} else {	!tx cr, "Items:", 0	}
-		lda gamevars_lo	; PLAYER
-		ldy gamevars_hi	; PLAYER
+		lda gamevars_lo	+ vo_PLAYER
+		ldy gamevars_hi	+ vo_PLAYER
 		jsr itemlist_at_YYAA	; scan items
 		jsr itemlist_list
 		; output list of possible directions:

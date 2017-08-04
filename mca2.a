@@ -175,7 +175,32 @@ inventory	jsr my_primm
 		jmp itemlist_list
 
 take		jsr my_primm
-		!tx "FIXME - take is not yet implemented", cr, 0
+!if DEUTSCH {	!tx "Grabsch:", cr, 0
+} else {	!tx "Take:", cr, 0	}
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		bne +
+			jsr my_primm
+!if DEUTSCH {		!tx " Nichts da zum Grabschen!", cr, 0
+} else {		!tx " There is nothing to take!", cr, 0	}
+			rts
++		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr select	; returns status in C and maybe index in X
+		bcs .no_take
+		; take: set item's location to INVENTORY
+		lda #>location_INVENTORY
+		sta gamevars_hi, x
+		lda #<location_INVENTORY
+		sta gamevars_lo, x
+		jsr my_primm
+!if DEUTSCH {	!tx " - ok, gegrabscht!", cr, 0
+} else {	!tx " - ok, took it!", cr, 0	}
+		rts
+
+.no_take	jsr my_primm
+!if DEUTSCH {	!tx " - nichts gegrabscht!", cr, 0
+} else {	!tx " - nothing taken!", cr, 0	}
 		rts
 
 drop		jsr my_primm
@@ -187,36 +212,47 @@ drop		jsr my_primm
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Verlieren!", cr, 0
-} else {		!tx " Nothing to drop!", cr, 0	}
+} else {		!tx " There is nothing to drop!", cr, 0	}
 			rts
-+		jsr itemlist_numbered	; returns highest allowed character
-		sta .highest
++		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr select	; returns status in C and maybe index in X
+		bcs .no_drop
+		; drop: copy player's location to item's location
+		lda gamevars_hi + vo_PLAYER
+		sta gamevars_hi, x
+		lda gamevars_lo + vo_PLAYER
+		sta gamevars_lo, x
+		jsr my_primm
+!if DEUTSCH {	!tx " - ok, verloren!", cr, 0
+} else {	!tx " - ok, dropped it!", cr, 0	}
+		rts
+
+.no_drop	jsr my_primm
+!if DEUTSCH {	!tx " - nichts verloren!", cr, 0
+} else {	!tx " - nothing dropped!", cr, 0	}
+		rts
+!zone
+select ; ask user to select one of the items in the current list (A must be first illegal char)
+		sta .limit
 		jsr get_key
 		pha
 		jsr k_chrout	; yes, KERNAL out - because input characters are petscii
 		pla
 		cmp #'1'
-		bcc .no_drop
-		cmp #MODIFIED8	: .highest = * - 1
-		beq .drop
-		bcs .no_drop
-.drop		; convert digit to list offset
+		bcc .illegal_key
+		cmp #MODIFIED8	: .limit = * - 1
+		bcs .illegal_key
+		; convert digit to list offset
 		sec
 		sbc #'1'
 		; convert list offset to item offset
 		tax
 		lda itemlist, x
 		tax
-		; copy player's location to item's location
-		lda gamevars_hi + vo_PLAYER
-		sta gamevars_hi, x
-		lda gamevars_lo + vo_PLAYER
-		sta gamevars_lo, x
+		; return result
+		clc	; ok
 		rts
-
-.no_drop	jsr my_primm
-!if DEUTSCH {	!tx " - nichts verloren!", cr, 0
-} else {	!tx " - nothing dropped!", cr, 0	}
+.illegal_key	sec	; fail
 		rts
 
 examine		jsr my_primm
@@ -226,7 +262,7 @@ examine		jsr my_primm
 use		jsr my_primm
 		!tx "FIXME - use is not yet implemented", cr, 0
 		rts
-
+!zone
 ;internal_error	jsr my_primm
 ;		!tx "Internal error!", CR, 0
 exit		ldx #MODIFIED8	: sp_buffer = * - 1
