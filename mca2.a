@@ -190,9 +190,13 @@ take ; "take" command
 !if DEUTSCH {		!tx " Nichts da zum Grabschen!", cr, 0
 } else {		!tx " There is nothing to take!", cr, 0	}
 			rts
-+		jsr itemlist_numbered	; returns limit (first illegal) character
++		ldx #1	; yes, do size checking
+		jsr itemlist_numbered	; returns limit (first illegal) character
 		jsr select	; returns status in C and maybe index in X
 		bcs .no_take
+		; check size
+		lda item_weight, x
+		bmi .too_large
 		; take: set item's location to INVENTORY
 		lda #>location_INVENTORY
 		sta gamevars_hi, x
@@ -201,6 +205,11 @@ take ; "take" command
 		jsr my_primm
 !if DEUTSCH {	!tx " - ok, gegrabscht!", cr, 0
 } else {	!tx " - ok, took it!", cr, 0	}
+		rts
+
+.too_large	jsr my_primm
+!if DEUTSCH {	!tx " - nein, das kann man nicht mitnehmen!", cr, 0
+} else {	!tx " - no, you cannot take that with you!", cr, 0	}
 		rts
 
 .no_take	jsr my_primm
@@ -220,7 +229,8 @@ drop ; "drop" command
 !if DEUTSCH {		!tx " Nichts da zum Verlieren!", cr, 0
 } else {		!tx " There is nothing to drop!", cr, 0	}
 			rts
-+		jsr itemlist_numbered	; returns limit (first illegal) character
++		ldx #0	; no size check
+		jsr itemlist_numbered	; returns limit (first illegal) character
 		jsr select	; returns status in C and maybe index in X
 		bcs .no_drop
 		; drop: copy player's location to item's location
@@ -256,7 +266,8 @@ examine ; "examine" command
 !if DEUTSCH {		!tx " Nichts da zum Untersuchen!", cr, 0
 } else {		!tx " There is nothing to examine!", cr, 0	}
 			rts
-+		jsr itemlist_numbered	; returns limit (first illegal) character
++		ldx #0	; no size check
+		jsr itemlist_numbered	; returns limit (first illegal) character
 		jsr select	; returns status in C and maybe index in X
 		bcs .no_examine
 		; examine: display item's description string
@@ -277,13 +288,13 @@ examine ; "examine" command
 select ; ask user to select one of the items in the current list (A must be first illegal char)
 		sta .limit
 		jsr get_key
-		pha
-		jsr k_chrout	; yes, KERNAL out - because input characters are petscii
-		pla
 		cmp #'1'
 		bcc .illegal_key
 		cmp #MODIFIED8	: .limit = * - 1
 		bcs .illegal_key
+		pha
+		jsr k_chrout	; yes, KERNAL out - because input characters are petscii
+		pla
 		; convert digit to list offset
 		sec
 		sbc #'1'

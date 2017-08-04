@@ -66,7 +66,10 @@ none ; show string instead of empty item list
 			!tx color_GREEN, cr, 0
 		rts
 !zone
-itemlist_numbered ; list up to nine items and enumerate (nonzero number must be given in A)
+itemlist_numbered ; list up to nine items and enumerate
+; nonzero number of items must be given in A
+; X says whether to do size check on items (influences color)
+		stx .size_check
 		cmp #10	; if ten or more, reduce to nine
 		bcc +
 			lda #9
@@ -75,7 +78,18 @@ itemlist_numbered ; list up to nine items and enumerate (nonzero number must be 
 		sta .digit
 		lda #0	; start index
 		sta .idx
----			jsr my_primm	: !tx " [", color_LGREEN
+---			jsr my_primm	: !tx " [", 0
+			; check for size
+			ldx #MODIFIED8	: .size_check = * - 1
+			beq .highlight
+				ldx .idx
+				lda itemlist, x
+				tax
+				lda item_weight, x
+				bmi .skip
+.highlight			lda #color_LGREEN
+				jsr my_chrout
+.skip			jsr my_primm
 .digit	!tx MODIFIED8, color_GREEN, "] ", 0
 			ldx #MODIFIED8	: .idx = * - 1
 			lda itemlist, x
