@@ -43,7 +43,7 @@ var cows_killed	0
 # parameters are size (small/large), start location in game, in-script name, in-game name, in-game description
 # small items can be taken by player (put into inventory), large items can only be moved around by code
 # in-script names must be unique, in-game names can be re-used (so player thinks it's the same item)
-item small NOWHERE	string	"Sehne"		"eine Bogensehne"	#
+item small INVENTORY	string	"Sehne"		"eine Bogensehne"	#
 item small INVENTORY	bow1	"Bogen"		"kaputter Bogen"	# player starts with a broken bow in inventory
 item small NOWHERE	bow2	"Bogen"		"reparierter Bogen"	# script code can later replace it with this one!
 item large start	hippo	"Nilpferd"	"ein Nilpferd"		# put a hippo into start location
@@ -143,6 +143,7 @@ gain some_item
 
 # "using" defines what happens if player tries to "use item X with item Y" (and has access to both):
 using bow1 string
+	hide string	# string disappears
 	hide bow1	# broken bow disappears
 	gain bow2	# repaired bow appears
 	"Der Bogen ist nun funktionsbereit!"

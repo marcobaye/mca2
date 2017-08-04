@@ -8,7 +8,7 @@
 
 ; zp variables
 ;!addr	fac1		= $61	; floating point registers are used for temp storage
-!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output)
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $fd	; counts recursion levels
 ;!addr	tmp		= $fe
 
@@ -107,7 +107,60 @@ itemlist_numbered ; list up to nine items and enumerate
 		lda .digit	; returns limit character (illegal!)
 		rts
 
-; engine
+engine_use_A_with_X ; scan "usages" for correct code sequence and execute
+		; if A is larger, exchange A and X
+		sta .hinz
+		stx .kunz
+		cpx .hinz
+		bcs +
+			; exchange
+			stx .hinz
+			sta .kunz
++		; now that registers are available, do a line feed
+		lda #cr
+		jsr my_chrout
+		; scan chain
+		lda #<usages
+		ldx #>usages
+		jmp .entry
+.next_entry		lda #MODIFIED8	: .link_lo = * - 1
+			ldx #MODIFIED8	: .link_hi = * - 1
+.entry			sta runptr
+			stx runptr + 1
+			ldy #0
+			lda (runptr), y	; get link, low
+			sta .link_lo
+			iny
+			lda (runptr), y	; get link, high
+			beq .end_of_chain
+			sta .link_hi
+			; now check current usage
+			iny
+			lda (runptr), y	; get first item
+			;beq .match1	; zero matches ANYTHING
+			; FIXME - this "match ANYTHING" idea will not work, because of item ordering!
+			cmp #MODIFIED8	: .hinz = * - 1
+			bne .next_entry
+.match1			iny
+			lda (runptr), y	; get second item
+			;beq .match2	; zero matches ANYTHING
+			cmp #MODIFIED8	: .kunz = * - 1
+			bne .next_entry
+.match2			; both items match!
+			ldy runptr + 1
+			lda #4
+			clc
+			adc runptr
+			bcc +
+				iny
++			jsr interpreter_run_YYAA
+			lda #cr
+			jsr my_chrout
+			clc	; return "ok, usage has been found and called"
+			rts
+.end_of_chain		sec	; return "no match found"
+			rts
+
 engine_new_location ; basically the start of the engine's main loop
 		; check "restart" flag:
 		lda #MODIFIED8	: restart_flag = * - 1
@@ -492,3 +545,18 @@ cmd_table
 		; reserve space for command pointers
 		* = * + 2 * CMDLIMIT
 		; table will be filled in by "instruction" macro in later pass!
+
+	; special macro for "usages" list: make sure to put smaller value first
+	!macro ordered .hinz, .kunz {
+		; commented out because not needed, actually (values are assigned first)
+		;.dummy = .hinz + .kunz	; make sure we do passes until both are resolved
+		;!ifdef .dummy {
+			!if .hinz < .kunz {
+				!by .hinz, .kunz
+			} else {
+				!by .kunz, .hinz
+			}
+		;} else {
+		;	!by 0, 0	; make sure to produce same length
+		;}
+	}

@@ -138,7 +138,7 @@ class usage(codeseq):
 		self.kunz = kunz
 	def output(self):
 		print '\t!wo +\t; link pointer'
-		print '\t!by ' + self.hinz.offset_name() + ', ' + self.kunz.offset_name()
+		print '\t+ordered ' + self.hinz.offset_name() + ', ' + self.kunz.offset_name()
 		for line in self.code:
 			print line
 		print self.indents * '\t' + '+end_usage'

@@ -283,6 +283,55 @@ examine ; "examine" command
 } else {	!tx " - nothing examined!", cr, 0	}
 		rts
 
+use ; "use" command
+		jsr my_primm
+!if DEUTSCH {	!tx "Benutze:", cr, 0
+} else {	!tx "Use:", cr, 0	}
+		; get list of items in inventory
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		; extend list with items at location
+		tax
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_plus_at_YYAA	; returns number in Y, A and Z ;)
+		bne +
+			jsr my_primm
+!if DEUTSCH {		!tx " Nichts da zum Benutzen!", cr, 0
+} else {		!tx " There is nothing to use!", cr, 0	}
+			rts
++		sta .length	; remember number of items
+		; choose first item
+		ldx #0	; no size check
+		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr select	; returns status in C and maybe index in X
+		bcs .no_use
+		stx .hinz
+		; choose second item
+		jsr my_primm
+!if DEUTSCH {	!tx " mit:", cr, 0
+} else {	!tx " with:", cr, 0	}
+		lda #MODIFIED8	: .length = * - 1
+		ldx #0	; no size check
+		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr select	; returns status in C and maybe index in X
+		bcs .no_use
+		;stx .kunz
+		lda #MODIFIED8	: .hinz = * - 1
+		; use: call engine with both items
+		jsr engine_use_A_with_X
+		bcc +
+			jsr my_primm
+!if DEUTSCH {		!tx " - das geht nicht!", cr, 0
+} else {		!tx " - that does not work!", cr, 0	}
++		rts
+
+.no_use		jsr my_primm
+!if DEUTSCH {	!tx " - nichts benutzt!", cr, 0
+} else {	!tx " - nothing used!", cr, 0	}
+		rts
+
 
 !zone
 select ; ask user to select one of the items in the current list (A must be first illegal char)
@@ -308,9 +357,6 @@ select ; ask user to select one of the items in the current list (A must be firs
 .illegal_key	sec	; fail
 		rts
 
-use		jsr my_primm
-		!tx "FIXME - use is not yet implemented", cr, 0
-		rts
 !zone
 ;internal_error	jsr my_primm
 ;		!tx "Internal error!", CR, 0
