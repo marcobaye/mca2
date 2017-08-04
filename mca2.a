@@ -121,22 +121,26 @@ help		jsr my_primm
 		!tx "  Inventar Grabsch Verliere", cr
 		!tx "  Untersuche Benutze", cr, color_GREEN
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
+		!tx "CLR/HOME baut den Bildschirm neu auf.", cr
 } else {	!tx "Allowed commands:", cr
 		!tx "  North South West East Up Down", cr
 		!error "Inventory Take Lose", cr
 		!error "Examine Use", cr
 		!tx "Type the first character only!", cr
+		!tx "CLR/HOME will redisplay the screen.", cr
 }
 		!tx 0
 		rts
 
 keys_start
-!if DEUTSCH {	!pet "?nswohrigvub"
-} else {	!pet "?nsweuditdEU"	}
+!if DEUTSCH {	!pet petscii_CLEAR, petscii_HOME, "?nswohrigvub"
+} else {	!pet petscii_CLEAR, petscii_HOME, "?nsweuditdEU"	}
 keys_end
 
-action_lo	!by <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <drop, <examine, <use
-action_hi	!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >drop, >examine, >use
+action_lo	!by <redisp, <redisp, <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <drop, <examine, <use
+action_hi	!by >redisp, >redisp, >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >drop, >examine, >use
+
+	redisp = engine_new_location
 
 go_n		ldx #offset_NORTH
 		+bit16
@@ -175,7 +179,44 @@ take		jsr my_primm
 		rts
 
 drop		jsr my_primm
-		!tx "FIXME - drop is not yet implemented", cr, 0
+!if DEUTSCH {	!tx "Verliere:", cr, 0
+} else {	!tx "Drop:", cr, 0	}
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		bne +
+			jsr my_primm
+!if DEUTSCH {		!tx " Nichts da zum Verlieren!", cr, 0
+} else {		!tx " Nothing to drop!", cr, 0	}
+			rts
++		jsr itemlist_numbered	; returns highest allowed character
+		sta .highest
+		jsr get_key
+		pha
+		jsr k_chrout	; yes, KERNAL out - because input characters are petscii
+		pla
+		cmp #'1'
+		bcc .no_drop
+		cmp #MODIFIED8	: .highest = * - 1
+		beq .drop
+		bcs .no_drop
+.drop		; convert digit to list offset
+		sec
+		sbc #'1'
+		; convert list offset to item offset
+		tax
+		lda itemlist, x
+		tax
+		; copy player's location to item's location
+		lda gamevars_hi + vo_PLAYER
+		sta gamevars_hi, x
+		lda gamevars_lo + vo_PLAYER
+		sta gamevars_lo, x
+		rts
+
+.no_drop	jsr my_primm
+!if DEUTSCH {	!tx " - nichts verloren!", cr, 0
+} else {	!tx " - nothing dropped!", cr, 0	}
 		rts
 
 examine		jsr my_primm

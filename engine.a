@@ -34,9 +34,9 @@ itemlist_at_YYAA ; make list of items at a given place
 		tya	; now result is in A, Y and Z flag ;)
 		rts
 
-itemlist_list ; list items (number is given in A/Y/Z)
+itemlist_list ; list items (number must be given in A/Z)
 		beq none
-		sty .limit	; at least one item
+		sta .limit	; at least one item
 		lda #0	; dummy separator
 		sta .idx	; and start index
 ---			jsr my_chrout	; output separator (dummy or comma)
@@ -56,10 +56,38 @@ itemlist_list ; list items (number is given in A/Y/Z)
 			bne ---
 		lda #cr
 		jmp my_chrout
+
 none ; show string instead of empty item list
 		jsr my_primm	: !tx color_GRAY1
 !if DEUTSCH {	!tx " (keine)"	} else {	!tx " (none)"	}
 			!tx color_GREEN, cr, 0
+		rts
+!zone
+itemlist_numbered ; list up to nine items and enumerate (nonzero number must be given in A)
+		cmp #10	; if ten or more, reduce to nine
+		bcc +
+			lda #9
++		sta .limit
+		lda #'1'
+		sta .digit
+		lda #0	; start index
+		sta .idx
+---			jsr my_primm	: !tx " [", color_LGREEN
+.digit	!tx MODIFIED8, color_GREEN, "] ", 0
+			ldx #MODIFIED8	: .idx = * - 1
+			lda itemlist, x
+			tax
+			ldy item_name_lo, x
+			lda item_name_hi, x
+			jsr print_AAYY
+			lda #cr
+			jsr my_chrout
+			inc .digit
+			inc .idx
+			ldx .idx
+			cpx #MODIFIED8	: .limit = * - 1
+			bne ---
+		lda .digit	; returns highest allowed character
 		rts
 
 ; engine
