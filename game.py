@@ -29,7 +29,7 @@ item small NOWHERE book5 "Ein braunes Buch" "TT64",cr," Wahnsinnig toll oder nur
 item small NOWHERE book6 "Ein uraltes Buch" "Die Schwarte handelt von magischen Kristallen. Sollen irgendwie gut gegen Untote sein, steht hier..."
 item small NOWHERE book7 "Ein vergilbtes Buch" "HAT SCHON JEMAND CHOPLIFTER GESAGT?"
 item small NOWHERE book8 "Ein grünes Buch" "VERPOLTE NETZTEILE UND ANDERE ÄRGERNISSE"
-item small NOWHERE book9 "Ein winziges Buch" "REZEPT FÜR STÄRKETRANK",cr," Eine Mistel, ein Sumpfkraut, Haare eines Toten, eine frische Alraune, SCUMM und etwas ranziges Eulenfett, sowie eine Rabenfeder.",cr,"Zuletzt muss noch etwas total unwichtiges in den Kessel geworfen werden."
+item small NOWHERE book9 "Ein winziges Buch" "REZEPT FÜR STÄRKETRANK",cr," Eine Mistel, ein Sumpfkraut, Haare eines Toten, eine frische Alraune, SCUMM und etwas ranziges Eulenfett, sowie eine Rabenfeder.",cr," Zuletzt muss noch etwas total unwichtiges in den Kessel geworfen werden."
 item small NOWHERE book10 "Ein schwarzes Buch" "ARCANA MAGICA III",cr," Das ultimative Nachschlagewerk"
 item small NOWHERE book11 "Ein bläuliches Buch" "DURCHKÄMMT DIE WÜSTE!",cr," ...und andere Missverständisse"
 item small NOWHERE book12 "Ein Buch mit Runen" "Hmm... Ein alchmestischer Prozess um magische Runen zu kristallifizieren.."
@@ -37,7 +37,7 @@ item small NOWHERE book13 "Ein winziges Buch" "DER KOPIERSCHUTZ VON ELITE",cr," 
 item small NOWHERE book14 "Ein unscheinbares Buch" "Hmm... Laut diesem Buch sollen Palawaume angeblich immun gegen Magieschaden sein..."
 ## Inventar beim Spielstart
 item small INVENTORY sickle "Eine goldene Sichel" "Mit dieser magischen Sichel kann man hervorragend Misteln schneiden."
-item small INVENTORY wand "Eine Zauberstab" "Dieser magische Zauberstab ist dein wichtigster Besitz."
+item small INVENTORY wand "Ein Zauberstab" "Dieser magische Zauberstab ist dein wichtigster Besitz."
 ## Kräuter im Garten, braucht erst Sichel oder Spaten
 item large garden marten "Ein toter Marder" "Hier liegt ein toter Marder.",cr," Das stinkende Ding wirst du auf keinen Fall anfassen!"
 item large garden mistle "Eine kleine Mistel" "Ein kleiner, grünlicher Mistelzweig wächst hier und kann von dir abgeschnitten werden."

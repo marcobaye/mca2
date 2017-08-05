@@ -199,9 +199,15 @@ print_AAYY ; print zero-terminated string. keeps X.
 ; word wrap:
 	LINE_LEN	= 40
 !addr	z_quote_mode	= $d4
-.xbuf	!by 0
+.xbuf		!by 0
 .space_left	!by LINE_LEN
 .chars_in_buf	!by 0
+.indents	!by 0
+indent0		lda #0
+		+bit16
+indent1		lda #1
+		sta .indents
+		rts
 wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		cmp #$21	; low control codes and space flush buffer
 		bcc .control_or_space
@@ -240,17 +246,18 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		lda .space_left
 		cmp .chars_in_buf
 		bcs +
-			; do wrap
+			; too little space on line, so do wrap
+			; first force carriage return
 			lda #cr
 			jsr k_chrout
-			lda #LINE_LEN	; next line is completely unused
-			sta .space_left
+			jsr .new_line
+
+			lda .space_left
 			cmp .chars_in_buf
 +		bne .small
 			; fits exactly
 			jsr linebuf_flush
-			lda #LINE_LEN	; next line is completely unused
-			sta .space_left
+			jsr .new_line
 			ldx .xbuf
 			pla
 			jsr k_chrout
@@ -266,6 +273,16 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		jsr k_chrout
 		clc	; ok
 		rts
+
+
+.new_line	lda #LINE_LEN	; next line is completely unused
+		sta .space_left
+		ldx .indents
+		beq +
+			lda #' '
+			jsr k_chrout
+			dec .space_left
++		rts
 
 .space ; code is space
 		lda #0	; output dummy code instead

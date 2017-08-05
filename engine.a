@@ -40,6 +40,7 @@ itemlist_plus_at_YYAA ; extend current list (size in X) with list of items at a 
 itemlist_list ; list items (number must be given in A/Z)
 		beq none
 		sta .limit	; at least one item
+		jsr indent1
 		lda #0	; dummy separator
 		sta .idx	; and start index
 ---			jsr my_chrout	; output separator (dummy or comma)
@@ -74,6 +75,7 @@ itemlist_numbered ; list up to nine items and enumerate
 		bcc +
 			lda #9
 +		sta .limit
+		jsr indent0
 		lda #'1'
 		sta .digit
 		lda #0	; start index
@@ -195,10 +197,11 @@ engine_new_location ; basically the start of the engine's main loop
 		lda gamevars_lo	+ vo_PLAYER
 		ldy gamevars_hi	+ vo_PLAYER
 		jsr itemlist_at_YYAA	; scan items
-		jsr itemlist_list
-		; output list of possible directions:
+		jmp itemlist_list
+
+show_paths	; output list of possible directions:
 		jsr my_primm
-!if DEUTSCH {	!tx "Wege:", 0	} else {	!tx cr, "Paths:", 0	}
+!if DEUTSCH {	!tx cr, "Wege:", 0	} else {	!tx cr, "Paths:", 0	}
 		ldx #0
 ---
 			lda #' '
@@ -215,7 +218,7 @@ engine_new_location ; basically the start of the engine's main loop
 			inx
 			cpx #6
 			bne ---
-		jsr my_primm	: !tx color_GREEN, cr, 0
+		jsr my_primm	: !tx color_GREEN, cr, cr, 0
 		rts
 
 !macro unknown_cmd { ; error handler called on illegal byte code
@@ -304,6 +307,7 @@ interpreter_go_on ; enter with A = offset to add
 ;---------------------------------------
 	!macro print		{!by CMD_PRINT	}
 	!macro terminate	{!by 0		}
+			jsr indent0
 --			jsr my_chrout
 +instruction ~CMD_PRINT, ~cmd_print
 			inc runptr

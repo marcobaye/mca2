@@ -79,5 +79,3 @@ einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
 F1 wie CLR/HOME
 F3 wie INV
-
-Benutze "Wege" als Prompt?

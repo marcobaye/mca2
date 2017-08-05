@@ -83,6 +83,7 @@ entry ; entry point for SYS
 		sta vic_cbg
 		jsr output_init
 		; FIXME - fade in!
+		jsr indent0
 		jsr my_primm
 !if DEUTSCH {
 		!tx "Willkommen zu ", cr, '"', "Multiple Choice Adventure 2", '"', "!", cr, cr
@@ -96,7 +97,8 @@ entry ; entry point for SYS
 ; now enter actual main loop:
 ---		jsr engine_new_location	; includes "restart" etc.
 		; now wait for command
-.get			jsr get_key
+.get			jsr show_paths
+			jsr get_key
 			ldx #0
 --				cmp keys_start, x
 				beq .found
@@ -131,7 +133,7 @@ help ; "?" command
 		!tx "Type the first character only!", cr
 		!tx "CLR/HOME will redisplay the screen.", cr
 }
-		!tx 0
+		!tx cr, 0
 		rts
 
 keys_start
@@ -164,6 +166,7 @@ go_d		ldx #offset_DOWN
 		sta gamevars_lo + vo_PLAYER
 		jmp engine_new_location
 .illegal ; player chose an illegal direction
+		jsr indent1
 		jsr my_primm
 !if DEUTSCH {	!tx "Richtung nicht m", in_ö, "glich, bitte eine andere w", in_ä, "hlen.", cr, 0
 } else {	!tx "Illegal direction, please choose another.", cr, 0	}
@@ -272,6 +275,7 @@ examine ; "examine" command
 		bcs .no_examine
 		; examine: display item's description string
 		jsr my_primm	: !tx ":", cr, " ", color_LGREEN, 0
+		jsr indent1
 		ldy item_desc_lo, x
 		lda item_desc_hi, x
 		jsr print_AAYY
@@ -366,6 +370,7 @@ exit		ldx #MODIFIED8	: sp_buffer = * - 1
 
 pre_situation ; called before a new situation (to clear screen?)
 		; make some space
+		jsr indent0
 		jsr my_primm	: !tx petscii_CLEAR, petscii_REVSON, 0
 		; invert first line for title
 		ldx #39
