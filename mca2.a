@@ -86,10 +86,10 @@ entry ; entry point for SYS
 		jsr my_primm
 !if DEUTSCH {
 		!tx "Willkommen zu ", cr, '"', "Multiple Choice Adventure 2", '"', "!", cr, cr
-		!tx "Bitte eine Taste..."
+		!tx "Bitte eine Taste...", cr
 } else {
 		!tx "Welcome to Multiple Choice Adventure 2!", cr, cr
-		!tx "Press any key..."
+		!tx "Press any key...", cr
 }
 		!tx 0
 		jsr get_key
@@ -341,9 +341,9 @@ select ; ask user to select one of the items in the current list (A must be firs
 		bcc .illegal_key
 		cmp #MODIFIED8	: .limit = * - 1
 		bcs .illegal_key
-		pha
+		;pha
 		jsr k_chrout	; yes, KERNAL out - because input characters are petscii
-		pla
+		;pla
 		; convert digit to list offset
 		sec
 		sbc #'1'

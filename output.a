@@ -90,7 +90,7 @@ output_init ; setup own charset, vic registers, etc.
 		; re-enable vic display
 		lda #%...##.##
 		sta vic_controlv
-		rts
+.rts		rts
 
 ; wrapper for CHROUT (to convert UTF8 to PetSCII)
 my_chrout ; must keep X/Y!
@@ -101,7 +101,7 @@ my_chrout ; must keep X/Y!
 		bcs +
 			; convert A..Z
 			ora #$80
-			jmp k_chrout
+			jmp wordwrapped
 +		; check for a..z
 		cmp #'a'
 		bcc +++	; [\]^_` are kept
@@ -109,7 +109,7 @@ my_chrout ; must keep X/Y!
 		bcs +
 			; convert a..z
 			and #$df
-			jmp k_chrout
+			jmp wordwrapped
 +		; check for äöüßÄÖÜ and replace
 !if ISO {
 		cmp #in_ä
@@ -139,8 +139,12 @@ my_chrout ; must keep X/Y!
 		cmp #colorbase
 		bcc +++
 			; set color
-			sta currentcolor
-.rts			rts
+			pha
+			lda #0	; output dummy code to flush buffer
+			jsr wordwrapped
+			pla
+			sta currentcolor	; new characters have correct color
+			rts
 		; replace ÄÖÜß with correct codes for chosen charset
 !if ISO {
 .ä		lda #$a4
@@ -157,7 +161,7 @@ my_chrout ; must keep X/Y!
 .Ü		lda #$bb
 		+bit16
 .ß		lda #$be
-+++		jmp k_chrout
++++		jmp wordwrapped
 
 ; print immediate
 my_primm	pla	; get low byte of return address - 1
@@ -190,4 +194,109 @@ print_AAYY ; print zero-terminated string. keeps X.
 				inc .print_ptr + 1	; fix high byte
 +			lda addr($ff00), y	: .print_ptr = * - 2
 			bne ---
+		rts
+
+; word wrap:
+	LINE_LEN	= 40
+!addr	z_quote_mode	= $d4
+.xbuf	!by 0
+.space_left	!by LINE_LEN
+.chars_in_buf	!by 0
+wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
+		cmp #$21	; low control codes and space flush buffer
+		bcc .control_or_space
+		cmp #$80	; printables with msb clear?
+		bcc .printable
+		cmp #$a0	; high control codes flush buffer (shift space could be used as nbsp)
+		bcc .control
+		; printables with msb set
+.printable ; append to buffer
+		stx .xbuf
+		ldx .chars_in_buf
+		sta linebuf, x
+		cpx #LINE_LEN	; buffer overrun? (old value!)
+		bne .end_append
+			; buffer overran, so fuck the word wrap, just output it
+			; "chars_left" does not change in this case!
+			jsr linebuf_flush
+			; and move the new character to start of buf
+			lda linebuf + LINE_LEN
+			sta linebuf
+.end_append	inc .chars_in_buf
+		ldx .xbuf
+		rts
+
+.control_or_space
+		cmp #' '
+		beq .space
+		cmp #cr
+		beq .cr
+		cmp #petscii_CLEAR
+		beq .clear
+.control ; A is separator code, so flush contents of buffer, then output A
+		pha
+		stx .xbuf
+		; does buffer fit in current line?
+		lda .space_left
+		cmp .chars_in_buf
+		bcs +
+			; do wrap
+			lda #cr
+			jsr k_chrout
+			lda #LINE_LEN	; next line is completely unused
+			sta .space_left
+			cmp .chars_in_buf
++		bne .small
+			; fits exactly
+			jsr linebuf_flush
+			lda #LINE_LEN	; next line is completely unused
+			sta .space_left
+			ldx .xbuf
+			pla
+			jsr k_chrout
+			sec	; next space could be skipped
+			rts
+.small		lda .space_left
+		sec
+		sbc .chars_in_buf
+		sta .space_left
+		jsr linebuf_flush
+		ldx .xbuf
+		pla
+		jsr k_chrout
+		clc	; ok
+		rts
+
+.space ; code is space
+		lda #0	; output dummy code instead
+		jsr .control
+		bcs +
+			; space must be output
+			lda #' '
+			jsr k_chrout
+			dec .space_left
+			bne +
+				lda #LINE_LEN
+				sta .space_left
++		rts
+
+.clear
+.cr		jsr .control
+		lda #LINE_LEN
+		sta .space_left
+		rts
+
+linebuf_flush ; output what's in the line buffer
+		ldx #0
+		beq +
+		;--
+---			lda linebuf, x
+			jsr k_chrout
+			lda #0
+			sta z_quote_mode
+			inx
++			cpx .chars_in_buf
+			bne ---
+		ldx #0
+		stx .chars_in_buf
 		rts

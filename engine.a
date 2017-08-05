@@ -202,7 +202,7 @@ engine_new_location ; basically the start of the engine's main loop
 		ldx #0
 ---
 			lda #' '
-			jsr my_chrout	; output '[' or ' '
+			jsr my_chrout	; output separator
 			ldy #color_GRAY1
 			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
 			beq +

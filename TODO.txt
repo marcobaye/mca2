@@ -55,7 +55,6 @@ oder vielleicht: "Items" -> und dann Nimm/Verliere/Untersuche/Benutze
 -fadeout und fadein zu intro.a verschieben
 -Namen festlegen
 -Intro von Inglish Glatss nachbauen
--automatisches Wordwrap machen!
 
 Clumsy Wizard oder Unicorn Shepard
 
@@ -80,3 +79,5 @@ einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
 F1 wie CLR/HOME
 F3 wie INV
+
+Benutze "Wege" als Prompt?
