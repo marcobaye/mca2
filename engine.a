@@ -315,7 +315,7 @@ interpreter_go_on ; enter with A = offset to add
 				inc runptr + 1
 +			lda (runptr), y
 			bne --
-		; FIXME - when adding word wrap, flush buffer here!
+		; if text does not end on CR, word wrap buffer will be flushed by main loop
 		lda #1
 		jmp interpreter_go_on
 ;---------------------------------------

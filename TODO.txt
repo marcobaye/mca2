@@ -58,24 +58,4 @@ oder vielleicht: "Items" -> und dann Nimm/Verliere/Untersuche/Benutze
 
 Clumsy Wizard oder Unicorn Shepard
 
-
-startscreen:
-
-Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie
-befasst und hat seither ein kleines Problem. In seinem Keller haust nun ein
-dämlicher Ghoul, den er nicht mehr los wird. Hätte er das gewusst, wäre er
-lieber bei seinen Fachgebieten Elementarismus und Illusionsmagie geblieben,
-aber nun ist es zu spät.
-Als ob das nicht schon genug Ärger wäre, hat es sein Zaubererfreund Mabruk
-auch noch gut mit ihm gemeint. Er versuchte den Ghoul mit einem
-Beschwörungsritual zu vernichten, doch leider laufen seither auch noch ein
-Kalahuii und ein Palawaum in Petrosilius Turm herum...
-Nun... Dann mal auf, mal schauen wie man die ungebetenen Gäste wieder
-loswerden kann...
-
-MAc, schreib bei der Story bitte noch als letzten Satz dazu, das man in der Bibliothek beginnen soll
-
 einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
-
-F1 wie CLR/HOME
-F3 wie INV

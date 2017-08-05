@@ -293,8 +293,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 			jsr k_chrout
 			dec .space_left
 			bne +
-				lda #LINE_LEN
-				sta .space_left
+				jsr .new_line
 +		rts
 
 .clear
