@@ -29,7 +29,7 @@ item small NOWHERE book5 "Ein braunes Buch" "TT64",cr," Wahnsinnig toll oder nur
 item small NOWHERE book6 "Ein uraltes Buch" "Die Schwarte handelt von magischen Kristallen. Sollen irgendwie gut gegen Untote sein, steht hier..."
 item small NOWHERE book7 "Ein vergilbtes Buch" "HAT SCHON JEMAND CHOPLIFTER GESAGT?"
 item small NOWHERE book8 "Ein grünes Buch" "VERPOLTE NETZTEILE UND ANDERE ÄRGERNISSE"
-item small NOWHERE book9 "Ein winziges Buch" "REZEPT FÜR STÄRKETRANK",cr," Eine Mistel, ein Sumpfkraut, Haare eines Toten, eine frische Alraune, SCUMM und etwas ranziges Eulenfett, sowie eine Rabenfeder.",cr," Zuletzt muss noch etwas total unwichtiges in den Kessel geworfen werden."
+item small NOWHERE book9 "Ein winziges Buch" "REZEPT FÜR STÄRKETRANK",cr," Eine Mistel, ein Sumpfkraut, Haare eines Toten, eine frische Alraune, SCUMM und etwas ranziges Eulenfett, sowie eine Rabenfeder.",cr," Dann braucht es noch etwas total unwichtiges, das ebenfalls in den Kessel geworfen werden muss.",cr,"Lasse zuletzt deine Magie auf das Gebräu einwirken!"
 item small NOWHERE book10 "Ein schwarzes Buch" "ARCANA MAGICA III",cr," Das ultimative Nachschlagewerk"
 item small NOWHERE book11 "Ein bläuliches Buch" "DURCHKÄMMT DIE WÜSTE!",cr," ...und andere Missverständisse"
 item small NOWHERE book12 "Ein Buch mit Runen" "Hmm... Ein alchmestischer Prozess um magische Runen zu kristallifizieren.."
@@ -46,7 +46,7 @@ item large NOWHERE alraun "Eine Alraune" "eine ganz normale Alraune, sie scheint
 ## Nach dem schneiden kann man sie auch nehmen
 item small NOWHERE mistle2 "Eine kleine Mistel" "Ein kleiner, grünlicher Mistelzweig."
 item small NOWHERE herb2 "Ein Büschel Sumpfkraut" "Etwas Sumpfgras von allerfeinster Qualität."
-item small NOWHERE alraun2 "Eine Alraune" "eine ganz normale Alraune, scheint noch recht frisch zu sein."
+item small NOWHERE alraun2 "Eine Alraune" "Eine ganz normale Alraune, sie scheint noch recht frisch zu sein."
 ## NPC
 item large tomb ghoul "Ein ekeliger Ghoul" "Igitt, ist das ein madiges Kerlchen! Der ist ja schon total verwest und verfault."
 item large bedroom pala "Ein echter Palawaum" "Wow! Ein krasser Palawaum!"
@@ -57,12 +57,13 @@ item large NOWHERE flonk "Ein lebendiger Flonk" "Wie niedlich, ein Flonk!"
 ## Nur für Bonuspunkt
 item small kitchen burger "Ein Hamburger" "Lecker, mit Käse und Speck!",cr," Scheint ein Mac Bacon zu sein."
 ## Hilfsmittel
-item small study sword "Ein Schwert" "Bei dieser Waffe handelt es sich um das magische Schwert 'Thunderblade'."
+item small NOWHERE sword "Ein Schwert" "Bei dieser Waffe handelt es sich um das magische Schwert 'Thunderblade'."
 item small NOWHERE crystal "Ein Kristall" " Dieser magische Kristall soll angeblich Untote bannen können."
 item small NOWHERE spade "Ein rostiger Spaten" "Ein ganz normaler, alter Spaten."
 item small NOWHERE rune "Eine Rune" "Diese Rune strahlt geradezu vor magischer Energie."
-item small study jemmy "Ein Brecheisen" "Ein schwerer Kuhfuß aus Stahl."
+item small NOWHERE jemmy "Ein Brecheisen" "Ein schwerer Kuhfuß aus Stahl."
 item small kitchen cheese "Ein kleines Stück Käse" "Boah, stinkt der!!!",cr," Muss wohl ein Oobdooländer oder was anderes kurioses sein.",cr," Essen wirst du diesen Sondermüll jedenfalls nicht. Sowas schmeckt Dir nicht."
+item small tomb key "Ein Schlüssel" "Ein ziemlich altes, rostiges Ding."
 ## Zauberzutaten (Ohne die Gartenkräuter)
 item small laboratory fat "Etwas Eulenfett" "Fein abgetriebenes, ranziges Eulenfett."
 item small NOWHERE feath "Eine Feder" "Eine schwarze Rabenfeder."
@@ -74,7 +75,10 @@ item large kitchen kettle "Ein grosser Kessel" "Ein riesiger Hexenkessel aus Guß
 item large tomb coffin "Ein schwerer Sarg" "Ein großer Sarg, der aus einem Stück Stein gemeisselt worden zu scheint."
 item large NOWHERE coffin2 "Ein schwerer Sarg" " Ein großer Sarg, der aus einem Stück Stein gemeisselt worden zu scheint."
 item large laboratory chem "Lauter alchemistisches Gerümpel" "Gläser und Flaschen und Kolben und Phiolen und Becher und Röhrchen..."
-item large library shelf "Ein Bücherregal" "Das Bücheregal geht ums Eck und nimmt fast den ganzen Raum ein.",cr," Es ist rappelvoll mit dicken Schwarten."
+-item large library shelf "Ein Bücherregal" "Das Bücherregal geht ums Eck und nimmt fast den ganzen Raum ein.",cr," Es ist rappelvoll mit dicken Schwarten."
+item large library shelf "Drei Bücherregale" "Die hohen Regale an den Wänden bedecken alle Wände und nehmen den Großteil des Raumes ein.",cr,"Sie sind rappelvoll mit dicken Schwarten."
+item large study chest "Eine Truhe" "Ein schwere, eisenbeschlagene Truhe aus Eichholz.",cr,"Was da wohl drin sein mag?"
+item large NOWHERE chest2 "Eine Truhe" "Ein schwere, eisenbeschlagene Truhe aus Eichholz.",cr,"Sie ist geöffnet und leer."
 
 
 # "asm" passes the remainder of the line to the assembler backend unchanged:
@@ -86,8 +90,7 @@ asm KUNZ	= color_LRED
 # usages:
 
 defproc bookswap
-	"Das Regal ist gestopft voll.",cr
-	"Also nimmst du erst ein neues Buch heraus und steckst das alte dann in die freie Lücke.",cr
+	"Die Regale sind gestopft voll. Also nimmst du erst ein neues Buch heraus und steckst das alte dann in die freie Lücke.",cr
 	"Buch gegen Buch, toller Tausch."
 
 ## Die Bücher im Regal
@@ -208,15 +211,16 @@ using cheese raven
 	"Na wer sagts denn, das verfressene Vogeltier hat es gar nicht mitbekommen."
 ## Die Kämpfe
 using sword pala
-if  potion == 8
+if  potion == 9
 	hide pala
 	inc score
 	move rune bedroom
-	"Ja, mit dem Schwert kann man einen Palawaum besiegen!",cr,cr
+	"Ja, mit dem Schwert und genug Schmalz in den Oberarmen kann man einen Palawaum besiegen!",cr,cr
 	"Du hackst das dumme, magieresistente Ding in Stücke!",cr,cr
 	"Aus der Leiche fällt eine Rune."
 	else
-	"Du bist viel zu schwach, du Hänfling!"
+	"Du bist viel zu schwach, du Hänfling!",cr
+	"Iss erstmal dein Müsli auf!"
 	endif
 using wand kala
 	hide kala
@@ -234,7 +238,7 @@ using crystal ghoul
 	"DU HAST DAS ADVENTURE GELÖST!"
 	# FIXME - hier callasm aufrufen!
 # Das Zubereiten des Zaubertrankes
-# Wenn Variable potion auf 8 steht, ist der Trank aktiv
+# Wenn Variable potion auf 9 steht, ist der Trank aktiv
 using kettle herb2
 	hide herb2
 	inc potion
@@ -271,18 +275,27 @@ using kettle feath
 	inc score
 	"Du wirfst die Rabenfeder in den Kessel."
 using kettle hering
-if potion == 7 
 	hide hering
 	inc potion
 	inc score
-	"Du wirfst den Hering in den Kessel.",cr
-	"Der Trank ist Fertig!",cr
-	"Sofort trinkst du ihn aus.",cr,cr
-	"WOW! Fühlst du dich jetzt kräftig!"
-else
-	"Du musst den Hering als letzte Zutat in den Kessel werfen!"
-endif 
-# Bonuspunkt
+	"Du wirfst den Hering in den Kessel."
+using kettle wand
+if potion == 8
+	inc potion
+	inc score
+	"Du wedelst mit Deinem Zauberstab.",cr,"Du murmelst magische Formeln.",cr,"BRUMMEL, BRUMMEL, BRABBEL, BRABBEL...",cr,cr,"Der Trank ist fertig!",cr,"Sofort trinkst du ihn aus.",cr,cr,"WOW! Fühlst du dich jetzt kräftig!"
+	else
+	"Du hast noch nicht alle Zutaten in den Kessel geworfen!",cr,"Erst wenn die Mischung komplett ist, kannst du deine Magie wirken lassen."
+	endif 
+## Bonuspunkt
+using key chest 
+	hide chest
+	move chest2 study
+	move sword study
+	move jemmy study
+	"Du öffnest die Truhe mit dem Schlüssel. Sie enthält ein Schwert und ein Brecheisen."
+using key chest2
+	"Du hast die Kiste bereits geöffnet."
 using sword cheese 
 	"Oh Nein, der Käse wird nicht aufgeschnitten!",cr
 	"Dann stinkt das ganze Schwert nach dem Zeug!"
@@ -294,26 +307,30 @@ using ghoul burger
 	"Vielleicht hättest du ihn vorher vergiften sollen?",cr
 	"Nee, falsches Spiel...",cr
 	"Das war bei ROBOX..."
+defproc sichel_statt_schwert
+	"Man muss Zauberzutaten mit einer goldenen Sichel schneiden!"
 using sword herb
-	"Man muss Zauberzutaten mit einer goldenen Sichel schneiden!"
+	callproc sichel_statt_schwert
 using sword mistle
-	"Man muss Zauberzutaten mit einer goldenen Sichel schneiden!"
+	callproc sichel_statt_schwert
+defproc wirf_in_kessel
+	"Das kannst du hier nicht gebrauchen. Das musst du in einen Zauberkessel werfen."
 using herb2 chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using alraun2 chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using mistle2 chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using hering chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using feath chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using fat chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using scumm chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using hair chem
-	"Das kannst du hier nicht gebrauchen.",cr,"Das musst du in einen Zauberkessel werfen."
+	callproc wirf_in_kessel
 using jemmy coffin2
 	"Du willst gerade wieder das Brecheisen am Sargdeckel ansetzen, "
 	"entsinnst dich dann aber doch anders und lässt deiner toten Verwandtschaft ihre Ruhe.",cr
@@ -344,16 +361,12 @@ using wand ghoul
 	"Der Ghoul guckt dich nur dumm an.",cr,cr
 	"Deine üblichen Zaubersprüche scheinen bei dem gar nichts zu bringen."
 using sword raven
-	"Der Rabe flattert dir davon, als er Dich mit dem Schwert ankommen sieht.",cr
-	"Der scheint clever zu sein."
+	"Der Rabe flattert dir davon, als er Dich mit dem Schwert ankommen sieht. Der scheint clever zu sein."
 using jemmy raven
 	"Der Rabe flattert vor dir davon, als er Dich mit dem Brecheisen sieht.",cr
-	"Der will wohl nicht gekeult werden.",cr
-	"Irgendwie auch verständlich..."
+	"Der will wohl nicht gekeult werden. Irgendwie auch verständlich..."
 using wand raven
-	"Du fuchtelst mit deinem Zauberstab.",cr
-	"Es knistert nur ein wenig.",cr
-	"Der Vogel scheint etwas Besonderes zu sein. So klappt das nicht."
+	"Du fuchtelst mit deinem Zauberstab.",cr,"ZACK!",cr,cr,"Der Vogel scheint etwas Besonderes zu sein. Er hat einen Blitz nach dir geworfen!",cr,"Scheint eine Art von Thunderbird zu sein...",cr,"So klappt das nicht."
 using spade pala
 	"Mit einem Spaten?",cr
 	"Besorg dir eine bessere Waffe!"
@@ -362,6 +375,30 @@ using spade ghoul
 using spade raven
 	"Der Rabe kräht und faucht dich wütend an, als du mit dem dem Spaten auf ihn losgehen willst.",cr,cr
 	"Erschrocken weichst du einen Schritt zurück."
+using sickle pala
+	"Mit einer Sichel kann man keine Kalahuiis töten."
+using sickle kala
+	"Du haust dem Kalahuii deine Sichel auf die Birne.",cr,"Sinnlos, das macht ihm gar nichts aus."
+using sickle raven
+	move sickle observatory
+	"Der Rabe hackt dir Krallen in den Arm. Erschrocken lässt du deine Sichel fallen."
+using sickle ghoul
+	"Der Ghoul meckert nur ein wenig, als du versuchst ihn mit deiner goldenen Sichel anzugreifen.",cr,"Du hörst lieber auf, bevor er noch richtig wütend wird."
+## Noch ein paar Versuche was zu zaubern
+using wand shelf
+	"Du kennst leider keinen Zauberspruch, mit dem sich Bücher sortieren lassen."
+using wand coffin
+	"Du traust dich nicht, an dem Sarg herumzuzaubern. Da liegt dein Großvater drin und du willst ihn nicht wütend machen.",cr,"Einen Zauberer sollte man auch dann nicht verärgern, wenn er schon lange tot ist."
+using wand coffin2
+	"Du traust dich nicht, an dem Sarg herumzuzaubern. Du hast deinen Großvater heute schon genug gestört."
+using wand chem
+	"Was willst du denn an deiner Laborausrüstung verzaubern? Da ist alles so wie es sein soll."
+using wand sickle
+	"Die Sichel besteht aus Gold und kann nicht verzaubert werden.",cr,"Jedenfalls nicht von dir, da braucht es schon einen zwergischen Runenmagier. Die können sowas angeblich."
+using wand sword
+	"Das Schwert muss nicht verzaubert werden, das ist schon eine magische Waffe."
+using wand jemmy
+	"Ein Brecheisen verzaubern? Auf was für Ideen kommst du denn?"
 
 # procedures:
 #defproc name
@@ -477,7 +514,7 @@ loc bedroom
 	"Schlafzimmer",cr
 	"Das Schlafzimmer ist recht spartanisch "
 	"eingerichtet. An der Südwand steht ein "
-	"grosses Bett, an der Ostwand ein riesieger Schrank. Rund um das Bett ist "
+	"grosses Bett, an der Ostwand ein riesiger Schrank. Rund um das Bett ist "
 	"ein Läufer ausgelegt und neben dem Bett "
 	"steht ein kleines Nachtschränkchen. "
 	"Eine Tür aus schwerem Holz führt im "
@@ -489,7 +526,7 @@ loc laboratory
 	"das über und über mit merkwürdigen "
 	"Apparaten gefüllt ist. Da brodelt, "
 	"funkt und zischt es, dass es eine reine "
-	"Freude ist. Natürlich weiss ein Fachmann wie du genauestens Bescheid, wozu "
+	"Freude ist. Natürlich weiß ein Fachmann wie du genauestens Bescheid, wozu "
 	"die Apparate dienen, die auf dem Tisch "
 	"stehen. In manchen brodeln Dir wohlbekannte Chemikalien vor sich hin. Sie "
 	"sehen wunderschön giftig aus. Nach "
@@ -506,4 +543,3 @@ loc library
 	"finden, wonach er sucht?",cr
 	"Ohne Bibliothekar erscheint Dir das "
 	"beinahe aussichtslos.", cr
-
