@@ -7,7 +7,6 @@
 ; helper values
 	CR		= 13
 	cr		= 13
-	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
 !if ISO {
 	; ISO8859/1
 	in_ä		= $e4
@@ -29,6 +28,26 @@
 	in_Ü		= $9c
 	colorbase	= $f0
 }
+	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
+!ifdef C128 {
+	color_BLACK	= colorbase + $0
+	color_WHITE	= colorbase + $f
+	color_RED	= colorbase + $8
+	color_CYAN	= colorbase + $7
+	color_PURPLE	= colorbase + $b
+	color_GREEN	= colorbase + $4
+	color_BLUE	= colorbase + $2
+	color_YELLOW	= colorbase + $d
+	color_ORANGE	= colorbase + $a
+	color_BROWN	= colorbase + $c
+	color_LRED	= colorbase + $9
+	color_GRAY1	= colorbase + $6
+	color_GRAY2	= colorbase + $1
+	color_LGREEN	= colorbase + $5
+	color_LBLUE	= colorbase + $3
+	color_GRAY3	= colorbase + $e
+	color_SWITCHEDOFF	= color_GRAY2
+} else {
 	color_BLACK	= colorbase + $0
 	color_WHITE	= colorbase + $1
 	color_RED	= colorbase + $2
@@ -45,13 +64,80 @@
 	color_LGREEN	= colorbase + $d
 	color_LBLUE	= colorbase + $e
 	color_GRAY3	= colorbase + $f
-
+	color_SWITCHEDOFF	= color_GRAY1
+}
 ; system memory
+!ifdef C128 {
+!addr	currentcolor	= $f1
+!addr	cbmshift	= $f7
+	LINE_LEN	= 80
+!addr	z_quote_mode	= $1300	; FIXME!
+!addr	vdcw		= $cdcc
+!addr	.charcount	= $ff
+} else {
 !addr	currentcolor	= $0286
-!addr	screenpage	= $0288
 !addr	cbmshift	= $0291
+	LINE_LEN	= 40
+!addr	z_quote_mode	= $d4
+!addr	screenpage	= $0288
+}
+
+!ifdef C128 {
+copycharset ; copy data to vdc ram with gaps, XORing with A
+		sta .xor
+		lda #<charset
+		sta .ptr
+		lda #>charset
+		sta .ptr + 1
+		lda #128
+		sta .charcount
+-----			; eight real bytes
+			ldy #8
+---				lda MODIFIED16	: .ptr = * - 2
+				eor #MODIFIED8	: .xor = * - 1
+				inc .ptr
+				bne +
+					inc .ptr + 1
++				ldx #31
+				jsr vdcw
+				dey
+				bne ---
+			; eight fake bytes
+			ldy #8
+---				lda #0
+				ldx #31
+				jsr vdcw
+				dey
+				bne ---
+			; all chars done?
+			inc .charcount
+			bne -----
+		rts
+}
 
 output_init ; setup own charset, vic registers, etc.
+!ifdef C128 {
+		; forbid cbm/shift
+		lda #$80
+		sta cbmshift
+		; copy charset:
+		; start address in vdc ram should be $3000 (lowercase charset)
+		ldx #18
+		lda #>$3000
+		jsr vdcw
+		ldx #19
+		lda #<$3000
+		jsr vdcw
+		; copy first half
+		lda #0
+		jsr copycharset
+		; copy reverse half
+		lda #255
+		jsr copycharset
+		; now CLEAR to init screen
+		jsr my_primm
+		!tx petscii_LOWERCASE, color_GREEN, petscii_CLEAR, 0
+} else {
 		; ECB + bitmap + disable => all black
 		lda #%.##.#.##
 		sta vic_controlv
@@ -90,6 +176,7 @@ output_init ; setup own charset, vic registers, etc.
 		; re-enable vic display
 		lda #%...##.##
 		sta vic_controlv
+}
 .rts		rts
 
 ; wrapper for CHROUT (to convert UTF8 to PetSCII)
@@ -143,6 +230,10 @@ my_chrout ; must keep X/Y!
 			lda #0	; output dummy code to flush buffer
 			jsr wordwrapped
 			pla
+!ifdef C128 {
+			and #$f	; keep color
+			ora #%#.......	; 2nd charset, no revs, no underline, no flash
+}
 			sta currentcolor	; new characters have correct color
 			rts
 		; replace ÄÖÜß with correct codes for chosen charset
@@ -197,8 +288,6 @@ print_AAYY ; print zero-terminated string. keeps X.
 		rts
 
 ; word wrap:
-	LINE_LEN	= 40
-!addr	z_quote_mode	= $d4
 .xbuf		!by 0
 .space_left	!by LINE_LEN
 .chars_in_buf	!by 0

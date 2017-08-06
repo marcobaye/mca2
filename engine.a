@@ -62,7 +62,7 @@ itemlist_list ; list items (number must be given in A/Z)
 		jmp my_chrout
 
 none ; show string instead of empty item list
-		jsr my_primm	: !tx color_GRAY1
+		jsr my_primm	: !tx color_SWITCHEDOFF
 !if DEUTSCH {	!tx " (keine)"	} else {	!tx " (none)"	}
 			!tx color_GREEN, cr, 0
 		rts
@@ -206,7 +206,7 @@ show_paths	; output list of possible directions:
 ---
 			lda #' '
 			jsr my_chrout	; output separator
-			ldy #color_GRAY1
+			ldy #color_SWITCHEDOFF
 			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
 			beq +
 				ldy #color_LGREEN
