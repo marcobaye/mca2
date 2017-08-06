@@ -22,8 +22,11 @@ _game.tmp.a: conv.py game.py
 _example.tmp.a: conv.py example.py
 	./conv.py example.py > _example.tmp.a
 
-vice: game.prg
+x64: game.prg
 	x64 -device8 1 -autostartprgmode 1 game.prg
+
+x128: game128.prg
+	x128 -device8 1 -autostartprgmode 1 game128.prg
 
 clean:
 	-$(RM) -f *.o *.tmp $(PROGS) *~ core

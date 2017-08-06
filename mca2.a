@@ -331,12 +331,10 @@ examine ; "examine" command
 		jsr itemlist_numbered	; returns limit (first illegal) character
 		jsr select	; returns status in C and maybe index in X
 		bcs .no_examine
-		; examine: display item's description string
+		; examine: execute item's description code
 		jsr my_primm	: !tx ":", cr, " ", color_LGREEN, 0
 		jsr indent1
-		ldy item_desc_lo, x
-		lda item_desc_hi, x
-		jsr print_AAYY
+		jsr engine_describe_X
 		jsr my_primm	: !tx color_GREEN, cr, 0
 		rts
 

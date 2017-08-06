@@ -128,8 +128,11 @@ engine_use_A_with_X ; scan "usages" for correct code sequence and execute
 			sta .link_lo
 			iny
 			lda (runptr), y	; get link, high
-			beq .end_of_chain
-			sta .link_hi
+			bne +
+				; end_of_chain
+				sec	; return "no match found"
+				rts
++			sta .link_hi
 			; now check current usage
 			iny
 			lda (runptr), y	; get first item
@@ -142,20 +145,18 @@ engine_use_A_with_X ; scan "usages" for correct code sequence and execute
 			;beq .match2	; zero matches ANYTHING
 			cmp #MODIFIED8	: .kunz = * - 1
 			bne .next_entry
-.match2			; both items match!
-			ldy runptr + 1
-			lda #4
-			clc
-			adc runptr
-			bcc +
-				iny
-+			jsr interpreter_run_YYAA
-			lda #cr
-			jsr my_chrout
-			clc	; return "ok, usage has been found and called"
-			rts
-.end_of_chain		sec	; return "no match found"
-			rts
+.match2		; both items match!
+		ldy runptr + 1
+		lda #4
+		clc
+		adc runptr
+		bcc +
+			iny
++		jsr interpreter_run_YYAA
+		lda #cr
+		jsr my_chrout
+		clc	; return "ok, usage has been found and called"
+		rts
 
 engine_new_location ; basically the start of the engine's main loop
 		; check "restart" flag:
@@ -239,6 +240,10 @@ show_paths	; output list of possible directions:
 
 ; bytecode interpreter:
 
+engine_describe_X ; execute code to describe item X
+		lda item_desc_lo, x
+		ldy item_desc_hi, x
+		; FALLTHROUGH
 interpreter_run_YYAA ; execute bytecode block
 		sta runptr
 		sty runptr + 1
@@ -282,6 +287,7 @@ interpreter_go_on ; enter with A = offset to add
 ;---------------------------------------
 ; all command handlers are entered with runptr pointing to command and Y=0
 ;---------------------------------------
+	!macro end_itemdesc	{!by CMD_ENDOFBLOCK	}
 	!macro end_usage	{!by CMD_ENDOFBLOCK	}
 	!macro end_procedure	{!by CMD_ENDOFBLOCK	}
 	!macro end_location	{!by CMD_ENDOFBLOCK	}

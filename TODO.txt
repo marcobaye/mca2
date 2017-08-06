@@ -62,4 +62,25 @@ einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
 bei Itemauswahl: "0", um weitere anzuzeigen?
 
-change converter so item descriptions are code, not text!
+am Anfang einmal das Inventar anzeigen!
+
+use FAST mode on C128
+
+intro:
+;ACME 0.96.2
+
+!if 0 {
+"Saufbox!"
+"präsentiert:"
+"Adventure of the Nachmittag"
+"Code: The Incredible Bauchspeck"
+"Story: Unicorn Shepard"
+"Graphics: "
+"Sound: J-Snake"
+
+"Checking for 6502 or compatible... ok"
+"Checking for VIC... ok"
+"Checking for POKEY,,, failed",
+"using fallback code:"
+" checking for AY... failed"
+}

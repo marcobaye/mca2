@@ -39,27 +39,35 @@ var cows_killed	0
 # the engine pre-defines a variable called __TMP__, this is needed for internal
 # calculations, so DO NOT USE IT YOURSELF!
 
-# "item" defines a game item the player can interact with:
-# parameters are size (small/large), start location in game, in-script name, in-game name, in-game description
-# small items can be taken by player (put into inventory), large items can only be moved around by code
-# in-script names must be unique, in-game names can be re-used (so player thinks it's the same item)
-item small INVENTORY	string	"Sehne"		"eine Bogensehne"	#
-item small INVENTORY	bow1	"Bogen"		"kaputter Bogen"	# player starts with a broken bow in inventory
-item small NOWHERE	bow2	"Bogen"		"reparierter Bogen"	# script code can later replace it with this one!
-item large start	hippo	"Nilpferd"	"ein Nilpferd"		# put a hippo into start location
-item small start	umlauts	"äöüßÄÖÜ"	"Umlaute"
-# There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
-# be moved around by the script (to move the player).
-
 # "asm" passes the remainder of the line to the assembler backend unchanged:
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
-/* (comment out the following docs)
-
 # the remainder of the description file consists of code sequences in the actual
 # script language:
+
+# "item" defines a game item the player can interact with:
+# parameters are size (small/large), start location in game, in-script name, in-game name
+# small items can be taken by player (put into inventory), large items can only be moved around by script code.
+# in-script names must be unique, in-game names can be re-used (so player thinks it's the same item)
+# script code after the "item" line gets executed when player examines the item.
+item small INVENTORY	string	"Sehne"
+	"eine ganz normale Bogensehne, Du kannst auch bei genauester Untersuchung "
+	"nichts ungewöhnliches daran entdecken."
+item small INVENTORY	bow1	"Bogen"	# player starts with a broken bow in inventory
+	"Dieser Bogen ist kaputt, die Sehne ist gerissen.", cr
+	"Man könnte ihn sicher reparieren, wenn man eine neue Sehne auftreibt..."
+item small NOWHERE	bow2	"Bogen"	# script code can later replace it with this one!
+	"Seit der Reparatur sieht der Bogen wieder aus wie neu!"
+item large start	hippo	"Nilpferd"	# put a hippo into start location
+	"hierbei handelt es sich um ein ganz normales Nilpferd"
+item small start	umlauts	"äöüßÄÖÜ"
+	"Dieses Objekt ist nur ein Test, um die Darstellung der Umlaute überprüfen zu können."
+# There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
+# be moved around by the script (to move the player).
+
+/* (comment out the following docs)
 
 loc location_name
 #	defines a location in the game. the code sequence is executed whenever
@@ -70,7 +78,7 @@ using itemA itemB
 #	defines what happens if the player uses two items together. the code
 #	sequence is executed whenever the player enters "use X with Y" and has
 #	access to both items.
-defproc proc_name
+proc proc_name
 #	starts a procedure definition. the named procedure can then be
 #	called from other code sequences.
 # a code sequence ends where the next one begins, or at end-of-file.
@@ -170,8 +178,8 @@ loc deck4_transporter_room
 	# 'a' is for alternative actions, with key, text and result as arguments
 	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
 
-# "defproc" starts a procedure definition (can be called using "callproc")
-defproc check_lives
+# "proc" starts a procedure definition (can be called using "callproc")
+proc check_lives
 	if lives_left == 0
 		"You are so dead."
 		delay 10	# wait a full second
