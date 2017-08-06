@@ -124,7 +124,7 @@ using shelf book8
 	gain book9
 	callproc bookswap
 using shelf book9
-	hide book10
+	hide book9
 	gain book10
 	callproc bookswap
 using shelf book10
@@ -384,7 +384,7 @@ loc floor1
 	"Flur im ersten Stock",cr
 	"Du befindest Dich in einem kleinen "
 	"Treppenhaus, in dem sich die steinerne "
-	"Treppe nach sowohl nach oben als nach "
+	"Treppe sowohl nach oben als nach "
 	"unten weiter windet. Es ist hier zwar "
 	"weder kalt noch muffig, aber doch "
 	"etwas trostlos. Ein schwacher Lichtschimmer dringt aus einem Durchgang im "
@@ -444,7 +444,7 @@ loc garden
 
 loc kitchen
 	"Küche", cr
-	"Hier in der Küche bereit deine Ehegattin ihre leckeren Sachen zu. Unter "
+	"Hier in der Küche bereitet deine Ehegattin ihre leckeren Sachen zu. Unter "
 	"Kennern sind ihre Kochkünste weit bekannt. Leider ist sie momentan auf "
 	"Reisen. Du siehst einen Herd, einen "
 	"Küchenschrank, einen Tisch und Stühle. "
