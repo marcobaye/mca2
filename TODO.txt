@@ -62,8 +62,6 @@ einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
 bei Itemauswahl: "0", um weitere anzuzeigen?
 
-am Anfang einmal das Inventar anzeigen!
-
 use FAST mode on C128
 
 intro:

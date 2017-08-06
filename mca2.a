@@ -154,7 +154,12 @@ entry ; entry point for SYS
 		jsr get_key
 ; now enter actual main loop:
 ---		jsr engine_new_location	; includes "restart" etc.
-		; now wait for command
+		; at start of game, show inventory once without being asked:
+		lda once_per_game
+		bne +
+			inc once_per_game
+			jsr inventory
++		; now wait for command
 .get			jsr show_paths
 			jsr get_key
 			ldx #0

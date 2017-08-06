@@ -19,6 +19,8 @@ itemlist
 	* = * + gamevars_ITEMCOUNT
 linebuf ; line buffer for word wrap (can hold one byte more than actual line)
 	* = * + LINE_LEN + 1
+once_per_game
+	* = * + 1
 
 	; commented out, because Basic ROM is now off anyway:
 	;!if * >= $a000 { !error "Reached BASIC ROM. Please add code to disable it." }

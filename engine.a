@@ -172,6 +172,7 @@ engine_new_location ; basically the start of the engine's main loop
 				dex
 			bne --
 			stx restart_flag	; inhibit this until someone requests it again
+			stx once_per_game
 ++		; okay, here is the real start:
 		; clear directions
 		lda #0
