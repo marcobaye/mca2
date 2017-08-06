@@ -17,6 +17,12 @@
 ; helper values
 	MODIFIED8	= $ff
 
+; zp variables
+;!addr	fac1		= $61	; floating point registers could be used for temp storage
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $fd	; counts recursion levels
+!addr	tmp		= $fe
+
 ; system memory
 !ifdef C128 {
 !addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
@@ -424,10 +430,17 @@ pre_situation ; called before a new situation (to clear screen?)
 		; make some space
 		jsr indent0
 		jsr my_primm	: !tx petscii_CLEAR, petscii_REVSON, 0
-		; invert first line for title
 !ifdef C128 {
-		; FIXME!
+		; invert first line for title
+		lda #' '
+		ldx #256 - LINE_LEN
+-			jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
+			inx
+			bne -
+		lda #petscii_HOME	; yes, kernal, no need to filter through conv/wordwrap
+		jsr k_chrout
 } else {
+		; invert first line for title
 		ldx #39
 		lda #160
 --			sta SCREEN, x

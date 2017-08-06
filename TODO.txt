@@ -61,3 +61,5 @@ Clumsy Wizard oder Unicorn Shepard
 einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
 bei Itemauswahl: "0", um weitere anzuzeigen?
+
+change converter so item descriptions are code, not text!

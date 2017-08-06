@@ -73,7 +73,6 @@
 	LINE_LEN	= 80
 !addr	z_quote_mode	= $1300	; FIXME!
 !addr	vdcw		= $cdcc
-!addr	.charcount	= $ff
 } else {
 !addr	currentcolor	= $0286
 !addr	cbmshift	= $0291
@@ -83,6 +82,7 @@
 }
 
 !ifdef C128 {
+	.charcount = tmp
 copycharset ; copy data to vdc ram with gaps, XORing with A
 		sta .xor
 		lda #<charset
@@ -120,6 +120,7 @@ output_init ; setup own charset, vic registers, etc.
 		; forbid cbm/shift
 		lda #$80
 		sta cbmshift
+		; FIXME - pimp vdc to 9x10 matrix?
 		; copy charset:
 		; start address in vdc ram should be $3000 (lowercase charset)
 		ldx #18
@@ -303,7 +304,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		cmp #$80	; printables with msb clear?
 		bcc .printable
 		cmp #$a0	; high control codes flush buffer (shift space could be used as nbsp)
-		bcc .control
+		bcc .control_hi
 		; printables with msb set
 .printable ; append to buffer
 		stx .xbuf
@@ -326,10 +327,12 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		beq .space
 		cmp #cr
 		beq .cr
+		cmp #petscii_HOME
+		beq .home
+.control_hi ; A is separator code, so flush contents of buffer, then output A
 		cmp #petscii_CLEAR
 		beq .clear
-.control ; A is separator code, so flush contents of buffer, then output A
-		pha
+.control	pha
 		stx .xbuf
 		; does buffer fit in current line?
 		lda .space_left
@@ -385,6 +388,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 				jsr .new_line
 +		rts
 
+.home
 .clear
 .cr		jsr .control
 		lda #LINE_LEN
