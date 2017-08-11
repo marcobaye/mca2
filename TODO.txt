@@ -29,7 +29,7 @@ vocabulary:
 	Down
 !	drop/dump	(Lose? Throw?)
 	East
-!	examine		(Look?)
+!	examine		(Look? eXamine?)
 	Help
 	Inventory/Items	(Go from here to USE!)
 	North
@@ -61,8 +61,6 @@ Clumsy Wizard oder Unicorn Shepard
 einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
 bei Itemauswahl: "0", um weitere anzuzeigen?
-
-use FAST mode on C128
 
 intro:
 ;ACME 0.96.2

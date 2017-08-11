@@ -126,7 +126,7 @@ if some_var == some_value
 #	possible comparisons: "==", "!=", "<", ">", "<=", ">=", "@", "!@"
 #	"@" and "!@" are special operators for "item at location" and
 #	"item not at location" check. Instead of a location, another
-#	item can be given, then this checks if both items' location
+#	item can be given, then this checks if both items' locations
 #	are equal / not equal.
 #	it is also possible to give only one argument:
 #	"if somevar" is equivalent to "if somevar != 0"
@@ -177,10 +177,6 @@ loc deck4_transporter_room
 	# ...now the game will display north/east/up/down as possible directions,
 	# but neither south nor west.
 
-	#FIXME - add shorthand command for "alternative action leading to new location"?
-	# 'a' is for alternative actions, with key, text and result as arguments
-	# remember "nsewud" cannot be used ("nsowhr" if german), so better use digits!
-
 # "proc" starts a procedure definition (can be called using "callproc")
 proc check_lives
 	if lives_left == 0
@@ -196,7 +192,6 @@ proc check_lives
 loc start	# <= one location MUST be called "start", this is where the game begins
 	"Start location", cr	# "title"
 	"Hi! Hit the correct key to begin the game.", cr
-	#a corridor2		FIXME - implement "a"!
 	d corridor2
 	callproc check_lives
 

@@ -23,9 +23,11 @@ asm KUNZ	= color_LRED
 asm color_std	= color_GREEN	# standard text color
 asm color_emph	= color_LGREEN	# "emphasized" text color
 asm color_out	= color_GRAY1	# "disabled" text color
+# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
 # items:
-# (args are size, location, skriptname, shortdesc, longdesc)
+# (args are size, location, skript name, game name)
+#	(must be followed by script code to output description)
 
 ## Bücher in der Bibliothek
 item small library book1 "Ein großes Buch"
@@ -157,7 +159,6 @@ item large NOWHERE chest2 "Eine Truhe"
 	"Sie ist geöffnet und leer."
 
 
-# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 # usages:
 
 proc bookswap
@@ -354,12 +355,18 @@ using kettle wand
 if potion == 8
 	inc potion
 	inc score
-	"Du wedelst mit Deinem Zauberstab.",cr,"Du murmelst magische Formeln.",cr,"BRUMMEL, BRUMMEL, BRABBEL, BRABBEL...",cr,cr,"Der Trank ist fertig!",cr,"Sofort trinkst du ihn aus.",cr,cr,"WOW! Fühlst du dich jetzt kräftig!"
+	"Du wedelst mit Deinem Zauberstab.",cr
+	"Du murmelst magische Formeln.",cr
+	"BRUMMEL, BRUMMEL, BRABBEL, BRABBEL...",cr,cr
+	"Der Trank ist fertig!",cr
+	"Sofort trinkst du ihn aus.",cr,cr
+	"WOW! Fühlst du dich jetzt kräftig!"
 	else
-	"Du hast noch nicht alle Zutaten in den Kessel geworfen!",cr,"Erst wenn die Mischung komplett ist, kannst du deine Magie wirken lassen."
+	"Du hast noch nicht alle Zutaten in den Kessel geworfen!",cr
+	"Erst wenn die Mischung komplett ist, kannst du deine Magie wirken lassen."
 	endif 
 ## Bonuspunkt
-using key chest 
+using key chest
 	hide chest
 	move chest2 study
 	move sword study
@@ -367,8 +374,8 @@ using key chest
 	"Du öffnest die Truhe mit dem Schlüssel. Sie enthält ein Schwert und ein Brecheisen."
 using key chest2
 	"Du hast die Kiste bereits geöffnet."
-using sword cheese 
-	"Oh Nein, der Käse wird nicht aufgeschnitten!",cr
+using sword cheese
+	"Oh nein, der Käse wird nicht aufgeschnitten!",cr
 	"Dann stinkt das ganze Schwert nach dem Zeug!"
 using ghoul burger
 	hide burger
@@ -437,35 +444,43 @@ using jemmy raven
 	"Der Rabe flattert vor dir davon, als er Dich mit dem Brecheisen sieht.",cr
 	"Der will wohl nicht gekeult werden. Irgendwie auch verständlich..."
 using wand raven
-	"Du fuchtelst mit deinem Zauberstab.",cr,"ZACK!",cr,cr,"Der Vogel scheint etwas Besonderes zu sein. Er hat einen Blitz nach dir geworfen!",cr,"Scheint eine Art von Thunderbird zu sein...",cr,"So klappt das nicht."
+	"Du fuchtelst mit deinem Zauberstab.",cr
+	"ZACK!",cr,cr
+	"Der Vogel scheint etwas Besonderes zu sein. Er hat einen Blitz nach dir geworfen!",cr
+	"Scheint eine Art von Thunderbird zu sein...",cr
+	"So klappt das nicht."
 using spade pala
 	"Mit einem Spaten?",cr
 	"Besorg dir eine bessere Waffe!"
 using spade ghoul
-	"Der Ghoul schmeisst sich weg vor Lachen, als du unbeholfen mit dem Spaten auf ihn einschlagen willst."
+	"Der Ghoul schmeißt sich weg vor Lachen, als du unbeholfen mit dem Spaten auf ihn einschlagen willst."
 using spade raven
 	"Der Rabe kräht und faucht dich wütend an, als du mit dem dem Spaten auf ihn losgehen willst.",cr,cr
 	"Erschrocken weichst du einen Schritt zurück."
 using sickle pala
 	"Mit einer Sichel kann man keine Kalahuiis töten."
 using sickle kala
-	"Du haust dem Kalahuii deine Sichel auf die Birne.",cr,"Sinnlos, das macht ihm gar nichts aus."
+	"Du haust dem Kalahuii deine Sichel auf die Birne.",cr
+	"Sinnlos, das macht ihm gar nichts aus."
 using sickle raven
 	move sickle observatory
 	"Der Rabe hackt dir Krallen in den Arm. Erschrocken lässt du deine Sichel fallen."
 using sickle ghoul
-	"Der Ghoul meckert nur ein wenig, als du versuchst ihn mit deiner goldenen Sichel anzugreifen.",cr,"Du hörst lieber auf, bevor er noch richtig wütend wird."
+	"Der Ghoul meckert nur ein wenig, als du versuchst ihn mit deiner goldenen Sichel anzugreifen.",cr
+	"Du hörst lieber auf, bevor er noch richtig wütend wird."
 ## Noch ein paar Versuche was zu zaubern
 using wand shelf
 	"Du kennst leider keinen Zauberspruch, mit dem sich Bücher sortieren lassen."
 using wand coffin
-	"Du traust dich nicht, an dem Sarg herumzuzaubern. Da liegt dein Großvater drin und du willst ihn nicht wütend machen.",cr,"Einen Zauberer sollte man auch dann nicht verärgern, wenn er schon lange tot ist."
+	"Du traust dich nicht, an dem Sarg herumzuzaubern. Da liegt dein Großvater drin und du willst ihn nicht wütend machen.",cr
+	"Einen Zauberer sollte man auch dann nicht verärgern, wenn er schon lange tot ist."
 using wand coffin2
 	"Du traust dich nicht, an dem Sarg herumzuzaubern. Du hast deinen Großvater heute schon genug gestört."
 using wand chem
 	"Was willst du denn an deiner Laborausrüstung verzaubern? Da ist alles so wie es sein soll."
 using wand sickle
-	"Die Sichel besteht aus Gold und kann nicht verzaubert werden.",cr,"Jedenfalls nicht von dir, da braucht es schon einen zwergischen Runenmagier. Die können sowas angeblich."
+	"Die Sichel besteht aus Gold und kann nicht verzaubert werden.",cr
+	"Jedenfalls nicht von dir, da braucht es schon einen zwergischen Runenmagier. Die können sowas angeblich."
 using wand sword
 	"Das Schwert muss nicht verzaubert werden, das ist schon eine magische Waffe."
 using wand jemmy
@@ -477,8 +492,7 @@ using wand jemmy
 # locations:
 loc start
 	"Flur im Erdgeschoss",cr
-	"Du stehst im Eingangsbereich deines "
-	"Magierturmes.",cr
+	"Du stehst im Eingangsbereich deines Magierturmes.",cr
 	"Im Süden befindet sich die Haustür, "
 	"nach Osten und Westen führen Durchgänge. Im Norden des Raumes führt "
 	"eine steinerne Treppe in die oberen "
