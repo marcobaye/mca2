@@ -31,22 +31,21 @@
 	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
 !ifdef C128 {
 	color_BLACK	= colorbase + $0
-	color_WHITE	= colorbase + $f
-	color_RED	= colorbase + $8
-	color_CYAN	= colorbase + $7
-	color_PURPLE	= colorbase + $b
-	color_GREEN	= colorbase + $4
+	color_DARKGRAY	= colorbase + $1	: color_GRAY1 = color_DARKGRAY
 	color_BLUE	= colorbase + $2
-	color_YELLOW	= colorbase + $d
-	color_ORANGE	= colorbase + $a
-	color_BROWN	= colorbase + $c
-	color_LRED	= colorbase + $9
-	color_GRAY1	= colorbase + $6
-	color_GRAY2	= colorbase + $1
-	color_LGREEN	= colorbase + $5
 	color_LBLUE	= colorbase + $3
-	color_GRAY3	= colorbase + $e
-	color_SWITCHEDOFF	= color_GRAY2
+	color_GREEN	= colorbase + $4
+	color_LGREEN	= colorbase + $5
+	color_CYAN	= colorbase + $6
+	color_LCYAN	= colorbase + $7
+	color_RED	= colorbase + $8
+	color_LRED	= colorbase + $9
+	color_PURPLE	= colorbase + $a
+	color_LPURPLE	= colorbase + $b
+	color_BROWN	= colorbase + $c
+	color_YELLOW	= colorbase + $d
+	color_LGRAY	= colorbase + $e
+	color_WHITE	= colorbase + $f
 } else {
 	color_BLACK	= colorbase + $0
 	color_WHITE	= colorbase + $1
@@ -64,7 +63,6 @@
 	color_LGREEN	= colorbase + $d
 	color_LBLUE	= colorbase + $e
 	color_GRAY3	= colorbase + $f
-	color_SWITCHEDOFF	= color_GRAY1
 }
 ; system memory
 !ifdef C128 {
@@ -137,7 +135,7 @@ output_init ; setup own charset, vic registers, etc.
 		jsr copycharset
 		; now CLEAR to init screen
 		jsr my_primm
-		!tx petscii_LOWERCASE, color_GREEN, petscii_CLEAR, 0
+		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
 } else {
 		; ECB + bitmap + disable => all black
 		lda #%.##.#.##
@@ -173,7 +171,7 @@ output_init ; setup own charset, vic registers, etc.
 		sta screenpage
 		; now CLEAR to init screen
 		jsr my_primm
-		!tx color_GREEN, petscii_CLEAR, 0
+		!tx color_std, petscii_CLEAR, 0
 		; re-enable vic display
 		lda #%...##.##
 		sta vic_controlv

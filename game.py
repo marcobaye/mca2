@@ -20,12 +20,15 @@ var potion	0
 # these two are used for colored text output
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
+asm color_std	= color_GREEN	# standard text color
+asm color_emph	= color_LGREEN	# "emphasized" text color
+asm color_out	= color_GRAY1	# "disabled" text color
 
 # items:
 # (args are size, location, skriptname, shortdesc, longdesc)
 
 ## Bücher in der Bibliothek
-item small library book1 "Ein grosses Buch"
+item small library book1 "Ein großes Buch"
 	"DAS IST DOCH NUR EINE SICHERUNGSKOPIE!",cr
 	" ...und andere Ausreden"
 item small NOWHERE book2 "Ein kleines Buch"
@@ -135,7 +138,7 @@ item small bathroom hering "Ein Hering"
 	"Sieht ja enorm wichtig aus...",cr
 	"Aber sicher zu nichts zu gebrauchen."
 ## Einrichtung
-item large kitchen kettle "Ein grosser Kessel"
+item large kitchen kettle "Ein großer Kessel"
 	"Ein riesiger Hexenkessel aus Gußeisen."
 item large tomb coffin "Ein schwerer Sarg"
 	"Ein großer Sarg, der aus einem Stück Stein gemeißelt worden zu sein scheint."
@@ -516,7 +519,7 @@ loc floor2
 loc observatory
 	"Observatorium",cr
 	"Hier oben im Observatorium deines Turms "
-	"hast Du einen grossartigen Blick über "
+	"hast Du einen großartigen Blick über "
 	"den Zauberwald. Im Westen siehst Du die "
 	"berühmten Silberberge mit ihren schneebedeckten Gipfeln. Der Ausblick lässt "
 	"Dich den beschwerlichen Aufgang über "
@@ -583,7 +586,7 @@ loc bedroom
 	"Schlafzimmer",cr
 	"Das Schlafzimmer ist recht spartanisch "
 	"eingerichtet. An der Südwand steht ein "
-	"grosses Bett, an der Ostwand ein riesiger Schrank. Rund um das Bett ist "
+	"großes Bett, an der Ostwand ein riesiger Schrank. Rund um das Bett ist "
 	"ein Läufer ausgelegt und neben dem Bett "
 	"steht ein kleines Nachtschränkchen. "
 	"Eine Tür aus schwerem Holz führt im "

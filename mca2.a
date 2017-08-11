@@ -16,6 +16,8 @@
 
 ; helper values
 	MODIFIED8	= $ff
+	FIRST_LIST_KEY	= '1'
+	LIST_LEN_LIMIT	= 10
 
 ; zp variables
 ;!addr	fac1		= $61	; floating point registers could be used for temp storage
@@ -134,7 +136,7 @@ entry ; entry point for SYS
 		jsr indent1
 		jsr my_primm
 !if DEUTSCH {
-		!tx color_GREEN, petscii_CLEAR, cr, cr, "Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie "
+		!tx color_std, petscii_CLEAR, cr, cr, "Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie "
 		!tx "befasst und hat seither ein kleines Problem. In seinem Keller haust nun ein "
 		!tx "d", in_ä, "mlicher Ghoul, den er nicht mehr los wird. H", in_ä, "tte er das gewusst, w", in_ä, "re er "
 		!tx "lieber bei seinen Fachgebieten Elementarismus und Illusionsmagie geblieben, "
@@ -183,10 +185,10 @@ entry ; entry point for SYS
 
 help ; "?" command
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "M", in_ö, "gliche Befehle:", cr, color_LGREEN
+!if DEUTSCH {	!tx cr, "M", in_ö, "gliche Befehle:", cr, color_emph
 		!tx "  Nord S", in_ü, "d West Ost Hoch Runter", cr
 		!tx "  Inventar(=F3) Grabsch Verliere", cr
-		!tx "  Untersuche Benutze", cr, color_GREEN
+		!tx "  Untersuche Benutze", cr, color_std
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
 		!tx "CLR/HOME(=F1) baut den Bildschirm neu auf.", cr
 } else {	!tx "Allowed commands:", cr
@@ -337,10 +339,10 @@ examine ; "examine" command
 		jsr select	; returns status in C and maybe index in X
 		bcs .no_examine
 		; examine: execute item's description code
-		jsr my_primm	: !tx ":", cr, " ", color_LGREEN, 0
+		jsr my_primm	: !tx ":", cr, " ", color_emph, 0
 		jsr indent1
 		jsr engine_describe_X
-		jsr my_primm	: !tx color_GREEN, cr, 0
+		jsr my_primm	: !tx color_std, cr, 0
 		rts
 
 .no_examine	jsr my_primm
@@ -402,7 +404,7 @@ use ; "use" command
 select ; ask user to select one of the items in the current list (A must be first illegal char)
 		sta .limit
 		jsr get_key
-		cmp #'1'
+		cmp #FIRST_LIST_KEY
 		bcc .illegal_key
 		cmp #MODIFIED8	: .limit = * - 1
 		bcs .illegal_key
@@ -411,7 +413,7 @@ select ; ask user to select one of the items in the current list (A must be firs
 		;pla
 		; convert digit to list offset
 		sec
-		sbc #'1'
+		sbc #FIRST_LIST_KEY
 		; convert list offset to item offset
 		tax
 		lda itemlist, x

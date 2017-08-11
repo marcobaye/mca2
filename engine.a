@@ -38,55 +38,59 @@ itemlist_list ; list items (number must be given in A/Z)
 		lda #0	; dummy separator
 		sta .idx	; and start index
 ---			jsr my_chrout	; output separator (dummy or comma)
-			jsr my_primm	: !tx " ", color_LGREEN, 0
+			jsr my_primm	: !tx " ", color_emph, 0
 			ldx #MODIFIED8	: .idx = * - 1
 			lda itemlist, x
 			tax
 			ldy item_name_lo, x
 			lda item_name_hi, x
 			jsr print_AAYY
-			lda #color_GREEN
-			jsr my_chrout
+			;lda #color_std	; this would allow the comma separator to appear at start of next line!
+			;jsr my_chrout
 			lda #','
 			inc .idx
 			ldx .idx
 			cpx #MODIFIED8	: .limit = * - 1
 			bne ---
+		lda #color_std
+		jsr my_chrout
 		lda #cr
 		jmp my_chrout
 
 none ; show string instead of empty item list
-		jsr my_primm	: !tx color_SWITCHEDOFF
+		jsr my_primm	: !tx color_out
 !if DEUTSCH {	!tx " (keine)"	} else {	!tx " (none)"	}
-			!tx color_GREEN, cr, 0
+			!tx color_std, cr, 0
 		rts
 !zone
 itemlist_numbered ; list up to nine items and enumerate
 ; nonzero number of items must be given in A
 ; X says whether to do size check on items (influences color)
 		stx .size_check
-		cmp #10	; if ten or more, reduce to nine
+		cmp #LIST_LEN_LIMIT	; if ten or more, reduce to nine
 		bcc +
 			lda #9
 +		sta .limit
 		jsr indent0
-		lda #'1'
+		lda #FIRST_LIST_KEY
 		sta .digit
 		lda #0	; start index
 		sta .idx
 ---			jsr my_primm	: !tx " [", 0
-			; check for size
+			lda #color_emph	; prepare color
+			jsr my_chrout
+			; check for size?
 			ldx #MODIFIED8	: .size_check = * - 1
 			beq .highlight
 				ldx .idx
 				lda itemlist, x
 				tax
 				lda item_weight, x
-				bmi .skip
-.highlight			lda #color_LGREEN
-				jsr my_chrout
-.skip			jsr my_primm
-.digit	!tx MODIFIED8, color_GREEN, "] ", 0
+				bpl .highlight
+					lda #color_out
+					jsr my_chrout
+.highlight		jsr my_primm
+.digit	!tx MODIFIED8, color_std, "] ", 0
 			ldx #MODIFIED8	: .idx = * - 1
 			lda itemlist, x
 			tax
@@ -202,10 +206,10 @@ show_paths	; output list of possible directions:
 ---
 			lda #' '
 			jsr my_chrout	; output separator
-			ldy #color_SWITCHEDOFF
+			ldy #color_out
 			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
 			beq +
-				ldy #color_LGREEN
+				ldy #color_emph
 +			tya
 			jsr my_chrout
 			ldy dirs_lo, x
@@ -214,7 +218,7 @@ show_paths	; output list of possible directions:
 			inx
 			cpx #6
 			bne ---
-		jsr my_primm	: !tx color_GREEN, cr, cr, 0
+		jsr my_primm	: !tx color_std, cr, cr, 0
 		rts
 
 !macro unknown_cmd { ; error handler called on illegal byte code

@@ -82,3 +82,5 @@ intro:
 "using fallback code:"
 " checking for AY... failed"
 }
+
+BUG: Patch für längere Liste funktioniert nicht immer!?
