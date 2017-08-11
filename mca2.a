@@ -37,7 +37,7 @@
 	* = load_addr
 		!wo line2, 2017
 !ifdef C128 {
-		!by $de, $20, $9c, $3a, $de, $20, $35, $3a, $fe, $02, $20, $30, $3a	; "GRAPHIC CLR:GRAPHIC 5:BANK 0:"
+		!by $de, $20, $9c, $3a, $de, $20, $35, $3a, $fe, $02, $20, $30, $3a, $fe, $25, $3a	; "GRAPHIC CLR:GRAPHIC 5:BANK 0:FAST:"
 }
 		!by $9e, $20	; "sys "
 		!by '0' + entry % 10000 / 1000
