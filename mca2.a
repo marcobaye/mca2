@@ -138,12 +138,12 @@ entry ; entry point for SYS
 !if DEUTSCH {
 		!tx color_std, petscii_CLEAR, cr, cr, "Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie "
 		!tx "befasst und hat seither ein kleines Problem. In seinem Keller haust nun ein "
-		!tx "d", in_ä, "mlicher Ghoul, den er nicht mehr los wird. H", in_ä, "tte er das gewusst, w", in_ä, "re er "
+		!tx "d", ä, "mlicher Ghoul, den er nicht mehr los wird. H", ä, "tte er das gewusst, w", ä, "re er "
 		!tx "lieber bei seinen Fachgebieten Elementarismus und Illusionsmagie geblieben, "
-		!tx "aber nun ist es zu sp", in_ä, "t.", cr
-		!tx "Als ob das nicht schon genug ", in_Ä, "rger w", in_ä, "re, hat es sein Zaubererfreund Mabruk "
+		!tx "aber nun ist es zu sp", ä, "t.", cr
+		!tx "Als ob das nicht schon genug ", Ä, "rger w", ä, "re, hat es sein Zaubererfreund Mabruk "
 		!tx "auch noch gut mit ihm gemeint. Er versuchte den Ghoul mit einem "
-		!tx "Beschw", in_ö, "rungsritual zu vernichten, doch leider laufen seither auch noch ein "
+		!tx "Beschw", ö, "rungsritual zu vernichten, doch leider laufen seither auch noch ein "
 		!tx "Kalahuii und ein Palawaum in Petrosilius Turm herum...", cr
 		!tx "Nun... Dann mal auf, mal schauen wie man die ungebetenen Gäste wieder "
 		!tx "loswerden kann...", cr
@@ -171,7 +171,7 @@ entry ; entry point for SYS
 				cpx #keys_end - keys_start
 				bne --
 			jsr my_primm
-!if DEUTSCH {	!tx "(falsche Taste, dr", in_ü, "ck '?' f", in_ü, "r Hilfe)", cr, 0
+!if DEUTSCH {	!tx "(falsche Taste, dr", ü, "ck '?' f", ü, "r Hilfe)", cr, 0
 } else {	!tx "(wrong key, press '?' for help)", cr, 0 }
 			jmp .get
 .found ; call action handler
@@ -185,8 +185,8 @@ entry ; entry point for SYS
 
 help ; "?" command
 		jsr my_primm
-!if DEUTSCH {	!tx cr, "M", in_ö, "gliche Befehle:", cr, color_emph
-		!tx "  Nord S", in_ü, "d West Ost Hoch Runter", cr
+!if DEUTSCH {	!tx cr, "M", ö, "gliche Befehle:", cr, color_emph
+		!tx "  Nord S", ü, "d West Ost Hoch Runter", cr
 		!tx "  Inventar(=F3) Grabsch Verliere", cr
 		!tx "  Untersuche Benutze", cr, color_std
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
@@ -233,7 +233,7 @@ go_d		ldx #offset_DOWN
 .illegal ; player chose an illegal direction
 		jsr indent1
 		jsr my_primm
-!if DEUTSCH {	!tx "Richtung nicht m", in_ö, "glich, bitte eine andere w", in_ä, "hlen.", cr, 0
+!if DEUTSCH {	!tx "Richtung nicht m", ö, "glich, bitte eine andere w", ä, "hlen.", cr, 0
 } else {	!tx "Illegal direction, please choose another.", cr, 0	}
 		rts
 
