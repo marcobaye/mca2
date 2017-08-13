@@ -168,6 +168,7 @@ using bow2 hippo
 	move hippo NOWHERE
 	"Der Pfeil geht durch das Nilpferd hindurch, welches sich in Luft auflöst."
 
+/*
 # "loc" starts a new location description:
 loc deck4_transporter_room
 	"Transporter room", cr	# first line is "title"
@@ -181,6 +182,7 @@ loc deck4_transporter_room
 	d deck5_jefferies	# going down leads to "jefferies tube on deck 5" location
 	# ...now the game will display north/east/up/down as possible directions,
 	# but neither south nor west.
+*/
 
 # "proc" starts a procedure definition (can be called using "callproc")
 proc check_lives
