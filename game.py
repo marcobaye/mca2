@@ -497,7 +497,8 @@ proc intro
 	delay 10
 	"              präsentiert:", cr, cr, cr, cr
 	delay 10
-	"      Adventure of the Bunkerparty", cr, cr, cr, cr
+	"      Adventure of the Bunkerparty", cr
+	"                  V1.1", cr, cr, cr
 	delay 10
 	"     Code:  TheIncredibleBauchspeck", cr
 	"     Story:           Clumsy Wizard", cr, cr, cr, cr, cr

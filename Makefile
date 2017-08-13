@@ -2,13 +2,14 @@ ASSEMBLER6502	= acme
 AS_FLAGS	= -v0 -Wtype-mismatch
 RM		= rm
 
-PROGS		= game.prg game128.prg example.prg
+PROGS		= game64.prg game128.prg example.prg
 SRCS		= mca2.a output.a charset.a engine.a tail.a
 
 all: $(PROGS)
 
-game.prg: $(SRCS) _game.tmp.a
-	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 --outfile game.prg --format cbm _game.tmp.a $(SRCS)
+game64.prg: $(SRCS) _game.tmp.a
+	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 --outfile game64.prg --format cbm _game.tmp.a $(SRCS)
+	#exomizer sfx basic game64.prg sfx.prg
 
 game128.prg: $(SRCS) _game.tmp.a
 	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 -DC128=1 --outfile game128.prg --format cbm _game.tmp.a $(SRCS)
@@ -22,8 +23,8 @@ _game.tmp.a: conv.py game.py
 _example.tmp.a: conv.py example.py
 	./conv.py example.py > _example.tmp.a
 
-x64: game.prg
-	x64 -device8 1 -autostartprgmode 1 game.prg
+x64: game64.prg
+	x64 -device8 1 -autostartprgmode 1 game64.prg
 
 x128: game128.prg
 	x128 -device8 1 -autostartprgmode 1 game128.prg
