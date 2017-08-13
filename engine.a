@@ -6,13 +6,13 @@
 !addr	MODIFIED16	= $ffff
 	MAX_RECURSIONS	= 64	; ought to be enough for anybody (tm)
 
-itemlist_at_YYAA ; make list of items at a given place
-		ldx #0
-itemlist_plus_at_YYAA ; extend current list (size in X) with list of items at a given place
-		stx .old_size
+itemlist_at_YYAA_new ; make list of items at a given place
+		ldx #0	; delete old list
+		stx itemlist_len
+itemlist_at_YYAA_add ; extend current list with list of items at a given place
 		sty .hi
 		sta .lo
-		ldy #MODIFIED8	: .old_size = * - 1
+		ldy #MODIFIED8	: itemlist_len = * - 1
 		ldx #1	; skip PLAYER
 		bne +++
 		;--
@@ -22,90 +22,92 @@ itemlist_plus_at_YYAA ; extend current list (size in X) with list of items at a 
 				lda gamevars_hi, x
 				cmp #MODIFIED8	: .hi = * - 1
 				bne +
+					; item matches, so add to list
 					txa
-					sta itemlist, y
+					sta itemlist_buf, y
 					iny
 +			inx
 +++			cpx #gamevars_ITEMCOUNT
 			bne ---
+		sty itemlist_len	; store list length
 		tya	; now result is in A, Y and Z flag ;)
 		rts
 
-itemlist_list ; list items (number must be given in A/Z)
+itemlist_list ; list items
+		lda itemlist_len
 		beq none
-		sta .limit	; at least one item
 		jsr indent1
 		lda #0	; dummy separator
 		sta .idx	; and start index
 ---			jsr my_chrout	; output separator (dummy or comma)
 			jsr my_primm	: !tx " ", color_emph, 0
 			ldx #MODIFIED8	: .idx = * - 1
-			lda itemlist, x
+			lda itemlist_buf, x
 			tax
 			ldy item_name_lo, x
 			lda item_name_hi, x
 			jsr print_AAYY
 			;lda #color_std	; this would allow the comma separator to appear at start of next line!
 			;jsr my_chrout
-			lda #','
+			lda #','	; separator for next iteration, if there is one
 			inc .idx
 			ldx .idx
-			cpx #MODIFIED8	: .limit = * - 1
+			cpx itemlist_len
 			bne ---
-		lda #color_std
-		jsr my_chrout
-		lda #cr
-		jmp my_chrout
+		jsr my_primm	: !tx color_std, cr, 0
+		rts
 
 none ; show string instead of empty item list
 		jsr my_primm	: !tx color_out
 !if DEUTSCH {	!tx " (keine)"	} else {	!tx " (none)"	}
-			!tx color_std, cr, 0
+		!tx color_std, cr, 0
 		rts
 !zone
-itemlist_numbered ; list up to nine items and enumerate
-; nonzero number of items must be given in A
+itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!)
 ; X says whether to do size check on items (influences color)
+; X returns limiting (illegal) index
 		stx .size_check
-		cmp #LIST_LEN_LIMIT	; if ten or more, reduce to nine
+		lda itemlist_len
+		cmp #LIST_LEN_LIMIT	; if too many, limit
 		bcc +
-			lda #9
+			lda #LIST_LEN_LIMIT
 +		sta .limit
 		jsr indent0
-		lda #FIRST_LIST_KEY
-		sta .digit
+		lda #'a'	; first list key
+		sta .character
 		lda #0	; start index
 		sta .idx
 ---			jsr my_primm	: !tx " [", 0
-			lda #color_emph	; prepare color
+			lda #color_emph	; set color to "item can be used"
 			jsr my_chrout
 			; check for size?
 			ldx #MODIFIED8	: .size_check = * - 1
-			beq .highlight
+			beq .show_char
+				; check size
 				ldx .idx
-				lda itemlist, x
+				lda itemlist_buf, x
 				tax
 				lda item_weight, x
-				bpl .highlight
+				bpl .show_char
+					; change color to "item cannot be used"
 					lda #color_out
 					jsr my_chrout
-.highlight		jsr my_primm
-.digit	!tx MODIFIED8, color_std, "] ", 0
+.show_char		jsr my_primm
+.character	!tx MODIFIED8, color_std, "] ", 0
 			ldx #MODIFIED8	: .idx = * - 1
-			lda itemlist, x
+			lda itemlist_buf, x
 			tax
 			ldy item_name_lo, x
 			lda item_name_hi, x
 			jsr print_AAYY
 			lda #cr
 			jsr my_chrout
-			inc .digit
+			inc .character
 			inc .idx
 			ldx .idx
 			cpx #MODIFIED8	: .limit = * - 1
 			bne ---
-		lda .digit	; returns limit character (illegal!)
-		rts
+		rts	; X returns limiting (illegal!) index
 
 engine_use_A_with_X ; scan "usages" for correct code sequence and execute
 		; if A is larger, exchange A and X
@@ -116,10 +118,7 @@ engine_use_A_with_X ; scan "usages" for correct code sequence and execute
 			; exchange
 			stx .hinz
 			sta .kunz
-+		; now that registers are available, do a line feed
-		lda #cr
-		jsr my_chrout
-		; scan chain
++		; scan chain
 		lda #<usages
 		ldx #>usages
 		jmp .entry
@@ -197,7 +196,7 @@ engine_new_location ; show current location
 !if DEUTSCH {	!tx cr, "Dinge:", 0	} else {	!tx cr, "Items:", 0	}
 		lda gamevars_lo	+ vo_PLAYER
 		ldy gamevars_hi	+ vo_PLAYER
-		jsr itemlist_at_YYAA	; scan items
+		jsr itemlist_at_YYAA_new	; scan items
 		jmp itemlist_list
 
 show_paths ; output list of possible directions:

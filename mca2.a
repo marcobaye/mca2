@@ -16,14 +16,14 @@
 
 ; helper values
 	MODIFIED8	= $ff
-	FIRST_LIST_KEY	= '1'
-	LIST_LEN_LIMIT	= 10
+	LIST_LEN_LIMIT	= 24	; with prompt underneath, screen shouldn't scroll
 
 ; zp variables
 ;!addr	fac1		= $61	; floating point registers could be used for temp storage
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $fd	; counts recursion levels
-!addr	tmp		= $fe
+;!addr	...		= $fe
+!addr	tmp		= $ff	; currently only used by C128 font copier
 
 ; system memory
 !ifdef C128 {
@@ -200,18 +200,18 @@ go_u		ldx #offset_UP
 		+bit16
 go_d		ldx #offset_DOWN
 		lda directions_hi, x
-		beq .illegal
-		tay
+		bne +
+			; player chose an illegal direction
+			jsr indent1
+			jsr my_primm
+!if DEUTSCH {		!tx "Richtung nicht m", ö, "glich, bitte eine andere w", ä, "hlen.", cr, 0
+} else {		!tx "Illegal direction, please choose another.", cr, 0	}
+			rts
++		tay
 		lda directions_lo, x
 		sty gamevars_hi + vo_PLAYER
 		sta gamevars_lo + vo_PLAYER
 		jmp engine_new_location
-.illegal ; player chose an illegal direction
-		jsr indent1
-		jsr my_primm
-!if DEUTSCH {	!tx "Richtung nicht m", ö, "glich, bitte eine andere w", ä, "hlen.", cr, 0
-} else {	!tx "Illegal direction, please choose another.", cr, 0	}
-		rts
 
 inventory ; "inventory" command
 		jsr my_primm
@@ -219,7 +219,7 @@ inventory ; "inventory" command
 } else {	!tx "Things in inventory:", 0	}
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
-		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		jsr itemlist_at_YYAA_new
 		jmp itemlist_list
 
 take ; "take" command
@@ -228,37 +228,36 @@ take ; "take" command
 } else {	!tx "Take:", cr, 0	}
 		ldy gamevars_hi + vo_PLAYER
 		lda gamevars_lo + vo_PLAYER
-		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		jsr itemlist_at_YYAA_new	; returns number in Y, A and Z ;)
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Grabschen!", cr, 0
 } else {		!tx " There is nothing to take!", cr, 0	}
 			rts
 +		ldx #1	; yes, do size checking
-		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr itemlist_menu_X_X	; returns first illegal index in X
 		jsr select	; returns status in C and maybe index in X
-		bcs .no_take
+		bcc +
+			jsr my_primm
+!if DEUTSCH {		!tx "- nichts gegrabscht!", cr, 0
+} else {		!tx "- nothing taken!", cr, 0	}
+			rts
++		jsr my_primm	: !tx ":", cr, 0
 		; check size
 		lda item_weight, x
-		bmi .too_large
-		; take: set item's location to INVENTORY
+		bpl +
+			jsr my_primm
+!if DEUTSCH {		!tx "Nein, das kann man nicht mitnehmen!", cr, 0
+} else {		!tx "No, you cannot take that with you!", cr, 0	}
+			rts
++		; take: set item's location to INVENTORY
 		lda #>location_INVENTORY
 		sta gamevars_hi, x
 		lda #<location_INVENTORY
 		sta gamevars_lo, x
 		jsr my_primm
-!if DEUTSCH {	!tx " - ok, gegrabscht!", cr, 0
-} else {	!tx " - ok, took it!", cr, 0	}
-		rts
-
-.too_large	jsr my_primm
-!if DEUTSCH {	!tx " - nein, das kann man nicht mitnehmen!", cr, 0
-} else {	!tx " - no, you cannot take that with you!", cr, 0	}
-		rts
-
-.no_take	jsr my_primm
-!if DEUTSCH {	!tx " - nichts gegrabscht!", cr, 0
-} else {	!tx " - nothing taken!", cr, 0	}
+!if DEUTSCH {	!tx "Ok, gegrabscht!", cr, 0
+} else {	!tx "Ok, took it!", cr, 0	}
 		rts
 
 lose ; "lose" command
@@ -267,29 +266,29 @@ lose ; "lose" command
 } else {	!tx "Lose:", cr, 0	}
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
-		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		jsr itemlist_at_YYAA_new	; returns number in Y, A and Z ;)
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Verlieren!", cr, 0
 } else {		!tx " There is nothing to lose!", cr, 0	}
 			rts
 +		ldx #0	; no size check
-		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr itemlist_menu_X_X	; returns first illegal index in X
 		jsr select	; returns status in C and maybe index in X
-		bcs .no_drop
+		bcc +
+			jsr my_primm
+!if DEUTSCH {		!tx "- nichts verloren!", cr, 0
+} else {		!tx "- nothing lost!", cr, 0	}
+			rts
++		jsr my_primm	: !tx ":", cr, 0
 		; drop: copy player's location to item's location
 		lda gamevars_hi + vo_PLAYER
 		sta gamevars_hi, x
 		lda gamevars_lo + vo_PLAYER
 		sta gamevars_lo, x
 		jsr my_primm
-!if DEUTSCH {	!tx " - ok, verloren!", cr, 0
-} else {	!tx " - ok, lost it!", cr, 0	}
-		rts
-
-.no_drop	jsr my_primm
-!if DEUTSCH {	!tx " - nichts verloren!", cr, 0
-} else {	!tx " - nothing lost!", cr, 0	}
+!if DEUTSCH {	!tx "Ok, verloren!", cr, 0
+} else {	!tx "Ok, lost it!", cr, 0	}
 		rts
 
 examine ; "examine" command
@@ -299,31 +298,29 @@ examine ; "examine" command
 		; get list of items at location
 		ldy gamevars_hi + vo_PLAYER
 		lda gamevars_lo + vo_PLAYER
-		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		jsr itemlist_at_YYAA_new
 		; extend list with items in inventory
-		tax
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
-		jsr itemlist_plus_at_YYAA	; returns number in Y, A and Z ;)
+		jsr itemlist_at_YYAA_add	; returns number in Y, A and Z ;)
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Untersuchen!", cr, 0
 } else {		!tx " There is nothing to examine!", cr, 0	}
 			rts
 +		ldx #0	; no size check
-		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr itemlist_menu_X_X	; returns first illegal index in X
 		jsr select	; returns status in C and maybe index in X
-		bcs .no_examine
+		bcc +
+			jsr my_primm
+!if DEUTSCH {		!tx "- nichts untersucht!", cr, 0
+} else {		!tx "- nothing examined!", cr, 0	}
+			rts
++		jsr my_primm	: !tx ":", cr, 0
 		; examine: execute item's description code
-		jsr my_primm	: !tx ":", cr, " ", color_emph, 0
 		jsr indent1
 		jsr engine_describe_X
 		jsr my_primm	: !tx color_std, cr, 0
-		rts
-
-.no_examine	jsr my_primm
-!if DEUTSCH {	!tx " - nichts untersucht!", cr, 0
-} else {	!tx " - nothing examined!", cr, 0	}
 		rts
 
 combine ; "combine" command
@@ -333,66 +330,60 @@ combine ; "combine" command
 		; get list of items in inventory
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
-		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
+		jsr itemlist_at_YYAA_new
 		; extend list with items at location
-		tax
 		ldy gamevars_hi + vo_PLAYER
 		lda gamevars_lo + vo_PLAYER
-		jsr itemlist_plus_at_YYAA	; returns number in Y, A and Z ;)
+		jsr itemlist_at_YYAA_add	; returns number in Y, A and Z ;)
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Benutzen!", cr, 0
 } else {		!tx " There is nothing to combine!", cr, 0	}
 			rts
-+		sta .length	; remember number of items
-		; choose first item
++		; choose first item
 		ldx #0	; no size check
-		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr itemlist_menu_X_X	; returns first illegal index in X
 		jsr select	; returns status in C and maybe index in X
-		bcs .no_use
-		stx .hinz
+		bcc +
+.no_combi		jsr my_primm
+!if DEUTSCH {		!tx "- nichts benutzt!", cr, 0
+} else {		!tx "- nothing combined!", cr, 0	}
+			rts
++		stx .hinz
 		; choose second item
 		jsr my_primm
 !if DEUTSCH {	!tx " mit:", cr, 0
 } else {	!tx " with:", cr, 0	}
-		lda #MODIFIED8	: .length = * - 1
 		ldx #0	; no size check
-		jsr itemlist_numbered	; returns limit (first illegal) character
+		jsr itemlist_menu_X_X	; returns first illegal index in X
 		jsr select	; returns status in C and maybe index in X
-		bcs .no_use
+		bcs .no_combi
 		;stx .kunz
+		jsr my_primm	: !tx ":", cr, 0
 		lda #MODIFIED8	: .hinz = * - 1
 		; use: call engine with both items
 		jsr engine_use_A_with_X
 		bcc +
 			jsr my_primm
-!if DEUTSCH {		!tx " - das geht nicht!", cr, 0
-} else {		!tx " - that does not work!", cr, 0	}
+!if DEUTSCH {		!tx "Das geht nicht!", cr, 0
+} else {		!tx "That does not work!", cr, 0	}
 +		rts
 
-.no_use		jsr my_primm
-!if DEUTSCH {	!tx " - nichts benutzt!", cr, 0
-} else {	!tx " - nothing combined!", cr, 0	}
-		rts
-
-
 !zone
-select ; ask user to select one of the items in the current list (A must be first illegal char)
-		sta .limit
+select ; ask user to select one of the items in the current list (X must be first illegal index)
+		stx .limit
 		jsr get_key
-		cmp #FIRST_LIST_KEY
+		sec
+!ct pet {	sbc #'a'	}	; petscii 'a'
 		bcc .illegal_key
 		cmp #MODIFIED8	: .limit = * - 1
 		bcs .illegal_key
-		;pha
-		jsr k_chrout	; yes, KERNAL out - because input characters are petscii
-		;pla
-		; convert digit to list offset
-		sec
-		sbc #FIRST_LIST_KEY
+		tax	; remember index (list offset)
+		clc
+		adc #'a'	; ascii/iso/utf8 'a'
+		jsr my_chrout
 		; convert list offset to item offset
-		tax
-		lda itemlist, x
+		lda itemlist_buf, x
 		tax
 		; return result
 		clc	; ok

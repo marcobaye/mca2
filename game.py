@@ -496,12 +496,13 @@ proc intro
 	"                Saufbox!", cr, cr, cr, cr
 	delay 10
 	"              präsentiert:", cr, cr, cr, cr
-	delay 10
+	delay 5
 	"      Adventure of the Bunkerparty", cr
 	"                  V1.1", cr, cr, cr
-	delay 10
+	delay 5
 	"     Code:  TheIncredibleBauchspeck", cr
 	"     Story:           Clumsy Wizard", cr, cr, cr, cr, cr
+	delay 5
 	"Bitte eine Taste..."
 	# "Welcome to Multiple Choice Adventure 2!", cr, cr
 	# "Press any key..."

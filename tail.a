@@ -15,7 +15,7 @@ gamevars_lo
 	* = * + gamevars_COUNT
 gamevars_hi
 	* = * + gamevars_COUNT
-itemlist
+itemlist_buf
 	* = * + gamevars_ITEMCOUNT
 linebuf ; line buffer for word wrap (can hold one byte more than actual line)
 	* = * + LINE_LEN + 1
