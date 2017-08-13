@@ -27,8 +27,10 @@
 
 ; system memory
 !ifdef C128 {
+!addr	z_keychk	= $033c	; fn ptr for f-key string expansion
 !addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
 	load_addr	= $1c01
+	!src <cbm/c128/mmu.a>
 } else {
 !addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
 	load_addr	= $0801
@@ -37,21 +39,23 @@
 	* = load_addr
 		!wo line2, 2017
 !ifdef C128 {
-		!by $de, $20, $9c, $3a, $de, $20, $35, $3a, $fe, $02, $20, $30, $3a, $fe, $25, $3a	; "GRAPHIC CLR:GRAPHIC 5:BANK 0:FAST:"
+		!by $fe, $25, $3a, $fe, $02, $20, $30, $3a	; "fast:bank 0:"
+		!by $de, $20, $9c, $3a, $de, $20, $35, $3a	; "graphic clr:graphic 5:"
 }
 		!by $9e, $20	; "sys "
 		!by '0' + entry % 10000 / 1000
 		!by '0' + entry %  1000 /  100
 		!by '0' + entry %   100 /   10
 		!by '0' + entry %    10
-		!pet $3a, $8f, " saufbox!", $0	; ":rem "
+		!by $3a, $8f, $20	; ":rem "
+		!pet "saufbox!", 0
 line2		!wo 0
 
 
 xor_border ; this is used by the example program
-		lda addr($d020)
+		lda vic_cborder
 		eor #15
-		sta addr($d020)
+		sta vic_cborder
 		rts
 
 wait_A_tenths ; wait for the number of .1 seconds given in A
@@ -83,6 +87,8 @@ wait_A_frames ; wait for the number of frames given in A
 +		rts
 
 get_key ; wait for user to press key
+		lda #0
+		jsr my_chrout	; force flushing of word wrap buffer
 ---			jsr k_getin
 			beq ---
 		rts
@@ -95,9 +101,9 @@ entry ; entry point for SYS
 		stx sp_buffer
 !ifdef C128 {
 		lda #%....111.	; ram0, kernal, i/o
-		sta addr($ff00)
+		sta mmu_cr
 		lda #<$c6b7	; this will skip the first few bytes of the original routine
-		sta addr($033c)	; and therefore disable F key string expansion
+		sta z_keychk	; and therefore disable F key string expansion
 }
 		; FIXME - fadeout!
 		lda #0
@@ -106,13 +112,13 @@ entry ; entry point for SYS
 		jsr output_init
 		; FIXME - fade in!
 		jsr indent0
+		;lda #30
+		;jsr wait_A_tenths
 		jsr my_primm
-		lda #30
-		jsr wait_A_tenths
 !if DEUTSCH {
 		!tx color_WHITE, petscii_CLEAR, cr, cr
 		;!tx"                                        "
-		!tx "               Saufbox!", cr, cr,cr
+		!tx "               Saufbox!", cr, cr, cr
 		!tx cr, 0
 		lda #10
 		jsr wait_A_tenths

@@ -346,6 +346,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		beq .clear
 .control	pha
 		stx .xbuf
+
 		; does buffer fit in current line?
 		lda .space_left
 		cmp .chars_in_buf
@@ -362,22 +363,24 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 			; fits exactly
 			jsr linebuf_flush
 			jsr .new_line
+
 			ldx .xbuf
 			pla
 			jsr k_chrout
 			sec	; next space could be skipped
 			rts
+
 .small		lda .space_left
 		sec
 		sbc .chars_in_buf
 		sta .space_left
 		jsr linebuf_flush
+
 		ldx .xbuf
 		pla
 		jsr k_chrout
 		clc	; ok
 		rts
-
 
 .new_line	lda #LINE_LEN	; next line is completely unused
 		sta .space_left
