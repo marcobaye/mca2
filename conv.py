@@ -211,6 +211,7 @@ class convertor(object):
 		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
 		# make sure "start" location is marked as referenced to inhibit confusing error
 		start = self.get_object(self.locations, 'start')
+		self.get_object(self.procedures, 'intro')
 		# create some reserved names:
 		# special value for lines below
 		self.line_number = '<predefined>'

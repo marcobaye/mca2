@@ -86,6 +86,8 @@ using itemA itemB
 proc proc_name
 #	starts a procedure definition. the named procedure can then be
 #	called from other code sequences.
+#	one procedure MUST be called "intro", this gets executed just before the
+#	actual game begins, so it can be used to output explanatory text.
 # a code sequence ends where the next one begins, or at end-of-file.
 
 # "instructions" of the actual script language:
@@ -189,6 +191,11 @@ proc check_lives
 
 
 # example:
+
+# 'proc' starts a new procedure, arg is name
+proc intro	# <= one procedure MUST be called "intro", this can show explanatory text
+	"This is an example game to demonstrate the engine.", cr
+	"Please press a key."
 
 # 'loc' starts a new location, arg is name
 loc start	# <= one location MUST be called "start", this is where the game begins

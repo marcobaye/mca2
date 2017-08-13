@@ -162,7 +162,7 @@ engine_use_A_with_X ; scan "usages" for correct code sequence and execute
 		clc	; return "ok, usage has been found and called"
 		rts
 
-engine_new_location ; basically the start of the engine's main loop
+engine_check_restart
 		; check "restart" flag:
 		lda #MODIFIED8	: restart_flag = * - 1
 		beq ++
@@ -176,8 +176,9 @@ engine_new_location ; basically the start of the engine's main loop
 				dex
 			bne --
 			stx restart_flag	; inhibit this until someone requests it again
-			stx once_per_game
-++		; okay, here is the real start:
+++		rts
+
+engine_new_location ; show current location
 		; clear directions
 		lda #0
 		ldx #6
@@ -199,7 +200,7 @@ engine_new_location ; basically the start of the engine's main loop
 		jsr itemlist_at_YYAA	; scan items
 		jmp itemlist_list
 
-show_paths	; output list of possible directions:
+show_paths ; output list of possible directions:
 		jsr my_primm
 !if DEUTSCH {	!tx cr, "Wege:", 0	} else {	!tx cr, "Paths:", 0	}
 		ldx #0

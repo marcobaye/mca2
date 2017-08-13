@@ -489,7 +489,19 @@ using wand jemmy
 	"Ein Brecheisen verzaubern? Auf was für Ideen kommst du denn?"
 
 # procedures:
-#proc name
+proc intro
+	"Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie "
+	"befasst und hat seither ein kleines Problem. In seinem Keller haust nun ein "
+	"dämlicher Ghoul, den er nicht mehr los wird. Hätte er das gewusst, wäre er "
+	"lieber bei seinen Fachgebieten Elementarismus und Illusionsmagie geblieben, "
+	"aber nun ist es zu spät.", cr
+	"Als ob das nicht schon genug Ärger wäre, hat es sein Zaubererfreund Mabruk "
+	"auch noch gut mit ihm gemeint. Er versuchte den Ghoul mit einem "
+	"Beschwörungsritual zu vernichten, doch leider laufen seither auch noch ein "
+	"Kalahuii und ein Palawaum in Petrosilius Turm herum...", cr
+	"Nun... Dann mal auf, mal schauen wie man die ungebetenen Gäste wieder "
+	"loswerden kann...", cr, cr
+	"(es ist sinnvoll, in der Bibliothek zu beginnen)"
 
 # locations:
 loc start

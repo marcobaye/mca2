@@ -72,14 +72,14 @@ wait_A_tenths ; wait for the number of .1 seconds given in A
 wait_A_frames ; wait for the number of frames given in A
 		tax
 ---
--			lda vic_controlv
-			bpl -
-		txa	; check for early exit (if called with A zero)
-		beq +	; early exit
--			lda vic_controlv
-			bmi -
-		dex
-		bne ---
+-				lda vic_controlv
+				bpl -
+			txa	; check for early exit (if called with A zero)
+			beq +	; early exit
+-				lda vic_controlv
+				bmi -
+			dex
+			bne ---
 +		rts
 
 get_key ; wait for user to press key
@@ -133,56 +133,40 @@ entry ; entry point for SYS
 		!tx "Press any key...", cr, 0
 }
 		jsr get_key
+		jsr my_primm	: !tx petscii_CLEAR, color_std, 0
 		jsr output_set_colors
-		jsr indent1
-		jsr my_primm
-!if DEUTSCH {
-		!tx color_std, petscii_CLEAR, cr, cr, "Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie "
-		!tx "befasst und hat seither ein kleines Problem. In seinem Keller haust nun ein "
-		!tx "d", ä, "mlicher Ghoul, den er nicht mehr los wird. H", ä, "tte er das gewusst, w", ä, "re er "
-		!tx "lieber bei seinen Fachgebieten Elementarismus und Illusionsmagie geblieben, "
-		!tx "aber nun ist es zu sp", ä, "t.", cr
-		!tx "Als ob das nicht schon genug ", Ä, "rger w", ä, "re, hat es sein Zaubererfreund Mabruk "
-		!tx "auch noch gut mit ihm gemeint. Er versuchte den Ghoul mit einem "
-		!tx "Beschw", ö, "rungsritual zu vernichten, doch leider laufen seither auch noch ein "
-		!tx "Kalahuii und ein Palawaum in Petrosilius Turm herum...", cr
-		!tx "Nun... Dann mal auf, mal schauen wie man die ungebetenen Gäste wieder "
-		!tx "loswerden kann...", cr
-		!tx cr
-		!tx "(es ist sinnvoll, in der Bibliothek zu beginnen)", cr
-} else {
-		!error "Übersetzung fehlt"
-}
-		!tx 0
-		jsr get_key
 ; now enter actual main loop:
----		jsr engine_new_location	; includes "restart" etc.
-		; at start of game, show inventory once without being asked:
-		lda once_per_game
-		bne +
-			inc once_per_game
-			jsr inventory
-+		; now wait for command
+		jsr engine_check_restart	; reset vars to default?
+		jsr indent1
+		lda #<proc_intro
+		ldy #>proc_intro
+		jsr interpreter_run_YYAA
+		lda #cr
+		jsr my_chrout
+		jsr get_key
+		jsr engine_new_location	; show start location
+		jsr inventory	; show inventory once without being asked
+; actual main loop:
+		; wait for command
 .get			jsr show_paths
 			jsr get_key
 			ldx #0
 --				cmp keys_start, x
-				beq .found
-				inx
+				bne +
+					; found, so call action handler
+					lda action_lo, x
+					sta .call
+					lda action_hi, x
+					sta .call + 1
+					jsr MODIFIED16	: .call = * - 2
+					jmp .get
++				inx
 				cpx #keys_end - keys_start
 				bne --
 			jsr my_primm
 !if DEUTSCH {	!tx "(falsche Taste, dr", ü, "ck '?' f", ü, "r Hilfe)", cr, 0
 } else {	!tx "(wrong key, press '?' for help)", cr, 0 }
 			jmp .get
-.found ; call action handler
-		lda action_lo, x
-		sta .call
-		lda action_hi, x
-		sta .call + 1
-		jsr MODIFIED16	: .call = * - 2
-		jmp .get
-
 
 help ; "?" command
 		jsr my_primm
@@ -240,8 +224,8 @@ go_d		ldx #offset_DOWN
 
 inventory ; "inventory" command
 		jsr my_primm
-!if DEUTSCH {	!tx "Dinge im Inventar:", cr, 0
-} else {	!tx "Things in inventory:", cr, 0	}
+!if DEUTSCH {	!tx "Dinge im Inventar:", 0
+} else {	!tx "Things in inventory:", 0	}
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
 		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
@@ -432,10 +416,10 @@ exit		ldx #MODIFIED8	: sp_buffer = * - 1
 		txs
 		rts
 
-pre_situation ; called before a new situation (to clear screen?)
+pre_situation ; called before a new situation (to init screen)
 		; make some space
 		jsr indent0
-		jsr my_primm	: !tx petscii_CLEAR, petscii_REVSON, 0
+		jsr my_primm	: !tx color_std, petscii_CLEAR, petscii_REVSON, 0
 !ifdef C128 {
 		; invert first line for title
 		lda #' '
