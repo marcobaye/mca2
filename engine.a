@@ -358,7 +358,7 @@ interpreter_go_on ; enter with A = offset to add
 
 !if DEUTSCH {
 north	!tx "Nord", 0
-south	!if ISO {	!tx "S�d", 0	} else {	!tx "Süd", 0	}
+south	!tx "S", ü, "d", 0
 west	!tx "West", 0
 east	!tx "Ost", 0
 up	!tx "Hoch", 0

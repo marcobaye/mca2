@@ -3,7 +3,9 @@
 	!src <cbm/c64/petscii.a>
 	!src <cbm/c64/vic.a>
 	!src <cbm/c64/kernal.a>
-!ifdef C128 {	!src <cbm/c128/vdc.a>	}
+!if SYSTEM = 128 {
+	!src <cbm/c128/vdc.a>
+}
 
 ; helper values
 	CR		= 13
@@ -30,25 +32,7 @@
 	colorbase	= $f0	; f0..ff
 }
 	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
-!ifdef C128 {
-	; vdc colors:
-	color_BLACK	= colorbase + $0
-	color_DARKGRAY	= colorbase + $1	: color_GRAY1 = color_DARKGRAY
-	color_BLUE	= colorbase + $2
-	color_LBLUE	= colorbase + $3
-	color_GREEN	= colorbase + $4
-	color_LGREEN	= colorbase + $5
-	color_CYAN	= colorbase + $6
-	color_LCYAN	= colorbase + $7
-	color_RED	= colorbase + $8
-	color_LRED	= colorbase + $9
-	color_PURPLE	= colorbase + $a
-	color_LPURPLE	= colorbase + $b
-	color_BROWN	= colorbase + $c
-	color_YELLOW	= colorbase + $d
-	color_LGRAY	= colorbase + $e
-	color_WHITE	= colorbase + $f
-} else {
+!if SYSTEM = 64 {
 	; vic-ii colors:
 	color_BLACK	= colorbase + $0
 	color_WHITE	= colorbase + $1
@@ -67,22 +51,42 @@
 	color_LBLUE	= colorbase + $e
 	color_GRAY3	= colorbase + $f
 }
+!if SYSTEM = 128 {
+	; vdc colors:
+	color_BLACK	= colorbase + $0
+	color_DARKGRAY	= colorbase + $1	: color_GRAY1 = color_DARKGRAY
+	color_BLUE	= colorbase + $2
+	color_LBLUE	= colorbase + $3
+	color_GREEN	= colorbase + $4
+	color_LGREEN	= colorbase + $5
+	color_CYAN	= colorbase + $6
+	color_LCYAN	= colorbase + $7
+	color_RED	= colorbase + $8
+	color_LRED	= colorbase + $9
+	color_PURPLE	= colorbase + $a
+	color_LPURPLE	= colorbase + $b
+	color_BROWN	= colorbase + $c
+	color_YELLOW	= colorbase + $d
+	color_LGRAY	= colorbase + $e
+	color_WHITE	= colorbase + $f
+}
 ; system memory
-!ifdef C128 {
-!addr	currentcolor	= $f1
-!addr	cbmshift	= $f7
-	LINE_LEN	= 80
-!addr	z_quote_mode	= $f4
-!addr	vdcw		= $cdcc
-} else {
+!if SYSTEM = 64 {
 !addr	currentcolor	= $0286
 !addr	cbmshift	= $0291
 	LINE_LEN	= 40
 !addr	z_quote_mode	= $d4
 !addr	screenpage	= $0288
 }
+!if SYSTEM = 128 {
+!addr	currentcolor	= $f1
+!addr	cbmshift	= $f7
+	LINE_LEN	= 80
+!addr	z_quote_mode	= $f4
+!addr	vdcw		= $cdcc
+}
 
-!ifdef C128 {
+!if SYSTEM = 128 {
 	.charcount = tmp
 copycharset ; copy data to vdc ram with gaps, XORing with A
 		sta .xor
@@ -117,29 +121,7 @@ copycharset ; copy data to vdc ram with gaps, XORing with A
 }
 
 output_init ; setup own charset, vic registers, etc.
-!ifdef C128 {
-		; forbid cbm/shift
-		lda #$80
-		sta cbmshift
-		; FIXME - pimp vdc to 9x10 matrix?
-		; copy charset:
-		; start address in vdc ram should be $3000 (lowercase charset)
-		ldx #vdcr_ram_hi
-		lda #>$3000
-		jsr vdcw
-		ldx #vdcr_ram_lo
-		lda #<$3000
-		jsr vdcw
-		; copy first half
-		lda #0
-		jsr copycharset
-		; copy reverse half
-		lda #255
-		jsr copycharset
-		; now CLEAR to init screen
-		jsr my_primm
-		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
-} else {
+!if SYSTEM = 64 {
 		; ECB + bitmap + disable => all black
 		lda #%.##.#.##
 		sta vic_controlv
@@ -179,18 +161,42 @@ output_init ; setup own charset, vic registers, etc.
 		lda #%...##.##
 		sta vic_controlv
 }
+!if SYSTEM = 128 {
+		; forbid cbm/shift
+		lda #$80
+		sta cbmshift
+		; FIXME - pimp vdc to 9x10 matrix?
+		; copy charset:
+		; start address in vdc ram should be $3000 (lowercase charset)
+		ldx #vdcr_ram_hi
+		lda #>$3000
+		jsr vdcw
+		ldx #vdcr_ram_lo
+		lda #<$3000
+		jsr vdcw
+		; copy first half
+		lda #0
+		jsr copycharset
+		; copy reverse half
+		lda #255
+		jsr copycharset
+		; now CLEAR to init screen
+		jsr my_primm
+		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
+}
 .rts		rts
 
 output_set_colors ; this will be called after credits screen
-!ifdef C128 {
-		ldx #vdcr_color
-		lda #((color_std & $f) << 4) | (color_background & $f)
-		jsr vdcw
-} else {
+!if SYSTEM = 64 {
 		lda #color_border
 		sta vic_cborder
 		lda #color_background
 		sta vic_cbg
+}
+!if SYSTEM = 128 {
+		ldx #vdcr_color
+		lda #((color_std & $f) << 4) | (color_background & $f)
+		jsr vdcw
 }
 		rts
 
@@ -245,7 +251,7 @@ my_chrout ; must keep X/Y!
 			lda #0	; output dummy code to flush buffer
 			jsr wordwrapped
 			pla
-!ifdef C128 {
+!if SYSTEM = 128 {
 			and #$f	; keep color
 			ora #%#.......	; 2nd charset, no revs, no underline, no flash
 }

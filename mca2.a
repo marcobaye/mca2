@@ -26,19 +26,22 @@
 !addr	tmp		= $ff	; currently only used by C128 font copier
 
 ; system memory
-!ifdef C128 {
+!if SYSTEM = 64 {
+	KEYPAD		= 0
+!addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
+	load_addr	= $0801
+}
+!if SYSTEM = 128 {
+	KEYPAD		= 1
 !addr	z_keychk	= $033c	; fn ptr for f-key string expansion
 !addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
 	load_addr	= $1c01
 	!src <cbm/c128/mmu.a>
-} else {
-!addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
-	load_addr	= $0801
 }
 ; basic header
 	* = load_addr
 		!wo line2, 2017
-!ifdef C128 {
+!if SYSTEM = 128 {
 		!by $fe, $25, $3a, $fe, $02, $20, $30, $3a	; "fast:bank 0:"
 		!by $de, $20, $9c, $3a, $de, $20, $35, $3a	; "graphic clr:graphic 5:"
 }
@@ -99,7 +102,7 @@ entry ; entry point for SYS
 		cld
 		tsx
 		stx sp_buffer
-!ifdef C128 {
+!if SYSTEM = 128 {
 		lda #%....111.	; ram0, kernal, i/o
 		sta mmu_cr
 		lda #<$c6b7	; this will skip the first few bytes of the original routine
@@ -152,7 +155,7 @@ help ; "?" command
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
 		!tx "CLR/HOME(=F1) baut den Bildschirm neu auf.", cr
 		!tx "Zum Bewegen k", ö, "nnen auch die Cursortasten und +/- benutzt werden"
-	!ifdef C128 {
+	!if KEYPAD {
 		!tx ", au", ß, "erdem die Zehnertastatur."
 	}
 		!tx "."
@@ -163,7 +166,7 @@ help ; "?" command
 		!tx "Type the first character only!", cr
 		!tx "CLR/HOME(=F1) will redisplay the screen.", cr
 		!tx "Moving around can also be done using the cursor and +/- keys"
-	!ifdef C128 {
+	!if KEYPAD {
 		!tx ", and the numerical keypad is also possible"
 	}
 		!tx "."
@@ -173,16 +176,16 @@ help ; "?" command
 
 keys_start
 		!pet petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT, '+', '-'
-!ifdef C128 {	!pet '8', '2', '4', '6', '5'	}
+!if KEYPAD {	!pet '8', '2', '4', '6', '5'	}
 !if DEUTSCH {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nswohrigvub"
 } else {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nsweuditlxc"	}
 keys_end
 
 action_lo	!by <go_n, <go_s, <go_w, <go_e, <go_u, <go_d
-!ifdef C128 {	!by <go_n, <go_s, <go_w, <go_e, <redisp	}
+!if KEYPAD {	!by <go_n, <go_s, <go_w, <go_e, <redisp	}
 		!by <redisp, <redisp, <redisp, <inventory, <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <combine
 action_hi	!by >go_n, >go_s, >go_w, >go_e, >go_u, >go_d
-!ifdef C128 {	!by >go_n, >go_s, >go_w, >go_e, >redisp	}
+!if KEYPAD {	!by >go_n, >go_s, >go_w, >go_e, >redisp	}
 		!by >redisp, >redisp, >redisp, >inventory, >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >combine
 
 	redisp = engine_new_location
@@ -402,7 +405,15 @@ pre_situation ; called before a new situation (to init screen)
 		; make some space
 		jsr indent0
 		jsr my_primm	: !tx color_std, petscii_CLEAR, petscii_REVSON, 0
-!ifdef C128 {
+!if SYSTEM = 64 {
+		; invert first line for title
+		ldx #39
+		lda #160
+--			sta SCREEN, x
+			dex
+			bpl --
+}
+!if SYSTEM = 128 {
 		; invert first line for title
 		lda #' '
 		ldx #256 - LINE_LEN
@@ -411,12 +422,5 @@ pre_situation ; called before a new situation (to init screen)
 			bne -
 		lda #petscii_HOME	; yes, kernal, no need to filter through conv/wordwrap
 		jsr k_chrout
-} else {
-		; invert first line for title
-		ldx #39
-		lda #160
---			sta SCREEN, x
-			dex
-			bpl --
 }
 		rts
