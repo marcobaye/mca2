@@ -11,19 +11,21 @@ define TRUE	1
 # variables and default values:
 
 ## angesammelte Punkte
-var score	0 
+var score	0
 ## Wie weit ist der Zaubertrank fertig 1-8
 ## Bei Wert 8 ist Zaubertrank getrunken und aktiv
-var potion	0 
+var potion	0
 
 # "asm" passes the remainder of the line to the assembler backend unchanged:
 # these two are used for colored text output
+# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
+asm color_background	= color_BLACK	# background color
+asm color_border	= color_BLACK	# border color
+asm color_std		= color_GREEN	# standard text color
+asm color_emph		= color_LGREEN	# "emphasized" text color
+asm color_out		= color_GRAY1	# "disabled" text color
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
-asm color_std	= color_GREEN	# standard text color
-asm color_emph	= color_LGREEN	# "emphasized" text color
-asm color_out	= color_GRAY1	# "disabled" text color
-# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
 # items:
 # (args are size, location, skript name, game name)
@@ -35,7 +37,7 @@ item small library book1 "Ein großes Buch"
 	" ...und andere Ausreden"
 item small NOWHERE book2 "Ein kleines Buch"
 	"ER WAR DOCH NICHT SEIN VATER!",cr
-	" Die grösste Lüge der Filmgeschichte"
+	" Die größte Lüge der Filmgeschichte"
 item small NOWHERE book3 "Ein interessantes Buch"
 	"Kalahuii sollen laut diesem Fachbuch nur mit Waffengewalt zu besiegen sein. Aber man sollte dafür ganz schön kräftig sein..."
 item small NOWHERE book4 "Ein altes Buch"

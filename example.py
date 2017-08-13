@@ -40,12 +40,14 @@ var cows_killed	0
 # calculations, so DO NOT USE IT YOURSELF!
 
 # "asm" passes the remainder of the line to the assembler backend unchanged:
+# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
+asm color_background	= color_BLACK	# background color
+asm color_border	= color_BLACK	# border color
+asm color_std		= color_GREEN	# standard text color
+asm color_emph		= color_LGREEN	# "emphasized" text color
+asm color_out		= color_GRAY1	# "disabled" text color
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
-asm color_std	= color_GREEN	# standard text color
-asm color_emph	= color_LGREEN	# "emphasized" text color
-asm color_out	= color_GRAY1	# "disabled" text color
-# ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 
 # the remainder of the description file consists of code sequences in the actual
 # script language:

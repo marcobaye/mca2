@@ -117,7 +117,7 @@ entry ; entry point for SYS
 		lda #10
 		jsr wait_A_tenths
 		jsr my_primm
-		!tx "             präsentiert:", cr, cr, cr, cr, 0
+		!tx "             pr", ä, "sentiert:", cr, cr, cr, cr, 0
 		lda #10
 		jsr wait_A_tenths
 		jsr my_primm
@@ -133,6 +133,7 @@ entry ; entry point for SYS
 		!tx "Press any key...", cr, 0
 }
 		jsr get_key
+		jsr output_set_colors
 		jsr indent1
 		jsr my_primm
 !if DEUTSCH {

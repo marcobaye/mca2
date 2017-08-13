@@ -3,13 +3,14 @@
 	!src <cbm/c64/petscii.a>
 	!src <cbm/c64/vic.a>
 	!src <cbm/c64/kernal.a>
+!ifdef C128 {	!src <cbm/c128/vdc.a>	}
 
 ; helper values
 	CR		= 13
 	cr		= 13
 !if ISO {
-	; ISO8859/1
-	colorbase	= $b0
+	; ISO8859-1
+	colorbase	= $b0	; b0..bf
 	Ä		= $c4
 	Ö		= $d6
 	Ü		= $dc
@@ -26,7 +27,7 @@
 	ä		= $a4
 	ö		= $b6
 	ü		= $bc
-	colorbase	= $f0
+	colorbase	= $f0	; f0..ff
 }
 	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
 !ifdef C128 {
@@ -96,14 +97,14 @@ copycharset ; copy data to vdc ram with gaps, XORing with A
 				inc .ptr
 				bne +
 					inc .ptr + 1
-+				ldx #31
++				ldx #vdcr_access
 				jsr vdcw
 				dey
 				bne ---
 			; eight fake bytes
 			ldy #8
 ---				lda #0
-				ldx #31
+				ldx #vdcr_access
 				jsr vdcw
 				dey
 				bne ---
@@ -121,10 +122,10 @@ output_init ; setup own charset, vic registers, etc.
 		; FIXME - pimp vdc to 9x10 matrix?
 		; copy charset:
 		; start address in vdc ram should be $3000 (lowercase charset)
-		ldx #18
+		ldx #vdcr_ram_hi
 		lda #>$3000
 		jsr vdcw
-		ldx #19
+		ldx #vdcr_ram_lo
 		lda #<$3000
 		jsr vdcw
 		; copy first half
@@ -177,6 +178,19 @@ output_init ; setup own charset, vic registers, etc.
 		sta vic_controlv
 }
 .rts		rts
+
+output_set_colors ; this will be called after credits screen
+!ifdef C128 {
+		ldx #vdcr_color
+		lda #((color_std & $f) << 4) | (color_background & $f)
+		jsr vdcw
+} else {
+		lda #color_border
+		sta vic_cborder
+		lda #color_background
+		sta vic_cbg
+}
+		rts
 
 ; wrapper for CHROUT (to convert UTF8 to PetSCII)
 my_chrout ; must keep X/Y!
