@@ -490,6 +490,22 @@ using wand jemmy
 
 # procedures:
 proc intro
+	delay 5
+	"", color_WHITE, petscii_CLEAR, cr, cr
+	#1234567890123456789012345678901234567890
+	"                Saufbox!", cr, cr, cr, cr
+	delay 10
+	"              präsentiert:", cr, cr, cr, cr
+	delay 10
+	"      Adventure of the Bunkerparty", cr, cr, cr, cr
+	delay 10
+	"     Code:  TheIncredibleBauchspeck", cr
+	"     Story:           Clumsy Wizard", cr, cr, cr, cr, cr
+	"Bitte eine Taste..."
+	# "Welcome to Multiple Choice Adventure 2!", cr, cr
+	# "Press any key..."
+	callasm get_key
+	"", color_std, petscii_CLEAR
 	"Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie "
 	"befasst und hat seither ein kleines Problem. In seinem Keller haust nun ein "
 	"dämlicher Ghoul, den er nicht mehr los wird. Hätte er das gewusst, wäre er "
@@ -502,6 +518,7 @@ proc intro
 	"Nun... Dann mal auf, mal schauen wie man die ungebetenen Gäste wieder "
 	"loswerden kann...", cr, cr
 	"(es ist sinnvoll, in der Bibliothek zu beginnen)"
+	callasm get_key
 
 # locations:
 loc start

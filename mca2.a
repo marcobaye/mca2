@@ -111,35 +111,7 @@ entry ; entry point for SYS
 		sta vic_cbg
 		jsr output_init
 		; FIXME - fade in!
-		jsr indent0
-		;lda #30
-		;jsr wait_A_tenths
-		jsr my_primm
-!if DEUTSCH {
-		!tx color_WHITE, petscii_CLEAR, cr, cr
-		;!tx"                                        "
-		!tx "               Saufbox!", cr, cr, cr
-		!tx cr, 0
-		lda #10
-		jsr wait_A_tenths
-		jsr my_primm
-		!tx "             pr", ä, "sentiert:", cr, cr, cr, cr, 0
-		lda #10
-		jsr wait_A_tenths
-		jsr my_primm
-		!tx "     Adventure of the Bunkerparty", cr, cr, cr, cr, 0
-		lda #10
-		jsr wait_A_tenths
-		jsr my_primm
-		!tx "    Code:      TheIncredibleBauchspeck", cr
-		!tx "    Story:               Clumsy Wizard", cr, cr, cr
-		!tx "Bitte eine Taste...", cr, 0
-} else {
-		!tx "Welcome to Multiple Choice Adventure 2!", cr, cr
-		!tx "Press any key...", cr, 0
-}
-		jsr get_key
-		jsr my_primm	: !tx petscii_CLEAR, color_std, 0
+		jsr my_primm	: !tx color_std, petscii_CLEAR, 0
 		jsr output_set_colors
 ; now enter actual main loop:
 		jsr engine_check_restart	; reset vars to default?
@@ -147,9 +119,6 @@ entry ; entry point for SYS
 		lda #<proc_intro
 		ldy #>proc_intro
 		jsr interpreter_run_YYAA
-		lda #cr
-		jsr my_chrout
-		jsr get_key
 		jsr engine_new_location	; show start location
 		jsr inventory	; show inventory once without being asked
 ; actual main loop:

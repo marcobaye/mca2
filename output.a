@@ -31,6 +31,7 @@
 }
 	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
 !ifdef C128 {
+	; vdc colors:
 	color_BLACK	= colorbase + $0
 	color_DARKGRAY	= colorbase + $1	: color_GRAY1 = color_DARKGRAY
 	color_BLUE	= colorbase + $2
@@ -48,6 +49,7 @@
 	color_LGRAY	= colorbase + $e
 	color_WHITE	= colorbase + $f
 } else {
+	; vic-ii colors:
 	color_BLACK	= colorbase + $0
 	color_WHITE	= colorbase + $1
 	color_RED	= colorbase + $2
@@ -70,7 +72,7 @@
 !addr	currentcolor	= $f1
 !addr	cbmshift	= $f7
 	LINE_LEN	= 80
-!addr	z_quote_mode	= $1300	; FIXME!
+!addr	z_quote_mode	= $f4
 !addr	vdcw		= $cdcc
 } else {
 !addr	currentcolor	= $0286

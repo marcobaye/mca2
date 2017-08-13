@@ -112,6 +112,7 @@ n2 some_location
 callproc proc_name
 #	calls the named procedure
 callasm player_has_won
+callasm get_key
 #	this adds code to call a machine language sub-routine. the argument is
 #	an assembler label you must define yourself in the surrounding asm code.
 delay 5
@@ -196,6 +197,7 @@ proc check_lives
 proc intro	# <= one procedure MUST be called "intro", this can show explanatory text
 	"This is an example game to demonstrate the engine.", cr
 	"Please press a key."
+	callasm get_key
 
 # 'loc' starts a new location, arg is name
 loc start	# <= one location MUST be called "start", this is where the game begins
