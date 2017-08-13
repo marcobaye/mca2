@@ -53,7 +53,6 @@ vocabulary:
 oder vielleicht: "Items" -> und dann Nimm/Verliere/Untersuche/Benutze
 
 -fadeout und fadein zu intro.a verschieben
--Namen festlegen
 -Intro von Inglish Glatss nachbauen
 
 Clumsy Wizard oder Unicorn Shepard
@@ -62,15 +61,6 @@ einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
 bei Itemauswahl: "0", um weitere anzuzeigen?
 
-intro:
-;ACME 0.96.2
-
-!if 0 {
-"Saufbox!"
-"präsentiert:"
-"Adventure of the Nachmittag"
-"Code: The Incredible Bauchspeck"
-"Story: Unicorn Shepard"
 "Graphics: "
 "Sound: J-Snake"
 
@@ -79,6 +69,13 @@ intro:
 "Checking for POKEY,,, failed",
 "using fallback code:"
 " checking for AY... failed"
-}
 
-BUG: Patch für längere Liste funktioniert nicht immer!?
+BUGfix: Patch für längere Liste funktioniert nicht immer!?
+taste zum reden mit npc (q wie quatschen)
+disable "use x with x"
+"use" ohne gegenstück (v wie verwende)
+oben rechts Punktstand (oder Spieltitel)
+item "npc" mit code für kommunikation
+add "input" or "choice" command?	Problem: User cannot save at that point!
+steckschwein-version
+change iso/utf8 encoding to _one_ variant!

@@ -151,23 +151,39 @@ help ; "?" command
 		!tx "  Untersuche Benutze", cr, color_std
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
 		!tx "CLR/HOME(=F1) baut den Bildschirm neu auf.", cr
+		!tx "Zum Bewegen k", ö, "nnen auch die Cursortasten und +/- benutzt werden"
+	!ifdef C128 {
+		!tx ", au", ß, "erdem die Zehnertastatur."
+	}
+		!tx "."
 } else {	!tx "Allowed commands:", cr
 		!tx "  North South West East Up Down", cr
-		!error "Inventory(=F3) Take Lose", cr
-		!error "Examine Use", cr
+		!tx "Inventory(=F3) Take Lose", cr
+		!tx "eXamine Combine", cr
 		!tx "Type the first character only!", cr
 		!tx "CLR/HOME(=F1) will redisplay the screen.", cr
+		!tx "Moving around can also be done using the cursor and +/- keys"
+	!ifdef C128 {
+		!tx ", and the numerical keypad is also possible"
+	}
+		!tx "."
 }
 		!tx cr, 0
 		rts
 
 keys_start
+		!pet petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT, '+', '-'
+!ifdef C128 {	!pet '8', '2', '4', '6', '5'	}
 !if DEUTSCH {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nswohrigvub"
-} else {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nsweuditdEU"	}
+} else {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nsweuditlxc"	}
 keys_end
 
-action_lo	!by <redisp, <redisp, <redisp, <inventory, <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <drop, <examine, <use
-action_hi	!by >redisp, >redisp, >redisp, >inventory, >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >drop, >examine, >use
+action_lo	!by <go_n, <go_s, <go_w, <go_e, <go_u, <go_d
+!ifdef C128 {	!by <go_n, <go_s, <go_w, <go_e, <redisp	}
+		!by <redisp, <redisp, <redisp, <inventory, <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <combine
+action_hi	!by >go_n, >go_s, >go_w, >go_e, >go_u, >go_d
+!ifdef C128 {	!by >go_n, >go_s, >go_w, >go_e, >redisp	}
+		!by >redisp, >redisp, >redisp, >inventory, >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >combine
 
 	redisp = engine_new_location
 
@@ -245,17 +261,17 @@ take ; "take" command
 } else {	!tx " - nothing taken!", cr, 0	}
 		rts
 
-drop ; "drop" command
+lose ; "lose" command
 		jsr my_primm
 !if DEUTSCH {	!tx "Verliere:", cr, 0
-} else {	!tx "Drop:", cr, 0	}
+} else {	!tx "Lose:", cr, 0	}
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
 		jsr itemlist_at_YYAA	; returns number in Y, A and Z ;)
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Verlieren!", cr, 0
-} else {		!tx " There is nothing to drop!", cr, 0	}
+} else {		!tx " There is nothing to lose!", cr, 0	}
 			rts
 +		ldx #0	; no size check
 		jsr itemlist_numbered	; returns limit (first illegal) character
@@ -268,12 +284,12 @@ drop ; "drop" command
 		sta gamevars_lo, x
 		jsr my_primm
 !if DEUTSCH {	!tx " - ok, verloren!", cr, 0
-} else {	!tx " - ok, dropped it!", cr, 0	}
+} else {	!tx " - ok, lost it!", cr, 0	}
 		rts
 
 .no_drop	jsr my_primm
 !if DEUTSCH {	!tx " - nichts verloren!", cr, 0
-} else {	!tx " - nothing dropped!", cr, 0	}
+} else {	!tx " - nothing lost!", cr, 0	}
 		rts
 
 examine ; "examine" command
@@ -310,10 +326,10 @@ examine ; "examine" command
 } else {	!tx " - nothing examined!", cr, 0	}
 		rts
 
-use ; "use" command
+combine ; "combine" command
 		jsr my_primm
 !if DEUTSCH {	!tx "Benutze:", cr, 0
-} else {	!tx "Use:", cr, 0	}
+} else {	!tx "Combine:", cr, 0	}
 		; get list of items in inventory
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
@@ -326,7 +342,7 @@ use ; "use" command
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Benutzen!", cr, 0
-} else {		!tx " There is nothing to use!", cr, 0	}
+} else {		!tx " There is nothing to combine!", cr, 0	}
 			rts
 +		sta .length	; remember number of items
 		; choose first item
@@ -356,7 +372,7 @@ use ; "use" command
 
 .no_use		jsr my_primm
 !if DEUTSCH {	!tx " - nichts benutzt!", cr, 0
-} else {	!tx " - nothing used!", cr, 0	}
+} else {	!tx " - nothing combined!", cr, 0	}
 		rts
 
 
