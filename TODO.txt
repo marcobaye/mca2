@@ -59,8 +59,6 @@ Clumsy Wizard oder Unicorn Shepard
 
 einen dieser tollen Gratuliere-du-hast-es-geschafft-Endscreen
 
-bei Itemauswahl: "0", um weitere anzuzeigen?
-
 "Graphics: "
 "Sound: J-Snake"
 
@@ -78,6 +76,3 @@ item "npc" mit code für kommunikation
 add "input" or "choice" command?	Problem: User cannot save at that point!
 change iso/utf8 encoding to _one_ variant!
 Steckschwein-Version?
-264-Version?
-
-BUGfix: Patch für längere Liste funktioniert nicht immer!?
