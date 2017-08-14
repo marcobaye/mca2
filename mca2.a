@@ -19,20 +19,21 @@
 	LIST_LEN_LIMIT	= 24	; with prompt underneath, screen shouldn't scroll
 
 ; zp variables
-;!addr	fac1		= $61	; floating point registers could be used for temp storage
-!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
-!addr	recursion_depth	= $fd	; counts recursion levels
-;!addr	...		= $fe
-!addr	tmp		= $ff	; currently only used by C128 font copier
 
 ; system memory
 !if SYSTEM = 64 {
 	KEYPAD		= 0
+;!addr	fac1		= $61	; floating point registers could be used for temp storage
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $fd	; counts recursion levels
 !addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
 	load_addr	= $0801
 }
 !if SYSTEM = 128 {
 	KEYPAD		= 1
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $fd	; counts recursion levels
+!addr	tmp		= $fe	; only used by font copier
 !addr	z_keychk	= $033c	; fn ptr for f-key string expansion
 !addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
 	load_addr	= $1c01
@@ -40,6 +41,9 @@
 }
 !if SYSTEM = 264 {
 	KEYPAD		= 0
+	; $fb..$fe are in use, so using floating point registers instead:
+!addr	runptr		= $61	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $63	; counts recursion levels
 !addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL	FIXME - bogus!
 	load_addr	= $1001
 !addr	ted_ff1c	= $ff1c	; lsb is msb of raster line
@@ -107,10 +111,8 @@ wait_A_frames ; wait for the number of frames given in A
 get_key ; wait for user to press key
 		lda #0
 		jsr my_chrout	; force flushing of word wrap buffer
-!if SYSTEM = 264 {cli}
 ---			jsr k_getin
 			beq ---
-!if SYSTEM = 264 {sei}
 		rts
 
 ; main program
@@ -126,7 +128,6 @@ entry ; entry point for SYS
 		sta z_keychk	; and therefore disable F key string expansion
 }
 !if SYSTEM = 264 {
-sei
 		; FIXME - disable 264's F key string expansion!
 ;		sta addr($ff3e)	; activate (kernal) ROM
 }

@@ -310,7 +310,9 @@ using crystal ghoul
 	"Die magischen Kräfte des Kristalls blasen dem ollen Ghoul sein untotes Dasein aus!",cr,cr
 	"Der Bursche zerfällt zu Staub!",cr,cr
 	"DU HAST DAS ADVENTURE GELÖST!"
-	# FIXME - hier callasm aufrufen!
+	#delay 10
+	#callasm get_key
+	#callasm restart
 # Das Zubereiten des Zaubertrankes
 # Wenn Variable potion auf 9 steht, ist der Trank aktiv
 using kettle herb2

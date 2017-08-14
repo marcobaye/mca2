@@ -93,10 +93,10 @@ ted_colors ; look-up table to convert vic colors to matching ted color/luma comb
 }
 !if SYSTEM = 264 {
 !addr	currentcolor	= $053b
-!addr	cbmshift	= $0c00	; FIXME - bogus!
+!addr	cbmshift	= $0547
 	LINE_LEN	= 40
-!addr	z_quote_mode	= $0c00	; FIXME - bogus!
-!addr	screenpage	= $0c00	; FIXME - bogus!
+!addr	z_quote_mode	= $cb
+!addr	SCREEN		= $0c00
 }
 
 !if SYSTEM = 128 {
@@ -198,7 +198,6 @@ output_init ; setup own charset, vic registers, etc.
 		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
 }
 !if SYSTEM = 264 {
-!addr	SCREEN = $0c00	; FIXME!
 		; FIXME - init ted and charset!
 		; now CLEAR to init screen
 		jsr my_primm
