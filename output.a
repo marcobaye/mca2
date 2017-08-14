@@ -41,8 +41,8 @@
 }
 !if SYSTEM = 264 {
 ted_colors ; look-up table to convert vic colors to matching ted color/luma combo
-		!by $00, $71, $22, $43, $44, $45, $26, $47
-		!by $38, $39, $62, $11, $31, $65, $56, $51
+		!by $00, $71, $22, $63, $44, $45, $26, $67
+		!by $48, $19, $42, $11, $31, $65, $56, $51
 }
 	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
 !if (SYSTEM = 64) OR (SYSTEM = 264) {
@@ -66,23 +66,24 @@ ted_colors ; look-up table to convert vic colors to matching ted color/luma comb
 	; ted colors must be substituted using a lookup table!
 }
 !if SYSTEM = 128 {
-	; vdc colors:
-	color_BLACK	= colorbase + $0
-	color_DARKGRAY	= colorbase + $1	: color_GRAY1 = color_DARKGRAY
-	color_BLUE	= colorbase + $2
+	; vdc colors and a mapping to vic color names:
+	color_DBLACK	= colorbase + $0	: color_BLACK	= color_DBLACK
+	color_LBLACK	= colorbase + $1	: color_GRAY1	= color_LBLACK
+	color_DBLUE	= colorbase + $2	: color_BLUE	= color_DBLUE
 	color_LBLUE	= colorbase + $3
-	color_GREEN	= colorbase + $4
+	color_DGREEN	= colorbase + $4	: color_GREEN	= color_DGREEN
 	color_LGREEN	= colorbase + $5
-	color_CYAN	= colorbase + $6
-	color_LCYAN	= colorbase + $7
-	color_RED	= colorbase + $8
+	color_DCYAN	= colorbase + $6	: color_GRAY2	= color_DCYAN
+	color_LCYAN	= colorbase + $7	: color_CYAN	= color_LCYAN
+	color_DRED	= colorbase + $8	: color_RED	= color_DRED
 	color_LRED	= colorbase + $9
-	color_PURPLE	= colorbase + $a
-	color_LPURPLE	= colorbase + $b
-	color_BROWN	= colorbase + $c
-	color_YELLOW	= colorbase + $d
-	color_LGRAY	= colorbase + $e
-	color_WHITE	= colorbase + $f
+	color_DPURPLE	= colorbase + $a	: color_PURPLE	= color_LPURPLE
+	color_LPURPLE	= colorbase + $b	: color_ORANGE	= color_DPURPLE
+	color_DYELLOW	= colorbase + $c	: color_BROWN	= color_DYELLOW
+	color_LYELLOW	= colorbase + $d	: color_YELLOW	= color_LYELLOW
+	color_DWHITE	= colorbase + $e	: color_GRAY3	= color_DWHITE
+	color_LWHITE	= colorbase + $f	: color_WHITE	= color_LWHITE
+	; basic7 maps GRAY1 and GRAY2 the other way around, but I like this better.
 }
 ; system memory
 !if SYSTEM = 64 {
