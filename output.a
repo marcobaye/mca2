@@ -1,9 +1,17 @@
 ;ACME 0.96.2
 
-	!src <cbm/c64/petscii.a>
+	!src <cbm/petscii.a>
+	petscii_LOWERCASE	=  14	; switch to lowercase/uppercase character set
+	petscii_F1	= 133:	petscii_F2	= 137
+	petscii_F3	= 134:	petscii_F4	= 138
+	petscii_F5	= 135:	petscii_F6	= 139
+	petscii_F7	= 136:	petscii_F8	= 140
+	!src <cbm/kernal.a>
+!if SYSTEM = 64 {
 	!src <cbm/c64/vic.a>
-	!src <cbm/c64/kernal.a>
+}
 !if SYSTEM = 128 {
+	!src <cbm/c128/vic.a>	; only needed for timing via frame counting
 	!src <cbm/c128/vdc.a>
 }
 
@@ -198,12 +206,26 @@ output_init ; setup own charset, vic registers, etc.
 		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
 }
 !if SYSTEM = 264 {
-		; FIXME - init ted and charset!
+		; init ted and charset:
+		; forbid cbm/shift
+		lda #$80
+		sta cbmshift
+		; charset in ram
+		lda #$c3
+		sta addr($ff12)
+		; copy charset
+		ldx #0
+---			!for i, 0, 3 {
+				lda charset + i * 256, x
+				sta addr($d400 + i * 256), x
+			}
+			inx
+			bne ---
 		; now CLEAR to init screen
 		jsr my_primm
 		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
 }
-.rts		rts
+		rts
 
 output_set_colors ; this will be called after credits screen
 !if SYSTEM = 64 {
@@ -289,7 +311,7 @@ my_chrout ; must keep X/Y!
 			ldx #MODIFIED8	: .tmpx = * - 1
 }
 			sta currentcolor	; new characters have correct color
-			rts
+.rts			rts
 		; replace ÄÖÜß with correct codes for chosen charset
 !if ISO {
 .ä		lda #$a4
