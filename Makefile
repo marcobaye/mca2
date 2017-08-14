@@ -2,7 +2,7 @@ ASSEMBLER6502	= acme
 AS_FLAGS	= -v0 -Wtype-mismatch
 RM		= rm
 
-PROGS		= game64.prg game128.prg example.prg
+PROGS		= game64.prg game128.prg game264.prg example.prg
 SRCS		= mca2.a output.a charset.a engine.a tail.a
 
 all: $(PROGS)
@@ -13,6 +13,9 @@ game64.prg: $(SRCS) _game.tmp.a
 
 game128.prg: $(SRCS) _game.tmp.a
 	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 -DSYSTEM=128 --outfile game128.prg --format cbm _game.tmp.a $(SRCS)
+
+game264.prg: $(SRCS) _game.tmp.a
+	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 -DSYSTEM=264 --outfile game264.prg --format cbm _game.tmp.a $(SRCS)
 
 example.prg: $(SRCS) _example.tmp.a
 	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=0 -DSYSTEM=64 --outfile example.prg --format cbm _example.tmp.a $(SRCS)
@@ -28,6 +31,9 @@ x64: game64.prg
 
 x128: game128.prg
 	x128 -device8 1 -autostartprgmode 1 game128.prg
+
+xplus4: game264.prg
+	xplus4 -device8 1 -autostartprgmode 1 game264.prg
 
 clean:
 	-$(RM) -f *.o *.tmp $(PROGS) *~ core

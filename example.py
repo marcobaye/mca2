@@ -187,9 +187,8 @@ loc deck4_transporter_room
 # "proc" starts a procedure definition (can be called using "callproc")
 proc check_lives
 	if lives_left == 0
-		"You are so dead."
-		delay 10	# wait a full second
-		callasm xor_border
+		"You are so dead. Press a key."
+		callasm get_key
 	endif
 
 

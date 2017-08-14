@@ -31,8 +31,13 @@
 	ü		= $bc
 	colorbase	= $f0	; f0..ff
 }
+!if SYSTEM = 264 {
+ted_colors ; look-up table to convert vic colors to matching ted color/luma combo
+		!by $00, $71, $22, $43, $44, $45, $26, $47
+		!by $38, $39, $62, $11, $31, $65, $56, $51
+}
 	; new color codes (because some PetSCII codes clash with the UTF8 conversion)
-!if SYSTEM = 64 {
+!if (SYSTEM = 64) OR (SYSTEM = 264) {
 	; vic-ii colors:
 	color_BLACK	= colorbase + $0
 	color_WHITE	= colorbase + $1
@@ -50,6 +55,7 @@
 	color_LGREEN	= colorbase + $d
 	color_LBLUE	= colorbase + $e
 	color_GRAY3	= colorbase + $f
+	; ted colors must be substituted using a lookup table!
 }
 !if SYSTEM = 128 {
 	; vdc colors:
@@ -84,6 +90,13 @@
 	LINE_LEN	= 80
 !addr	z_quote_mode	= $f4
 !addr	vdcw		= $cdcc
+}
+!if SYSTEM = 264 {
+!addr	currentcolor	= $053b
+!addr	cbmshift	= $0c00	; FIXME - bogus!
+	LINE_LEN	= 40
+!addr	z_quote_mode	= $0c00	; FIXME - bogus!
+!addr	screenpage	= $0c00	; FIXME - bogus!
 }
 
 !if SYSTEM = 128 {
@@ -184,6 +197,13 @@ output_init ; setup own charset, vic registers, etc.
 		jsr my_primm
 		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
 }
+!if SYSTEM = 264 {
+!addr	SCREEN = $0c00	; FIXME!
+		; FIXME - init ted and charset!
+		; now CLEAR to init screen
+		jsr my_primm
+		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
+}
 .rts		rts
 
 output_set_colors ; this will be called after credits screen
@@ -197,6 +217,12 @@ output_set_colors ; this will be called after credits screen
 		ldx #vdcr_color
 		lda #((color_std & $f) << 4) | (color_background & $f)
 		jsr vdcw
+}
+!if SYSTEM = 264 {
+		lda ted_colors + (color_border & $f)
+		sta addr($ff19)	; border
+		lda ted_colors + (color_background & $f)
+		sta addr($ff15)	; background
 }
 		rts
 
@@ -254,6 +280,14 @@ my_chrout ; must keep X/Y!
 !if SYSTEM = 128 {
 			and #$f	; keep color
 			ora #%#.......	; 2nd charset, no revs, no underline, no flash
+}
+!if SYSTEM = 264 {
+			; lookup in ted_colors but keep X and Y!
+			stx .tmpx
+			and #$f	; keep color
+			tax
+			lda ted_colors, x
+			ldx #MODIFIED8	: .tmpx = * - 1
 }
 			sta currentcolor	; new characters have correct color
 			rts
