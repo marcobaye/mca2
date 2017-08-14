@@ -2,23 +2,51 @@
 ; architecture-specific stuff for C128
 
 ; config
-	SYSTEM	= 128	; TODO - get rid of this
 	KEYPAD	= 1
+	LINE_LEN	= 80
 
 ; libraries
+	!src <cbm/c128/vic.a>	; only needed for timing via frame counting
 	!src <cbm/c128/mmu.a>
+	!src <cbm/c128/vdc.a>
 
-; zp variables
+; zero page
+!addr	currentcolor	= $f1
+!addr	z_quote_mode	= $f4
+!addr	cbmshift	= $f7
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $fd	; counts recursion levels
 !addr	tmp		= $fe	; only used by font copier
 
-; system memory
+; system area
 !addr	z_keychk	= $033c	; fn ptr for f-key string expansion
 !addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
 
 ; other
 	load_addr	= $1c01
+
+; editor/kernal rom
+!addr	vdcw		= $cdcc
+
+; new color codes (because some PetSCII codes clash with the UTF8 conversion):
+; vdc colors (and a mapping to vic color names - basic 7 maps
+; GRAY1 and GRAY2 the other way around, but I like this better):
+	color_DBLACK	= colorbase + $0	: color_BLACK	= color_DBLACK
+	color_LBLACK	= colorbase + $1	: color_GRAY1	= color_LBLACK
+	color_DBLUE	= colorbase + $2	: color_BLUE	= color_DBLUE
+	color_LBLUE	= colorbase + $3
+	color_DGREEN	= colorbase + $4	: color_GREEN	= color_DGREEN
+	color_LGREEN	= colorbase + $5
+	color_DCYAN	= colorbase + $6	: color_GRAY2	= color_DCYAN
+	color_LCYAN	= colorbase + $7	: color_CYAN	= color_LCYAN
+	color_DRED	= colorbase + $8	: color_RED	= color_DRED
+	color_LRED	= colorbase + $9
+	color_DPURPLE	= colorbase + $a	: color_PURPLE	= color_LPURPLE
+	color_LPURPLE	= colorbase + $b	: color_ORANGE	= color_DPURPLE
+	color_DYELLOW	= colorbase + $c	: color_BROWN	= color_DYELLOW
+	color_LYELLOW	= colorbase + $d	: color_YELLOW	= color_LYELLOW
+	color_DWHITE	= colorbase + $e	: color_GRAY3	= color_DWHITE
+	color_LWHITE	= colorbase + $f	: color_WHITE	= color_LWHITE
 
 ; code macros
 !macro arch_basicstuff {
@@ -59,4 +87,74 @@
 			bne -
 		lda #petscii_HOME	; yes, kernal, no need to filter through conv/wordwrap
 		jsr k_chrout
+}
+
+!macro arch_output_init {
+		; forbid cbm/shift
+		lda #$80
+		sta cbmshift
+		; FIXME - pimp vdc to 9x10 matrix?
+		; copy charset:
+		; start address in vdc ram should be $3000 (lowercase charset)
+		ldx #vdcr_ram_hi
+		lda #>$3000
+		jsr vdcw
+		ldx #vdcr_ram_lo
+		lda #<$3000
+		jsr vdcw
+		; copy first half
+		lda #0
+		jsr c128_copycharset
+		; copy reverse half
+		lda #255
+		jsr c128_copycharset
+		; now CLEAR to init screen
+		jsr my_primm
+		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
+}
+
+!macro arch_set_colors {
+		ldx #vdcr_color
+		lda #((color_std & $f) << 4) | (color_background & $f)
+		jsr vdcw
+}
+
+!macro arch_set_text_color_A {
+		and #%....####	; keep color, remove base code
+		ora #%#.......	; 2nd charset, no revs, no underline, no flash
+		sta currentcolor	; new characters have correct color
+}
+
+!macro arch_bulk {
+	.charcount = tmp
+c128_copycharset ; copy data to vdc ram with gaps, XORing with A
+		sta .xor
+		lda #<charset
+		sta .ptr
+		lda #>charset
+		sta .ptr + 1
+		lda #128
+		sta .charcount
+-----			; eight real bytes
+			ldy #8
+---				lda MODIFIED16	: .ptr = * - 2
+				eor #MODIFIED8	: .xor = * - 1
+				inc .ptr
+				bne +
+					inc .ptr + 1
++				ldx #vdcr_access
+				jsr vdcw
+				dey
+				bne ---
+			; eight fake bytes
+			ldy #8
+---				lda #0
+				ldx #vdcr_access
+				jsr vdcw
+				dey
+				bne ---
+			; all chars done?
+			inc .charcount
+			bne -----
+		rts
 }

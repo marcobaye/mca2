@@ -66,10 +66,10 @@ entry ; entry point for SYS
 		tsx
 		stx sp_buffer
 		+arch_init
-		jsr output_init
+		+arch_output_init	; setup own charset, vic registers, etc.
 		; FIXME - fade in!
 		jsr my_primm	: !tx color_std, petscii_CLEAR, 0
-		jsr output_set_colors
+		+arch_set_colors	; FIXME - should be called after credits screen!
 ; now enter actual main loop:
 		jsr engine_check_restart	; reset vars to default?
 		jsr indent1

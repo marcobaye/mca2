@@ -1,5 +1,8 @@
 ;ACME 0.96.2
 
+; add architecture-specific stuff (helper functions, tables etc.)
+	+arch_bulk
+
 ; external storage:
 softstack_lo
 	* = * + MAX_RECURSIONS

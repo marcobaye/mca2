@@ -2,22 +2,49 @@
 ; architecture-specific stuff for C64
 
 ; config
-	SYSTEM	= 64	; TODO - get rid of this
 	KEYPAD	= 0
+	LINE_LEN	= 40
 
 ; libraries
-	;!src <>
+	!src <cbm/c64/vic.a>
 
-; zp variables
+; zero page
+!addr	cpu_port	= $01
 ;!addr	fac1		= $61	; floating point registers could be used for temp storage
+!addr	z_quote_mode	= $d4
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $fd	; counts recursion levels
 
-; system memory
+; system area
+!addr	currentcolor	= $0286
+!addr	screenpage	= $0288
+!addr	cbmshift	= $0291
 !addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
 
 ; other
 	load_addr	= $0801
+
+; i/o
+!addr	cia2_port_a	= $dd00
+
+; new color codes (because some PetSCII codes clash with the UTF8 conversion):
+; vic-ii colors:
+	color_BLACK	= colorbase + $0
+	color_WHITE	= colorbase + $1
+	color_RED	= colorbase + $2
+	color_CYAN	= colorbase + $3
+	color_PURPLE	= colorbase + $4
+	color_GREEN	= colorbase + $5
+	color_BLUE	= colorbase + $6
+	color_YELLOW	= colorbase + $7
+	color_ORANGE	= colorbase + $8
+	color_BROWN	= colorbase + $9
+	color_LRED	= colorbase + $a
+	color_GRAY1	= colorbase + $b
+	color_GRAY2	= colorbase + $c
+	color_LGREEN	= colorbase + $d
+	color_LBLUE	= colorbase + $e
+	color_GRAY3	= colorbase + $f
 
 ; code macros
 !macro arch_basicstuff {
@@ -52,4 +79,62 @@
 			dex
 			bpl --
 		; done
+}
+
+!macro arch_output_init {
+		; ECB + bitmap + disable => all black
+		lda #%.##.#.##
+		sta vic_controlv
+		; forbid cbm/shift
+		lda #$80
+		sta cbmshift
+		; highest vic bank
+		lda #%#..#.#..
+		sta cia2_port_a
+		; screen at $cc00, charset at $d000
+!addr	SCREEN	= $cc00
+!addr	CHARGEN	= $d000
+		lda #((SCREEN & $3c00) >> 6) | %0100
+		sta vic_ram
+		; copy charset
+		lda #$31	; ram and charset
+		ldx #0
+		sei
+			sta cpu_port
+---				!for i, 0, 3 {
+					lda charset + i * 256, x
+					sta CHARGEN + i * 256, x
+					eor #$ff	; revert
+					sta CHARGEN + i * 256 + $0400, x
+				}
+				inx
+				bne ---
+			lda #$36	; ram, i/o, kernal
+			sta cpu_port
+		cli
+		; tell kernal where screen is
+		lda #>SCREEN
+		sta screenpage
+		; now CLEAR to init screen
+		jsr my_primm
+		!tx color_std, petscii_CLEAR, 0
+		; re-enable vic display
+		lda #%...##.##
+		sta vic_controlv
+}
+
+!macro arch_set_colors {
+		lda #color_border
+		sta vic_cborder
+		lda #color_background
+		sta vic_cbg
+}
+
+!macro arch_set_text_color_A {
+		; no need to convert, vic-ii only cares about lower nibble anyway
+		sta currentcolor	; new characters have correct color
+}
+
+!macro arch_bulk {
+		; nothing needed
 }

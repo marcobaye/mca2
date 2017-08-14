@@ -2,25 +2,30 @@
 ; architecture-specific stuff for C16/+4
 
 ; config
-	SYSTEM	= 264	; TODO - get rid of this
 	KEYPAD	= 0
+	LINE_LEN	= 40
 
 ; libraries
 	;!src <>
 
-; zp variables
+; zero page
 	; $fb..$fe are in use, so using floating point registers instead:
 !addr	runptr		= $61	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $63	; counts recursion levels
 !addr	is_PAL		= $64	; zero for NTSC, nonzero for PAL (CAUTION - own var, nothing official!)
+!addr	z_quote_mode	= $cb
 
-; system memory
-	;-
+; system area
+!addr	currentcolor	= $053b
+!addr	cbmshift	= $0547
+!addr	SCREEN		= $0c00
 
 ; other
 	load_addr	= $1001
+!addr	CHARGEN		= $d000	; 128 chars upper/graphics, then at $d400 128 chars lower/upper
 
 ; i/o (FIXME - create proper library files!)
+!addr	ted_ramrom	= $ff12	; bit 2 selects ram/rom charset
 !addr	ted_background	= $ff15	; background
 !addr	ted_border	= $ff19	; border
 !addr	ted_ff1c	= $ff1c	; lsb is msb of raster line
@@ -28,7 +33,32 @@
 ; kernal rom
 !addr	kernal_version	= $ff80	; msb contains PAL/NTSC info
 
+; new color codes (because some PetSCII codes clash with the UTF8 conversion):
+; "vic-ii colors" (ted colors are substituted using a lookup table)
+	color_BLACK	= colorbase + $0
+	color_WHITE	= colorbase + $1
+	color_RED	= colorbase + $2
+	color_CYAN	= colorbase + $3
+	color_PURPLE	= colorbase + $4
+	color_GREEN	= colorbase + $5
+	color_BLUE	= colorbase + $6
+	color_YELLOW	= colorbase + $7
+	color_ORANGE	= colorbase + $8
+	color_BROWN	= colorbase + $9
+	color_LRED	= colorbase + $a
+	color_GRAY1	= colorbase + $b
+	color_GRAY2	= colorbase + $c
+	color_LGREEN	= colorbase + $d
+	color_LBLUE	= colorbase + $e
+	color_GRAY3	= colorbase + $f
+
 ; code macros
+!macro arch_bulk {
+; look-up table to convert vic colors to matching ted color/luma combo
+ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
+		!by $48, $19, $42, $11, $31, $65, $56, $51
+}
+
 !macro arch_basicstuff {
 		!by $de, $20, $9c, $3a	; "graphic clr:"
 }
@@ -73,4 +103,42 @@
 			dex
 			bpl --
 		; done
+}
+
+!macro arch_output_init {
+		; init ted and charset:
+		; forbid cbm/shift
+		lda #$80
+		sta cbmshift
+		; charset in ram
+		lda #$c3
+		sta ted_ramrom
+		; copy charset
+		ldx #0
+---			!for i, 0, 3 {
+				lda charset + i * 256, x
+				sta CHARGEN + i * 256 + $0400, x
+			}
+			inx
+			bne ---
+		; now CLEAR to init screen
+		jsr my_primm
+		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
+}
+
+!macro arch_set_colors {
+		lda ted_colors + (color_background & $f)
+		sta ted_background
+		lda ted_colors + (color_border & $f)
+		sta ted_border
+}
+
+!macro arch_set_text_color_A {
+		; look up in ted_colors, but caller needs us to keep X and Y!
+		stx .tmpx
+		and #%....####	; keep color, remove base code
+		tax
+		lda ted_colors, x	; get luma/color combo
+		ldx #MODIFIED8	: .tmpx = * - 1	; restore X
+		sta currentcolor	; new characters have correct color
 }
