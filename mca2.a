@@ -31,34 +31,6 @@
 		!pet "saufbox!", 0
 line2		!wo 0
 
-
-wait_A_tenths ; wait for the number of .1 seconds given in A
-		; convert .1s unit to frames:
-		;	for PAL (50Hz), multiply by 5 (4+1)
-		;	for NTSC (60Hz), multiply by 6 (4+1+1)
-		sta .tenths
-		asl	; *2
-		asl	; *4
-		clc
-		adc #MODIFIED8	: .tenths = * - 1	; *5
-		; for NTSC, add another time
-		ldx is_PAL
-		bne +
-			clc
-			adc .tenths	; *6
-+		;FALLTHROUGH
-wait_A_frames ; wait for the number of frames given in A
-		tax
-		+arch_wait_X_frames
-		rts
-
-get_key ; wait for user to press key
-		lda #0
-		jsr my_chrout	; force flushing of word wrap buffer
----			jsr k_getin
-			beq ---
-		rts
-
 ; main program
 entry ; entry point for SYS
 		; init
@@ -360,4 +332,34 @@ pre_situation ; called before a new situation (to init screen)
 		jsr indent0
 		jsr my_primm	: !tx color_std, petscii_CLEAR, petscii_REVSON, 0
 		+arch_invert_title
+		rts
+
+;---------------------------------------
+; helper functions
+
+wait_A_tenths ; wait for the number of .1 seconds given in A
+		; convert .1s unit to frames:
+		;	for PAL (50Hz), multiply by 5 (4+1)
+		;	for NTSC (60Hz), multiply by 6 (4+1+1)
+		sta .tenths
+		asl	; *2
+		asl	; *4
+		clc
+		adc #MODIFIED8	: .tenths = * - 1	; *5
+		; for NTSC, add another time
+		ldx is_PAL
+		bne +
+			clc
+			adc .tenths	; *6
++		;FALLTHROUGH
+wait_A_frames ; wait for the number of frames given in A
+		tax
+		+arch_wait_X_frames
+		rts
+
+get_key ; wait for user to press key
+		lda #0
+		jsr my_chrout	; force flushing of word wrap buffer
+---			jsr k_getin
+			beq ---
 		rts
