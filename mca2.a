@@ -44,7 +44,7 @@
 	; $fb..$fe are in use, so using floating point registers instead:
 !addr	runptr		= $61	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $63	; counts recursion levels
-!addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL	FIXME - bogus!
+!addr	is_PAL		= $64	; zero for NTSC, nonzero for PAL
 	load_addr	= $1001
 !addr	ted_ff1c	= $ff1c	; lsb is msb of raster line
 }
@@ -128,6 +128,11 @@ entry ; entry point for SYS
 		sta z_keychk	; and therefore disable F key string expansion
 }
 !if SYSTEM = 264 {
+		lda addr($ff80)	; copy ROM hint to own PAL/NTSC flag (reading from TED would need shift and flip)
+		asl
+		lda #0
+		rol
+		sta is_PAL
 		; FIXME - disable 264's F key string expansion!
 ;		sta addr($ff3e)	; activate (kernal) ROM
 }
