@@ -3,22 +3,22 @@ AS_FLAGS	= -v0 -Wtype-mismatch
 RM		= rm
 
 PROGS		= game64.prg game128.prg game264.prg example.prg
-SRCS		= mca2.a output.a charset.a engine.a tail.a
+SRCS		= mca2.a charset.a engine.a output.a tail.a	# order is important: mca first, tail last, engine before output
 
 all: $(PROGS)
 
 game64.prg: $(SRCS) _game.tmp.a
-	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 -DSYSTEM=64 --outfile game64.prg --format cbm _game.tmp.a $(SRCS)
+	$(ASSEMBLER6502) $(AS_FLAGS) -DSYSTEM=64 --outfile game64.prg --format cbm _game.tmp.a $(SRCS)
 	#exomizer sfx basic game64.prg sfx.prg
 
 game128.prg: $(SRCS) _game.tmp.a
-	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 -DSYSTEM=128 --outfile game128.prg --format cbm _game.tmp.a $(SRCS)
+	$(ASSEMBLER6502) $(AS_FLAGS) -DSYSTEM=128 --outfile game128.prg --format cbm _game.tmp.a $(SRCS)
 
 game264.prg: $(SRCS) _game.tmp.a
-	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=1 -DSYSTEM=264 --outfile game264.prg --format cbm _game.tmp.a $(SRCS)
+	$(ASSEMBLER6502) $(AS_FLAGS) -DSYSTEM=264 --outfile game264.prg --format cbm _game.tmp.a $(SRCS)
 
 example.prg: $(SRCS) _example.tmp.a
-	$(ASSEMBLER6502) $(AS_FLAGS) -DISO=0 -DSYSTEM=64 --outfile example.prg --format cbm _example.tmp.a $(SRCS)
+	$(ASSEMBLER6502) $(AS_FLAGS) -DSYSTEM=64 --outfile example.prg --format cbm _example.tmp.a $(SRCS)
 
 _game.tmp.a: conv.py game.py
 	./conv.py game.py > _game.tmp.a

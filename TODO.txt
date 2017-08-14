@@ -76,3 +76,11 @@ item "npc" mit code für kommunikation
 add "input" or "choice" command?	Problem: User cannot save at that point!
 change iso/utf8 encoding to _one_ variant!
 Steckschwein-Version?
+
+use color_speech and color_magic in game.py
+move game.py to aotb.py
+tweak aotb.py so it can be used as an example:
+	move items to PLAYER instead of to specific locations
+	fix indentation
+	maybe use dynamic descriptions instead of multiple items?
+move machine-specific stuff to extra files
