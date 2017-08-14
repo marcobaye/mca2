@@ -1,0 +1,76 @@
+;ACME 0.96.2
+; architecture-specific stuff for C16/+4
+
+; config
+	SYSTEM	= 264	; TODO - get rid of this
+	KEYPAD	= 0
+
+; libraries
+	;!src <>
+
+; zp variables
+	; $fb..$fe are in use, so using floating point registers instead:
+!addr	runptr		= $61	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $63	; counts recursion levels
+!addr	is_PAL		= $64	; zero for NTSC, nonzero for PAL (CAUTION - own var, nothing official!)
+
+; system memory
+	;-
+
+; other
+	load_addr	= $1001
+
+; i/o (FIXME - create proper library files!)
+!addr	ted_background	= $ff15	; background
+!addr	ted_border	= $ff19	; border
+!addr	ted_ff1c	= $ff1c	; lsb is msb of raster line
+
+; kernal rom
+!addr	kernal_version	= $ff80	; msb contains PAL/NTSC info
+
+; code macros
+!macro arch_basicstuff {
+		!by $de, $20, $9c, $3a	; "graphic clr:"
+}
+
+!macro arch_wait_X_frames {
+---		; count down frames
+-				lda ted_ff1c
+				lsr
+				bcc -
+			txa	; check for early exit (if called with A zero)
+			beq +	; early exit
+-				lda ted_ff1c
+				lsr
+				bcs -
+			dex
+			bne ---
++		; done
+}
+
+!macro arch_init {
+		; copy ROM hint to own PAL/NTSC flag
+		; (reading from TED would need shift and flip)
+		lda kernal_version
+		asl
+		lda #0
+		rol
+		sta is_PAL
+		; FIXME - disable 264's F key string expansion!
+		; FIXME - how to enable much RAM plus kernal ROM?
+		;sta addr($ff3f)	like this?
+		; FIXME - fadeout!
+		lda #0	; black
+		sta ted_border
+		sta ted_background
+}
+
+!macro arch_invert_title {
+		; invert first line for title (exact same algo as c64)
+		ldx #LINE_LEN - 1
+		lda #160	; reverse space
+--			sta SCREEN, x
+			dex
+			bpl --
+		; done
+}

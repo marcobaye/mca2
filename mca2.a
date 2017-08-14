@@ -18,46 +18,10 @@
 	MODIFIED8	= $ff
 	LIST_LEN_LIMIT	= 24	; with prompt underneath, screen shouldn't scroll
 
-; zp variables
-
-; system memory
-!if SYSTEM = 64 {
-	KEYPAD		= 0
-;!addr	fac1		= $61	; floating point registers could be used for temp storage
-!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
-!addr	recursion_depth	= $fd	; counts recursion levels
-!addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
-	load_addr	= $0801
-}
-!if SYSTEM = 128 {
-	KEYPAD		= 1
-!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
-!addr	recursion_depth	= $fd	; counts recursion levels
-!addr	tmp		= $fe	; only used by font copier
-!addr	z_keychk	= $033c	; fn ptr for f-key string expansion
-!addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
-	load_addr	= $1c01
-	!src <cbm/c128/mmu.a>
-}
-!if SYSTEM = 264 {
-	KEYPAD		= 0
-	; $fb..$fe are in use, so using floating point registers instead:
-!addr	runptr		= $61	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
-!addr	recursion_depth	= $63	; counts recursion levels
-!addr	is_PAL		= $64	; zero for NTSC, nonzero for PAL
-	load_addr	= $1001
-!addr	ted_ff1c	= $ff1c	; lsb is msb of raster line
-}
 ; basic header
 	* = load_addr
 		!wo line2, 2017
-!if SYSTEM = 128 {
-		!by $fe, $25, $3a, $fe, $02, $20, $30, $3a	; "fast:bank 0:"
-		!by $de, $20, $9c, $3a, $de, $20, $35, $3a	; "graphic clr:graphic 5:"
-}
-!if SYSTEM = 264 {
-		!by $de, $20, $9c, $3a	; "graphic clr:"
-}
+		+arch_basicstuff	; add architecture-specific basic instructions
 		!by $9e, $20	; "sys "
 		!by '0' + entry % 10000 / 1000
 		!by '0' + entry %  1000 /  100
@@ -85,28 +49,8 @@ wait_A_tenths ; wait for the number of .1 seconds given in A
 +		;FALLTHROUGH
 wait_A_frames ; wait for the number of frames given in A
 		tax
----
-!if (SYSTEM = 64) OR (SYSTEM = 128) {
--				lda vic_controlv
-				bpl -
-			txa	; check for early exit (if called with A zero)
-			beq +	; early exit
--				lda vic_controlv
-				bmi -
-}
-!if SYSTEM = 264 {
--				lda ted_ff1c
-				lsr
-				bcc -
-			txa	; check for early exit (if called with A zero)
-			beq +	; early exit
--				lda ted_ff1c
-				lsr
-				bcs -
-}
-			dex
-			bne ---
-+		rts
+		+arch_wait_X_frames
+		rts
 
 get_key ; wait for user to press key
 		lda #0
@@ -121,31 +65,7 @@ entry ; entry point for SYS
 		cld
 		tsx
 		stx sp_buffer
-!if SYSTEM = 128 {
-		lda #%....111.	; ram0, kernal, i/o
-		sta mmu_cr
-		lda #<$c6b7	; this will skip the first few bytes of the original routine
-		sta z_keychk	; and therefore disable F key string expansion
-}
-!if SYSTEM = 264 {
-		lda addr($ff80)	; copy ROM hint to own PAL/NTSC flag (reading from TED would need shift and flip)
-		asl
-		lda #0
-		rol
-		sta is_PAL
-		; FIXME - disable 264's F key string expansion!
-;		sta addr($ff3e)	; activate (kernal) ROM
-}
-		; FIXME - fadeout!
-		lda #0
-!if (SYSTEM = 64) OR (SYSTEM = 128) {
-		sta vic_cborder
-		sta vic_cbg
-}
-!if SYSTEM = 264 {
-		sta addr($ff19)	; border
-		sta addr($ff15)	; background
-}
+		+arch_init
 		jsr output_init
 		; FIXME - fade in!
 		jsr my_primm	: !tx color_std, petscii_CLEAR, 0
@@ -439,22 +359,5 @@ pre_situation ; called before a new situation (to init screen)
 		; make some space
 		jsr indent0
 		jsr my_primm	: !tx color_std, petscii_CLEAR, petscii_REVSON, 0
-!if (SYSTEM = 64) OR (SYSTEM = 264) {
-		; invert first line for title
-		ldx #39
-		lda #160
---			sta SCREEN, x
-			dex
-			bpl --
-}
-!if SYSTEM = 128 {
-		; invert first line for title
-		lda #' '
-		ldx #256 - LINE_LEN
--			jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
-			inx
-			bne -
-		lda #petscii_HOME	; yes, kernal, no need to filter through conv/wordwrap
-		jsr k_chrout
-}
+		+arch_invert_title
 		rts

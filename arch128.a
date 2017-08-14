@@ -1,0 +1,62 @@
+;ACME 0.96.2
+; architecture-specific stuff for C128
+
+; config
+	SYSTEM	= 128	; TODO - get rid of this
+	KEYPAD	= 1
+
+; libraries
+	!src <cbm/c128/mmu.a>
+
+; zp variables
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $fd	; counts recursion levels
+!addr	tmp		= $fe	; only used by font copier
+
+; system memory
+!addr	z_keychk	= $033c	; fn ptr for f-key string expansion
+!addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
+
+; other
+	load_addr	= $1c01
+
+; code macros
+!macro arch_basicstuff {
+		!by $fe, $25, $3a, $fe, $02, $20, $30, $3a	; "fast:bank 0:"
+		!by $de, $20, $9c, $3a, $de, $20, $35, $3a	; "graphic clr:graphic 5:"
+}
+
+!macro arch_wait_X_frames {
+---		; count down VIC frames (exact same algo as c64)
+-				lda vic_controlv
+				bpl -
+			txa	; check for early exit (if called with X zero)
+			beq +	; early exit
+-				lda vic_controlv
+				bmi -
+			dex
+			bne ---
++		; done
+}
+
+!macro arch_init {
+		lda #%....111.	; ram0, kernal, i/o
+		sta mmu_cr
+		lda #<$c6b7	; this will skip the first few bytes of the original routine
+		sta z_keychk	;	and therefore disable F key string expansion
+		; FIXME - fadeout!
+		lda #0	; black
+		sta vic_cborder
+		sta vic_cbg
+}
+
+!macro arch_invert_title {
+		; invert first line for title
+		lda #' '
+		ldx #256 - LINE_LEN
+-			jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
+			inx
+			bne -
+		lda #petscii_HOME	; yes, kernal, no need to filter through conv/wordwrap
+		jsr k_chrout
+}

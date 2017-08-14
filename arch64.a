@@ -1,0 +1,55 @@
+;ACME 0.96.2
+; architecture-specific stuff for C64
+
+; config
+	SYSTEM	= 64	; TODO - get rid of this
+	KEYPAD	= 0
+
+; libraries
+	;!src <>
+
+; zp variables
+;!addr	fac1		= $61	; floating point registers could be used for temp storage
+!addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $fd	; counts recursion levels
+
+; system memory
+!addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
+
+; other
+	load_addr	= $0801
+
+; code macros
+!macro arch_basicstuff {
+		; nothing needed
+}
+
+!macro arch_wait_X_frames {
+---		; count down frames
+-				lda vic_controlv
+				bpl -
+			txa	; check for early exit (if called with A zero)
+			beq +	; early exit
+-				lda vic_controlv
+				bmi -
+			dex
+			bne ---
++		; done
+}
+
+!macro arch_init {
+		; FIXME - fadeout!
+		lda #0	; black
+		sta vic_cborder
+		sta vic_cbg
+}
+
+!macro arch_invert_title {
+		; invert first line for title
+		ldx #LINE_LEN - 1
+		lda #160	; reverse space
+--			sta SCREEN, x
+			dex
+			bpl --
+		; done
+}
