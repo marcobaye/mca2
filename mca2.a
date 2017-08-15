@@ -363,3 +363,6 @@ get_key ; wait for user to press key
 ---			jsr k_getin
 			beq ---
 		rts
+
+keep_spinning ; the end of the game
+		jmp *

@@ -370,7 +370,8 @@ using crystal ghoul
 	delay 2
 	"Der Bursche zerfällt zu Staub!",cr,cr
 	delay 2
-	"DU HAST DAS ADVENTURE GELÖST!"
+	"", color_magic, "DU HAST DAS ADVENTURE GELÖST!", color_std
+	callasm keep_spinning	# endless loop
 	#delay 10
 	#callasm get_key
 	#callasm restart
@@ -543,7 +544,7 @@ using spade raven
 	"auf ihn losgehen willst.",cr,cr
 	"Erschrocken weichst du einen Schritt zurück."
 using sickle pala
-	"Mit einer Sichel kann man keine Kalahuiis töten."
+	"Mit einer Sichel kann man keine Palawaume töten."
 using sickle kala
 	"Du haust dem Kalahuii deine Sichel auf die Birne.",cr
 	"Sinnlos, das macht ihm gar nichts aus."
