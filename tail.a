@@ -3,7 +3,13 @@
 ; add architecture-specific stuff (helper functions, tables etc.)
 	+arch_bulk
 
-; external storage:
+; -- end of program binary --
+
+; maybe call an arch_* macro here so program counter can be changed for
+; external storage to be put elsewhere?
+
+; -- start of external storage --
+
 softstack_lo
 	* = * + MAX_RECURSIONS
 softstack_hi
@@ -21,6 +27,7 @@ itemlist_buf
 linebuf ; line buffer for word wrap (can hold one byte more than actual line)
 	* = * + LINE_LEN + 1
 
-	; commented out, because Basic ROM is now off anyway:
-	;!if * >= $a000 { !error "Reached BASIC ROM. Please add code to disable it." }
-	; FIXME - use machine-specific memory limit instead?
+; -- end of external storage --
+
+; check architecture-specific memory limit
+	+arch_check_memlimit

@@ -2,7 +2,8 @@
 ; architecture-specific stuff for C128
 
 ; config
-	KEYPAD	= 1
+	BASIC_HEADER	= 1
+	KEYPAD		= 1
 	LINE_LEN	= 80
 
 ; libraries
@@ -157,4 +158,11 @@ c128_copycharset ; copy data to vdc ram with gaps, XORing with A
 			inc .charcount
 			bne -----
 		rts
+}
+
+!macro arch_check_memlimit {
+	;!if * >= $4000 {	!error "Reached BASIC ROM. Please add code to disable it." }	; basic roms are switched off
+	!if * >= $c000 {	!error "Reached editor/kernal ROM area. Engine must be changed to cope with this!" }
+	;!if * >= $d000 {	!error "Reached I/O area. Engine must be changed to cope with this!" }
+	;!if * >= $ff00 {	!error "Reached memory limit $ff00!" }
 }

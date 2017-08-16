@@ -2,7 +2,8 @@
 ; architecture-specific stuff for C16/+4
 
 ; config
-	KEYPAD	= 0
+	BASIC_HEADER	= 1
+	KEYPAD		= 0
 	LINE_LEN	= 40
 
 ; libraries
@@ -141,4 +142,9 @@ ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 		lda ted_colors, x	; get luma/color combo
 		ldx #MODIFIED8	: .tmpx = * - 1	; restore X
 		sta currentcolor	; new characters have correct color
+}
+
+!macro arch_check_memlimit {
+	!if * >= $8000 {	!error "Reached ROM area. Engine must be changed to cope with this!" }
+	;!if * >= $fd00 {	!error "Reached memory limit $fd00!" }
 }

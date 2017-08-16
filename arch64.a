@@ -2,7 +2,8 @@
 ; architecture-specific stuff for C64
 
 ; config
-	KEYPAD	= 0
+	BASIC_HEADER	= 1
+	KEYPAD		= 0
 	LINE_LEN	= 40
 
 ; libraries
@@ -137,4 +138,9 @@
 
 !macro arch_bulk {
 		; nothing needed
+}
+
+!macro arch_check_memlimit {
+	;!if * >= $a000 {	!error "Reached BASIC ROM. Please add code to disable it." }	; commented out, because Basic ROM is now off anyway
+	!if * >= $d000 {	!error "Reached I/O area. Engine must be changed to cope with this!" }
 }

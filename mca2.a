@@ -8,9 +8,10 @@
 ;  4 Sep 2016	added some comments and shaved off a byte
 ; 24 Jun 2017	started work to convert from original mca to mca2
 ; 26 Jun 2017	got it to work
+; 16 Aug 2017	looks finished enough to release v1.1 of demo game
 
 	!src <6502/std.a>	; for +bit16
-	;!ct pet	; disabled, strings are now in UTF8
+	;!ct pet	; disabled, strings are now in ISO 8859-1 or UTF-8
 
 	DEUTSCH	= 1;0	; set to nonzero to make engine use german texts
 
@@ -18,8 +19,10 @@
 	MODIFIED8	= $ff
 	LIST_LEN_LIMIT	= 24	; with prompt underneath, screen shouldn't scroll
 
-; basic header
+; -- start of program binary --
+
 	* = load_addr
+!if BASIC_HEADER {
 		!wo line2, 2017
 		+arch_basicstuff	; add architecture-specific basic instructions
 		!by $9e, $20	; "sys "
@@ -30,7 +33,9 @@
 		!by $3a, $8f, $20	; ":rem "
 		!pet "saufbox!", 0
 line2		!wo 0
-
+} else {
+		+arch_header
+}
 ; main program
 entry ; entry point for SYS
 		; init

@@ -1,5 +1,5 @@
 ASSEMBLER6502	= acme
-AS_FLAGS	= -v0 -Wtype-mismatch
+AS_FLAGS	= -v1 -Wtype-mismatch
 RM		= rm
 
 PROGS		= game64.prg game128.prg game264.prg example.prg
