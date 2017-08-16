@@ -13,8 +13,6 @@
 	!src <6502/std.a>	; for +bit16
 	;!ct pet	; disabled, strings are now in ISO 8859-1 or UTF-8
 
-	DEUTSCH	= 1;0	; set to nonzero to make engine use german texts
-
 ; helper values
 	MODIFIED8	= $ff
 	LIST_LEN_LIMIT	= 24	; with prompt underneath, screen shouldn't scroll

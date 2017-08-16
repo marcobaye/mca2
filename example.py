@@ -51,6 +51,10 @@ asm color_out		= color_GRAY1	# "disabled" text color
 #	set UTF8 to 0 if _this_ file uses ISO 8859-1 encoding
 #	set UTF8 to 1 if _this_ file uses UTF-8 encoding
 asm UTF8	= 1
+# this one _must_ be defined, it tells the engine which messages to output:
+#	set DEUTSCH to 0 to make the engine use english messages
+#	set DEUTSCH to 1 to make the engine use german messages
+asm DEUTSCH	= 1
 
 # these two could be used to color NPC speech:
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
