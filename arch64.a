@@ -3,9 +3,11 @@
 
 ; config
 	MAKE_BASIC_HEADER	= 1
+	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 0
 	INCLUDE_CHARSET		= 1
 	LINE_LENGTH		= 40
+	sys_NEWLINE		= 13
 
 ; libraries
 	!src <cbm/c64/vic.a>
@@ -28,6 +30,10 @@
 
 ; i/o
 !addr	cia2_port_a	= $dd00
+
+; kernal rom
+!addr	sys_chrout	= $ffd2
+!addr	sys_getin	= $ffe4
 
 ; new color codes (because some PetSCII codes clash with the UTF8 conversion):
 ; vic-ii colors:

@@ -83,10 +83,14 @@ help ; "?" command
 		!tx "  Untersuche Benutze", cr, color_std
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
 		!tx "CLR/HOME(=F1) baut den Bildschirm neu auf.", cr
-		!tx "Zum Bewegen k", ö, "nnen auch die Cursortasten und +/- benutzt werden"
-	!if ALLOW_KEYPAD {
-		!tx ", au", ß, "erdem die Zehnertastatur."
-	}
+		!tx "Zum Bewegen k", ö, "nnen auch "
+		!if ALLOW_CURSOR {
+			!tx "die Cursortasten und "
+		}
+		!tx "+/- benutzt werden"
+		!if ALLOW_KEYPAD {
+			!tx ", au", ß, "erdem die Zehnertastatur."
+		}
 		!tx "."
 } else {	!tx "Allowed commands:", cr
 		!tx "  North South West East Up Down", cr
@@ -94,29 +98,57 @@ help ; "?" command
 		!tx "eXamine Combine", cr
 		!tx "Type the first character only!", cr
 		!tx "CLR/HOME(=F1) will redisplay the screen.", cr
-		!tx "Moving around can also be done using the cursor and +/- keys"
-	!if ALLOW_KEYPAD {
-		!tx ", and the numerical keypad is also possible"
-	}
+		!tx "Moving around can also be done using "
+		!if ALLOW_CURSOR {
+			!tx "the cursor keys and "
+		}
+		!tx "the +/- keys"
+		!if ALLOW_KEYPAD {
+			!tx ", and the numerical keypad is also possible"
+		}
 		!tx "."
 }
 		!tx cr, 0
 		rts
 
 keys_start
-		!pet petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT, '+', '-'
-!if ALLOW_KEYPAD {	!pet '8', '2', '4', '6', '5'	}
-!if DEUTSCH {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nswohrigvub"
-} else {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nsweuditlxc"	}
+		!if ALLOW_CURSOR {
+			!pet petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT
+		}
+		!pet '+', '-'
+		!if ALLOW_KEYPAD {
+			!pet '8', '2', '4', '6', '5'
+		}
+		!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3
+		!if DEUTSCH {
+			!pet "?nswohrigvub"
+		} else {
+			!pet "?nsweuditlxc"
+		}
 keys_end
 
-action_lo	!by <go_n, <go_s, <go_w, <go_e, <go_u, <go_d
-!if ALLOW_KEYPAD {	!by <go_n, <go_s, <go_w, <go_e, <redisp	}
-		!by <redisp, <redisp, <redisp, <inventory, <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <combine
-action_hi	!by >go_n, >go_s, >go_w, >go_e, >go_u, >go_d
-!if ALLOW_KEYPAD {	!by >go_n, >go_s, >go_w, >go_e, >redisp	}
-		!by >redisp, >redisp, >redisp, >inventory, >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >combine
+action_lo
+		!if ALLOW_CURSOR {
+			!by <go_n, <go_s, <go_w, <go_e
+		}
+		!by <go_u, <go_d
+		!if ALLOW_KEYPAD {
+			!by <go_n, <go_s, <go_w, <go_e, <redisp
+		}
+		!by <redisp, <redisp, <redisp, <inventory
+		!by <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <combine
+action_hi
+		!if ALLOW_CURSOR {
+			!by >go_n, >go_s, >go_w, >go_e
+		}
+		!by >go_u, >go_d
+		!if ALLOW_KEYPAD {
+			!by >go_n, >go_s, >go_w, >go_e, >redisp
+		}
+		!by >redisp, >redisp, >redisp, >inventory
+		!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >combine
 
+; "redisplay" command
 	redisp = engine_new_location
 
 ; direction commands
@@ -363,7 +395,7 @@ wait_A_frames ; wait for the number of frames given in A
 get_key ; wait for user to press key
 		lda #0
 		jsr my_chrout	; force flushing of word wrap buffer
----			jsr k_getin
+---			jsr sys_getin
 			beq ---
 		rts
 

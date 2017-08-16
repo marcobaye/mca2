@@ -3,9 +3,11 @@
 
 ; config
 	MAKE_BASIC_HEADER	= 1
+	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 1
 	INCLUDE_CHARSET		= 1
 	LINE_LENGTH		= 80
+	sys_NEWLINE		= 13
 
 ; libraries
 	!src <cbm/c128/vic.a>	; only needed for timing via frame counting
@@ -29,6 +31,8 @@
 
 ; editor/kernal rom
 !addr	vdcw		= $cdcc
+!addr	sys_chrout	= $ffd2
+!addr	sys_getin	= $ffe4
 
 ; new color codes (because some PetSCII codes clash with the UTF8 conversion):
 ; vdc colors (and a mapping to vic color names - basic 7 maps
@@ -84,11 +88,11 @@
 		; invert first line for title
 		lda #' '
 		ldx #256 - LINE_LENGTH
--			jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
+-			jsr sys_chrout	; yes, kernal, no need to filter through conv/wordwrap
 			inx
 			bne -
-		lda #petscii_HOME	; yes, kernal, no need to filter through conv/wordwrap
-		jsr k_chrout
+		lda #petscii_HOME
+		jsr sys_chrout	; yes, kernal, no need to filter through conv/wordwrap
 }
 
 !macro arch_output_init {

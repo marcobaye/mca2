@@ -1,6 +1,5 @@
 ;ACME 0.96.2
 
-	!src <cbm/kernal.a>
 	!src <cbm/petscii.a>
 	petscii_LOWERCASE	=  14	; switch to lowercase/uppercase character set
 	petscii_F1	= 133:	petscii_F2	= 137
@@ -9,8 +8,8 @@
 	petscii_F7	= 136:	petscii_F8	= 140
 
 ; helper values
-	CR		= 13
-	cr		= 13
+	CR		= sys_NEWLINE
+	cr		= sys_NEWLINE
 !if UTF8 {
 	; UTF-8 (0xc2 prefix will be just ignored)
 	Ä		= $84
@@ -199,7 +198,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 			; too little space on line, so do wrap
 			; first force carriage return
 			lda #cr
-			jsr k_chrout
+			jsr sys_chrout
 			jsr .new_line
 
 			lda .space_left
@@ -211,7 +210,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 
 			ldx .xbuf
 			pla
-			jsr k_chrout
+			jsr sys_chrout
 			sec	; next space could be skipped
 			rts
 
@@ -223,7 +222,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 
 		ldx .xbuf
 		pla
-		jsr k_chrout
+		jsr sys_chrout
 		clc	; ok
 		rts
 
@@ -232,7 +231,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		ldx .indents
 		beq +
 			lda #' '
-			jsr k_chrout
+			jsr sys_chrout
 			dec .space_left
 +		rts
 
@@ -242,7 +241,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		bcs +
 			; space must be output
 			lda #' '
-			jsr k_chrout
+			jsr sys_chrout
 			dec .space_left
 			bne +
 				jsr .new_line
@@ -260,7 +259,7 @@ linebuf_flush ; output what's in the line buffer
 		beq +
 		;--
 ---			lda linebuf, x
-			jsr k_chrout
+			jsr sys_chrout
 			lda #0
 			sta z_quote_mode
 			inx
