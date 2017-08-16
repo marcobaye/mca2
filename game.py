@@ -8,20 +8,6 @@
 define FALSE	0
 define TRUE	1
 
-# variables and default values:
-
-## angesammelte Punkte
-var score	0
-## Wie weit ist der Zaubertrank fertig 1-8
-## Bei Wert 8 ist Zaubertrank getrunken und aktiv
-var potion	0
-# Wurde der Sarg schon genutzt?
-var coffin_used	FALSE
-# Wurde die Mistel abgeschnitten?
-var mistle_cut	FALSE
-# Wurde die Truhe aufgeschlossen?
-var chest_opened	FALSE
-
 # "asm" passes the remainder of the line to the assembler backend unchanged:
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 # these five _must_ be defined, they tell the engine which colors to use:
@@ -45,6 +31,20 @@ asm color_magic		= color_WHITE
 # these two could be used to color NPC speech:
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
+
+# variables and default values:
+
+## angesammelte Punkte
+var score	0
+## Wie weit ist der Zaubertrank fertig 1-8
+## Bei Wert 8 ist Zaubertrank getrunken und aktiv
+var potion	0
+# Wurde der Sarg schon genutzt?
+var coffin_used	FALSE
+# Wurde die Mistel abgeschnitten?
+var mistle_cut	FALSE
+# Wurde die Truhe aufgeschlossen?
+var chest_opened	FALSE
 
 # items:
 # (args are size, location, skript name, game name)

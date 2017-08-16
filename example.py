@@ -29,16 +29,6 @@ enum	FIST	ROCK	KNIFE	SWORD	PISTOL	LIGHTSABER	# this will assign values 0/1/2/3/4
 enum	MOOD_IN_LOVE	MOOD_FRIENDLY	MOOD_NEUTRAL	MOOD_GRUMPY	MOOD_PISSED	# assigns 0/1/2/3/4
 # (these lines have exactly the same effect as separate "define"-lines would have had)
 
-# "var" defines a game variable (16 bit unsigned int) and its start value:
-var dragon	ALIVE
-var crocodile	ALIVE
-var secretdoor	CLOSED
-var dwarfmood	MOOD_NEUTRAL
-var lives_left	5
-var cows_killed	0
-# the engine pre-defines a variable called __TMP__, this is needed for internal
-# calculations, so DO NOT USE IT YOURSELF!
-
 # "asm" passes the remainder of the line to the assembler backend unchanged:
 # ONLY USE THIS FOR SYMBOL DEFINITIONS, NOT FOR ACTUAL MACHINE CODE!
 # these five _must_ be defined, they tell the engine which colors to use:
@@ -59,6 +49,16 @@ asm DEUTSCH	= 1
 # these two could be used to color NPC speech:
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
+
+# "var" defines a game variable (16 bit unsigned int) and its start value:
+var dragon	ALIVE
+var crocodile	ALIVE
+var secretdoor	CLOSED
+var dwarfmood	MOOD_NEUTRAL
+var lives_left	5
+var cows_killed	0
+# the engine pre-defines a variable called __TMP__, this is needed for internal
+# calculations, so DO NOT USE IT YOURSELF!
 
 # the remainder of the description file consists of code sequences in the actual
 # script language:
