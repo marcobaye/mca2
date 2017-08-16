@@ -1,12 +1,12 @@
 ;ACME 0.96.2
 
+	!src <cbm/kernal.a>
 	!src <cbm/petscii.a>
 	petscii_LOWERCASE	=  14	; switch to lowercase/uppercase character set
 	petscii_F1	= 133:	petscii_F2	= 137
 	petscii_F3	= 134:	petscii_F4	= 138
 	petscii_F5	= 135:	petscii_F6	= 139
 	petscii_F7	= 136:	petscii_F8	= 140
-	!src <cbm/kernal.a>
 
 ; helper values
 	CR		= 13
@@ -147,7 +147,7 @@ print_AAYY ; print zero-terminated string. keeps X.
 
 ; word wrap:
 .xbuf		!by 0
-.space_left	!by LINE_LEN
+.space_left	!by LINE_LENGTH
 .chars_in_buf	!by 0
 .indents	!by 0
 indent0		lda #0
@@ -167,13 +167,13 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		stx .xbuf
 		ldx .chars_in_buf
 		sta linebuf, x
-		cpx #LINE_LEN	; buffer overrun? (old value!)
+		cpx #LINE_LENGTH	; buffer overrun? (old value!)
 		bne .end_append
 			; buffer overran, so fuck the word wrap, just output it
 			; "chars_left" does not change in this case!
 			jsr linebuf_flush
 			; and move the new character to start of buf
-			lda linebuf + LINE_LEN
+			lda linebuf + LINE_LENGTH
 			sta linebuf
 .end_append	inc .chars_in_buf
 		ldx .xbuf
@@ -227,7 +227,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 		clc	; ok
 		rts
 
-.new_line	lda #LINE_LEN	; next line is completely unused
+.new_line	lda #LINE_LENGTH	; next line is completely unused
 		sta .space_left
 		ldx .indents
 		beq +
@@ -251,7 +251,7 @@ wordwrapped ; output character with automatic word wrap. KEEPS X/Y!
 .home
 .clear
 .cr		jsr .control
-		lda #LINE_LEN
+		lda #LINE_LENGTH
 		sta .space_left
 		rts
 

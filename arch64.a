@@ -2,9 +2,10 @@
 ; architecture-specific stuff for C64
 
 ; config
-	BASIC_HEADER	= 1
-	KEYPAD		= 0
-	LINE_LEN	= 40
+	MAKE_BASIC_HEADER	= 1
+	ALLOW_KEYPAD		= 0
+	INCLUDE_CHARSET		= 1
+	LINE_LENGTH		= 40
 
 ; libraries
 	!src <cbm/c64/vic.a>
@@ -74,7 +75,7 @@
 
 !macro arch_invert_title {
 		; invert first line for title
-		ldx #LINE_LEN - 1
+		ldx #LINE_LENGTH - 1
 		lda #160	; reverse space
 --			sta SCREEN, x
 			dex

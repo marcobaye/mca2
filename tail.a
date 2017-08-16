@@ -25,7 +25,7 @@ gamevars_hi
 itemlist_buf
 	* = * + gamevars_ITEMCOUNT
 linebuf ; line buffer for word wrap (can hold one byte more than actual line)
-	* = * + LINE_LEN + 1
+	* = * + LINE_LENGTH + 1
 
 ; -- end of external storage --
 

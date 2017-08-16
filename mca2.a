@@ -20,7 +20,7 @@
 ; -- start of program binary --
 
 	* = load_addr
-!if BASIC_HEADER {
+!if MAKE_BASIC_HEADER {
 		!wo line2, 2017
 		+arch_basicstuff	; add architecture-specific basic instructions
 		!by $9e, $20	; "sys "
@@ -84,7 +84,7 @@ help ; "?" command
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
 		!tx "CLR/HOME(=F1) baut den Bildschirm neu auf.", cr
 		!tx "Zum Bewegen k", ö, "nnen auch die Cursortasten und +/- benutzt werden"
-	!if KEYPAD {
+	!if ALLOW_KEYPAD {
 		!tx ", au", ß, "erdem die Zehnertastatur."
 	}
 		!tx "."
@@ -95,7 +95,7 @@ help ; "?" command
 		!tx "Type the first character only!", cr
 		!tx "CLR/HOME(=F1) will redisplay the screen.", cr
 		!tx "Moving around can also be done using the cursor and +/- keys"
-	!if KEYPAD {
+	!if ALLOW_KEYPAD {
 		!tx ", and the numerical keypad is also possible"
 	}
 		!tx "."
@@ -105,16 +105,16 @@ help ; "?" command
 
 keys_start
 		!pet petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT, '+', '-'
-!if KEYPAD {	!pet '8', '2', '4', '6', '5'	}
+!if ALLOW_KEYPAD {	!pet '8', '2', '4', '6', '5'	}
 !if DEUTSCH {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nswohrigvub"
 } else {	!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3, "?nsweuditlxc"	}
 keys_end
 
 action_lo	!by <go_n, <go_s, <go_w, <go_e, <go_u, <go_d
-!if KEYPAD {	!by <go_n, <go_s, <go_w, <go_e, <redisp	}
+!if ALLOW_KEYPAD {	!by <go_n, <go_s, <go_w, <go_e, <redisp	}
 		!by <redisp, <redisp, <redisp, <inventory, <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <combine
 action_hi	!by >go_n, >go_s, >go_w, >go_e, >go_u, >go_d
-!if KEYPAD {	!by >go_n, >go_s, >go_w, >go_e, >redisp	}
+!if ALLOW_KEYPAD {	!by >go_n, >go_s, >go_w, >go_e, >redisp	}
 		!by >redisp, >redisp, >redisp, >inventory, >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >combine
 
 	redisp = engine_new_location

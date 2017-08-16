@@ -2,6 +2,7 @@
 ; original patterns taken from US charset of C128
 ; then added äöüßÄÖÜ
 
+!if INCLUDE_CHARSET {
 charset
 	!by %........
 	!by %..####..
@@ -1111,3 +1112,4 @@ charset
 	!by %....####
 	!by %....####
 	!by %....####
+}

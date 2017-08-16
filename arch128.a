@@ -2,9 +2,10 @@
 ; architecture-specific stuff for C128
 
 ; config
-	BASIC_HEADER	= 1
-	KEYPAD		= 1
-	LINE_LEN	= 80
+	MAKE_BASIC_HEADER	= 1
+	ALLOW_KEYPAD		= 1
+	INCLUDE_CHARSET		= 1
+	LINE_LENGTH		= 80
 
 ; libraries
 	!src <cbm/c128/vic.a>	; only needed for timing via frame counting
@@ -82,7 +83,7 @@
 !macro arch_invert_title {
 		; invert first line for title
 		lda #' '
-		ldx #256 - LINE_LEN
+		ldx #256 - LINE_LENGTH
 -			jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
 			inx
 			bne -
