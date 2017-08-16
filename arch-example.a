@@ -1,0 +1,116 @@
+;ACME 0.96.2
+; architecture-specific stuff for FIXME-WHATEVER
+
+; config
+	MAKE_BASIC_HEADER	= 0	; set to nonzero to create a CBM-style basic header
+	ALLOW_CURSOR		= 0	; set to nonzero to allow cursor navigation (currently needs petscii codes)
+	ALLOW_KEYPAD		= 1	; set to nonzero to allow keypad navigation
+	INCLUDE_CHARSET		= 0	; set to nonzero to include own charset
+	KEYBOARD_IS_PETSCII	= 0	; set to nonzero if "sys_getin" function returns petscii codes
+	LINE_LENGTH		= 80	; system's screen width (needed for location title and word wrap)
+	sys_NEWLINE		= 10	; system's newline character (probably 10 or 13)
+
+; libraries
+	;!src <>
+
+; zero page
+!addr	runptr		= $00	; 16bit, points to next bytecode instruction (also used for inline text output and scanning of usage list)
+!addr	recursion_depth	= $02	; 8bit, counts recursion levels (okay, this need not really be in zp)
+!addr	z_quote_mode	= $03	; 8bit - if you system does not know any "quote mode", just consider this to be a write-only variable)
+
+; system area
+!addr	is_PAL		= $0815	; zero for NTSC, nonzero for PAL (needed so "delay" can convert seconds to video frames)
+
+; other
+	load_addr	= $1000	; program counter at start of assembly
+
+; kernal
+!addr	sys_chrout	= $ffd2	; system function to output a character - MUST PRESERVE A/X/Y!
+!addr	sys_getin	= $ffe4	; system function to read a character from keyboard
+
+; color codes:
+; (names are from C64 colors, but architecture can change values in 0..f range)
+	color_BLACK	= colorbase + $0
+	color_WHITE	= colorbase + $1
+	color_RED	= colorbase + $2
+	color_CYAN	= colorbase + $3
+	color_PURPLE	= colorbase + $4
+	color_GREEN	= colorbase + $5
+	color_BLUE	= colorbase + $6
+	color_YELLOW	= colorbase + $7
+	color_ORANGE	= colorbase + $8
+	color_BROWN	= colorbase + $9
+	color_LRED	= colorbase + $a
+	color_GRAY1	= colorbase + $b
+	color_GRAY2	= colorbase + $c
+	color_LGREEN	= colorbase + $d
+	color_LBLUE	= colorbase + $e
+	color_GRAY3	= colorbase + $f
+
+; code macros
+
+; if architecture uses MAKE_BASIC_HEADER, this macro will be called just before
+; generating the SYS instruction, so you can insert other instructions
+!macro arch_basicstuff {
+		!by $99, $22, $58, $22, $3a	; print"x":
+}
+
+; if architecture does NOT use MAKE_BASIC_HEADER, this macro will be called to
+; create your own program header. enter the program with a jump to "entry".
+!macro arch_header {
+		jsr entry
+		jmp $4711	; return to shell
+}
+
+; this is used to delay execution
+; if X is zero on call, just wait for vblank
+!macro arch_wait_X_frames {
+}
+
+; this is used early on so machine can be initialised
+; (memory configuration, find out whether PAL/NTSC, fade to black, ...)
+!macro arch_init {
+}
+
+; this is used a bit later to init output system (init video chip, setup
+; charset, clear screen, enable display)
+!macro arch_output_init {
+}
+
+; set screen colors:
+; set border color to (color_border & 0xf)
+; set background color to (color_background & 0xf)
+; ...and if system does not support changing text color during game, you should
+; set global text color to (color_std & 0xf)
+!macro arch_set_colors {
+}
+
+; this is used when entering a new location, just after clearing the screen.
+; it should paint a reverse title bar on the screen
+!macro arch_invert_title {
+}
+
+; change text color to that given in A.
+; do not clobber X or Y! if you need one or both of them, restore their old contents (see arch264.a)
+!macro arch_set_text_color_A {
+		and #%....####	; keep color, remove base code
+		;sta whereever_your_system_stores_attribute_of_future_chars	; and store
+}
+
+; all macros above are inserted directly into code, without JSR/RTS.
+; if your code needs special routines to call and/or tables, put those here:
+!macro arch_bulk {
+my_special_routine1
+		sed
+		tax
+		lda my_lookup_table, x
+		tay
+		rts
+
+my_lookup_table	!by 1, 2, 3
+}
+
+; this is called at end of assembly so you can check for memory limits
+!macro arch_check_memlimit {
+	!if * >= $abcd {	!error "Reached kernal area, overwriting it! Shorten program or kernal!" }
+}

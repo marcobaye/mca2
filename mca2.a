@@ -111,21 +111,27 @@ help ; "?" command
 		!tx cr, 0
 		rts
 
+!if KEYBOARD_IS_PETSCII {
+	!ct pet	; if sys_getin returns petscii, use petscii for these tables as well:
+}
+
 keys_start
 		!if ALLOW_CURSOR {
-			!pet petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT
+			!tx petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT
 		}
-		!pet '+', '-'
+		!tx "+-"
 		!if ALLOW_KEYPAD {
-			!pet '8', '2', '4', '6', '5'
+			!tx "82465"
 		}
-		!pet petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3
+		!tx petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3
 		!if DEUTSCH {
-			!pet "?nswohrigvub"
+			!tx "?nswohrigvub"
 		} else {
-			!pet "?nsweuditlxc"
+			!tx "?nsweuditlxc"
 		}
 keys_end
+
+	!ct raw	; back to standard
 
 action_lo
 		!if ALLOW_CURSOR {
@@ -338,7 +344,11 @@ select ; ask user to select one of the items in the current list (X must be firs
 		stx .limit
 		jsr get_key
 		sec
-!ct pet {	sbc #'a'	}	; petscii 'a'
+!if KEYBOARD_IS_PETSCII {
+	!ct pet	; if sys_getin returns petscii, use petscii for comparison character as well:
+}
+		sbc #'a'	; might be either petscii or ascii/iso/utf8
+	!ct raw	; back to standard
 		bcc .illegal_key
 		cmp #MODIFIED8	: .limit = * - 1
 		bcs .illegal_key

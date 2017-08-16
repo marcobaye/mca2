@@ -6,6 +6,7 @@
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 1
 	INCLUDE_CHARSET		= 1
+	KEYBOARD_IS_PETSCII	= 1
 	LINE_LENGTH		= 80
 	sys_NEWLINE		= 13
 
@@ -55,6 +56,7 @@
 	color_LWHITE	= colorbase + $f	: color_WHITE	= color_LWHITE
 
 ; code macros
+
 !macro arch_basicstuff {
 		!by $fe, $25, $3a, $fe, $02, $20, $30, $3a	; "fast:bank 0:"
 		!by $de, $20, $9c, $3a, $de, $20, $35, $3a	; "graphic clr:graphic 5:"

@@ -6,6 +6,7 @@
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 0
 	INCLUDE_CHARSET		= 1
+	KEYBOARD_IS_PETSCII	= 1
 	LINE_LENGTH		= 40
 	sys_NEWLINE		= 13
 
@@ -59,6 +60,7 @@
 	color_GRAY3	= colorbase + $f
 
 ; code macros
+
 !macro arch_bulk {
 ; look-up table to convert vic colors to matching ted color/luma combo
 ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
