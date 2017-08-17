@@ -101,7 +101,7 @@
 		; forbid cbm/shift
 		lda #$80
 		sta cbmshift
-		; FIXME - pimp vdc to 9x10 matrix?
+;		jsr vdc_patch	; pimp vdc to 9x9 matrix
 		; copy charset:
 		; start address in vdc ram should be $3000 (lowercase charset)
 		ldx #vdcr_ram_hi
@@ -165,6 +165,7 @@ c128_copycharset ; copy data to vdc ram with gaps, XORing with A
 			inc .charcount
 			bne -----
 		rts
+;	!src "pimpvdc.a"
 }
 
 !macro arch_check_memlimit {

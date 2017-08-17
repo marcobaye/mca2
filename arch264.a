@@ -118,6 +118,7 @@ ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 		; forbid cbm/shift
 		lda #$80
 		sta cbmshift
+	!if INCLUDE_CHARSET {
 		; charset in ram
 		lda #$c3
 		sta ted_ramrom
@@ -129,6 +130,7 @@ ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 			}
 			inx
 			bne ---
+	}
 		; now CLEAR to init screen
 		jsr my_primm
 		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
@@ -152,6 +154,7 @@ ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 }
 
 !macro arch_check_memlimit {
+	;!if * >= $4000 {	!error "Reached 16 K RAM limit." }
 	!if * >= $8000 {	!error "Reached ROM area. Engine must be changed to cope with this!" }
 	;!if * >= $fd00 {	!error "Reached memory limit $fd00!" }
 }
