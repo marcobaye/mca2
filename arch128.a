@@ -31,8 +31,9 @@
 	load_addr	= $1c01
 
 ; editor/kernal rom
+!addr	editor_putAX	= $c003	; output screencode A and attribute X
 !addr	vdcw		= $cdcc
-!addr	sys_chrout	= $ffd2
+!addr	k_chrout	= $ffd2
 !addr	sys_getin	= $ffe4
 
 ; new color codes (because some PetSCII codes clash with the UTF8 conversion):
@@ -166,6 +167,26 @@ c128_copycharset ; copy data to vdc ram with gaps, XORing with A
 			bne -----
 		rts
 ;	!src "pimpvdc.a"
+
+sys_chrout ;
+		pha
+		stx .tmp_x
+		sty .tmp_y
+		cmp #32
+		bcc .kernal
+		cmp #128
+		bcc .put
+		cmp #$e0
+		bcc .kernal	; CLEAR, for example
+		and #31
+.put		ldx currentcolor
+		jsr editor_putAX
+		lda #petscii_RIGHT
+.kernal		jsr k_chrout
+		pla
+		ldx #MODIFIED8	: .tmp_x = * - 1
+		ldy #MODIFIED8	: .tmp_y = * - 1
+		rts
 }
 
 !macro arch_check_memlimit {
