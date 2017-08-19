@@ -23,11 +23,11 @@
 ; system area
 !addr	currentcolor	= $053b
 !addr	cbmshift	= $0547
-!addr	SCREEN		= $0c00
+!addr	SCREEN		= $0c00	; FIXME - default value! when changing this, add code to tell system and ted!
 
 ; other
 	load_addr	= $1001
-!addr	CHARGEN		= $d000	; 128 chars upper/graphics, then at $d400 128 chars lower/upper
+!addr	CHARGEN		= $d400	; FIXME - default value for lower/upper! when changing this, add code to tell ted!
 
 ; i/o (FIXME - create proper library files!)
 !addr	ted_ramrom	= $ff12	; bit 2 selects ram/rom charset
@@ -126,14 +126,15 @@ ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 		ldx #0
 ---			!for i, 0, 3 {
 				lda charset + i * 256, x
-				sta CHARGEN + i * 256 + $0400, x
+				sta CHARGEN + i * 256, x
 			}
 			inx
 			bne ---
 	}
 		; now CLEAR to init screen
 		jsr my_primm
-		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
+		!tx petscii_LOWERCASE	; FIXME - get rid of this and set ted register directly
+		!tx color_std, petscii_CLEAR, 0
 }
 
 !macro arch_set_colors {
@@ -156,5 +157,6 @@ ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 !macro arch_check_memlimit {
 	;!if * >= $4000 {	!error "Reached 16 K RAM limit." }
 	!if * >= $8000 {	!error "Reached ROM area. Engine must be changed to cope with this!" }
+	!if * >= CHARGEN {	!error "Reached chargen area. Move chargen up in memory!" }
 	;!if * >= $fd00 {	!error "Reached memory limit $fd00!" }
 }

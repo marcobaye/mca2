@@ -28,6 +28,9 @@
 
 ; other
 	load_addr	= $0801
+!addr	VICBANK		= $c000
+!addr	SCREEN		= VICBANK + $0c00	; screen at $cc00
+!addr	CHARGEN		= VICBANK + $1000	; charset at $d000
 
 ; i/o
 !addr	cia2_port_a	= $dd00
@@ -98,13 +101,11 @@
 		; forbid cbm/shift
 		lda #$80
 		sta cbmshift
-		; highest vic bank
-		lda #%#..#.#..
+		; set vic bank
+		lda #%#..#.### XOR (VICBANK >> 14)
 		sta cia2_port_a
-		; screen at $cc00, charset at $d000
-!addr	SCREEN	= $cc00
-!addr	CHARGEN	= $d000
-		lda #((SCREEN & $3c00) >> 6) | %0100
+		; set screen and charset address
+		lda #((SCREEN & $3c00) >> 6) | ((CHARGEN & $3800) >> 10)
 		sta vic_ram
 		; copy charset
 		lda #$31	; ram and charset
@@ -151,5 +152,7 @@
 
 !macro arch_check_memlimit {
 	;!if * >= $a000 {	!error "Reached BASIC ROM. Please add code to disable it." }	; commented out, because Basic ROM is now off anyway
+	!if * >= SCREEN {	!error "Reached screen area. Move screen up in memory!" }
+	!if * >= CHARGEN {	!error "Reached chargen area. Move chargen up in memory!" }
 	!if * >= $d000 {	!error "Reached I/O area. Engine must be changed to cope with this!" }
 }
