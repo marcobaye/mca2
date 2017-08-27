@@ -37,10 +37,10 @@
 ;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß	
 ;ISO encodes as 0xe0 .. 0xff,
 ;UTF8 encodes as 0xc3 0xa0 .. 0xc3 0xbf:
-;	àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	add one!
+;	àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	XOR 1!
 
-;ISO: 80..af ignore, b0..bf colors, c0..df down, e0..ff add1
-;UTF8: 80..9f down, a0..bf add1, c0..ef ignore, f0..ff colors
+;ISO: 80..af ignore, b0..bf colors, c0..df down, e0..ff xor1
+;UTF8: 80..9f down, a0..bf xor1, c0..ef ignore, f0..ff colors
 
 ; wrapper for CHROUT (to handle UTF8 and color codes etc)
 my_chrout ; must keep X/Y!
@@ -54,11 +54,11 @@ my_chrout ; must keep X/Y!
 		cmp #$c0
 		bcs .rts	; ignore (includes prefix code $c3)
 		cmp #$a0
-		bcs .add1
+		bcs .xor1
 		bcc .down
 } else {
 		cmp #$e0
-		bcs .add1
+		bcs .xor1
 		cmp #$c0
 		bcs .down
 		cmp #colorbase
@@ -75,8 +75,7 @@ my_chrout ; must keep X/Y!
 		+arch_set_text_color_A
 .rts		rts
 
-.add1		;sec
-		adc #0
+.xor1		eor #1
 		;FALLTHROUGH
 .down		ora #%###.....	; make sure arch macro can recognize them
 		jmp wordwrap_printable
