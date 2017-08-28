@@ -65,6 +65,9 @@
 ; look-up table to convert vic colors to matching ted color/luma combo
 ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 		!by $48, $19, $42, $11, $31, $65, $56, $51
+; petscii codes for function keys, needed to disable string expansion
+; (not really disabled, but now codes get replaced with themselves)
+arch_fkey_codes	!by $85, $89, $86, $8a, $87, $8b, $88, $8c
 }
 
 !macro arch_basicstuff {
@@ -94,7 +97,14 @@ ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 		lda #0
 		rol
 		sta is_PAL
-		; FIXME - disable 264's F key string expansion!
+		; disable 264's F key string expansion
+		ldx #7
+--			lda #1	; set string length to 1
+			sta addr($55f), x
+			lda arch_fkey_codes, x	; set string to code-before-expansion
+			sta addr($567), x
+			dex
+			bpl --
 		; FIXME - how to enable much RAM plus kernal ROM?
 		;sta addr($ff3f)	like this?
 		; FIXME - fadeout!
