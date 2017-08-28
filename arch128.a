@@ -91,11 +91,11 @@
 		; invert first line for title
 		lda #' '
 		ldx #256 - LINE_LENGTH
--			jsr sys_chrout	; yes, kernal, no need to filter through conv/wordwrap
+-			jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
 			inx
 			bne -
 		lda #petscii_HOME
-		jsr sys_chrout	; yes, kernal, no need to filter through conv/wordwrap
+		jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
 }
 
 !macro arch_output_init {

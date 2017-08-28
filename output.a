@@ -64,6 +64,7 @@ my_chrout ; must keep X/Y!
 		cmp #colorbase
 		bcs .setcolor
 		;ignore 80..af
+	jmp wordwrapped	; get CLEAR to work
 		rts
 }
 .setcolor ; hande own color codes ($bX or $fX)
