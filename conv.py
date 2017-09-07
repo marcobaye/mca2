@@ -145,10 +145,25 @@ class procedure(codeseq):
 			print line
 		print self.indents * '\t' + '+end_procedure'
 
-class usage(codeseq):
-	'code to execute when player enters USE A WITH B'
+class use(codeseq):
+	'code to execute when player enters USE A'
 	def __init__(self, name):
-		super(usage, self).__init__(name)
+		super(use, self).__init__(name)
+		self.hinz = None
+	# setters
+	def set_item(self, hinz):
+		self.hinz = hinz
+	def output(self):
+		print '\t!wo +\t; link pointer'
+		print '\t!by ' + self.hinz.offset_name()
+		for line in self.code:
+			print line
+		print self.indents * '\t' + '+end_use'
+
+class combi(codeseq):
+	'code to execute when player enters COMBINE A WITH B'
+	def __init__(self, name):
+		super(combi, self).__init__(name)
 		self.hinz = None
 		self.kunz = None
 	# setters
@@ -160,7 +175,7 @@ class usage(codeseq):
 		print '\t+ordered ' + self.hinz.offset_name() + ', ' + self.kunz.offset_name()
 		for line in self.code:
 			print line
-		print self.indents * '\t' + '+end_usage'
+		print self.indents * '\t' + '+end_combi'
 
 class location(codeseq):
 	'code to execute when entering a location'
@@ -202,7 +217,7 @@ class convertor(object):
 		self.allowed_errors = 5	# convertor stops after this many errors
 		self.in_comment = False	# for c-style multi-line comments
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
-		self.codeseq = None	# needed to track locations/procedures/usages
+		self.codeseq = None	# needed to track locations/procedures/combinations/usages
 		self.cond_state = [0]	# keeps track of "if/elif/else/endif" and nesting
 		self.code = []	# for stuff from "asm" lines
 		self.subst = dict()	# dictionary for "define/enum" substitutions
@@ -211,7 +226,8 @@ class convertor(object):
 		# special dictionaries with constructor for new entries
 		self.procedures = mydict(procedure)	# procedures
 		self.locations = mydict(location)	# locations
-		self.usages = mydict(usage)		# usages ("use A with B")
+		self.uses = mydict(use)		# usages ("use A")
+		self.combis = mydict(combi)		# combinations ("combine A with B")
 		self.items = mydict(item)	# items player can interact with
 		self.vars = mydict(symbol)	# game variables
 		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
@@ -405,9 +421,16 @@ class convertor(object):
 			print
 
 		print '; usages:'
-		print 'usages'
-		for usage in self.usages.get_defined():
-			usage.output()
+		print 'uses'
+		for use in self.uses.get_defined():
+			use.output()
+			print '+'
+		print '\t!wo 0\t; end marker'
+		print
+		print '; combinations:'
+		print 'combis'
+		for combi in self.combis.get_defined():
+			combi.output()
 			print '+'
 		print 'nullstring\t!wo 0\t; end marker (doubles as "nullstring" terminator)'
 		print
@@ -487,17 +510,17 @@ class convertor(object):
 			self.codeseq.add_code('+terminate')
 			self.text_mode = False
 	def new_code(self):
-		'if we are in description/location/procedure/usage, terminate'
+		'if we are in description/location/procedure/usage/combination, terminate'
 		self.no_text()
 		if self.codeseq != None:
 			if self.cond_state != [0]:
-				self.error_line('cannot start new description/location/procedure/usage, there are "if" blocks left open')
+				self.error_line('cannot start new description/location/procedure/usage/combination, there are "if" blocks left open')
 			self.codeseq = None
 # functions to parse different line types:
 	def process_asm_line(self, line):
 		'line to pass to assembler unchanged'
 		if self.codeseq != None:
-			self.error_line('Please put "asm" lines before all items/locations/procedures/usages')
+			self.error_line('Please put "asm" lines before all items/locations/procedures/usages/combinations')
 		self.add_code(' '.join(line[1:]))
 	def process_text_line(self, line):
 		'text line'
@@ -512,13 +535,19 @@ class convertor(object):
 		# make current
 		self.codeseq = obj
 		return obj
-	def process_usage_line(self, line):
-		'code to call if player wants to use item(s)'
+	def process_use_line(self, line):
+		'code to call if player wants to use item'
+		item = self.get_args(line, 1)[0]
+		item = self.get_object(self.items, item)
+		use = self.process_code_line(self.uses, str(id(item)))
+		use.set_item(item)
+	def process_combi_line(self, line):
+		'code to call if player wants to combine items'
 		item1, item2 = self.get_args(line, 2)
 		item1 = self.get_object(self.items, item1)
 		item2 = self.get_object(self.items, item2)
-		usage = self.process_code_line(self.usages, str(id(item1)) + '_' + str(id(item2)))
-		usage.set_items(item1, item2)
+		combi = self.process_code_line(self.combis, str(id(item1)) + '_' + str(id(item2)))
+		combi.set_items(item1, item2)
 	def process_proc_loc_line(self, line, dict):
 		'new procedure or location'
 		name = self.get_args(line, 1)[0]
@@ -773,8 +802,12 @@ class convertor(object):
 				self.process_endif_line(line)
 			elif key == 'loc':
 				self.process_proc_loc_line(line, self.locations)
-			elif key == 'using':
-				self.process_usage_line(line)
+			elif key == 'use':
+				self.process_use_line(line)
+			elif key == 'combine':
+				self.process_combi_line(line)
+			elif key == 'using':	# older form of "combine"
+				self.process_combi_line(line)
 			elif key == 'proc':
 				self.process_proc_loc_line(line, self.procedures)
 			elif key == 'callproc':

@@ -80,6 +80,8 @@ item large start	hippo	"Nilpferd"	# put a hippo into start location
 	"hierbei handelt es sich um ein ganz normales Nilpferd"
 item small start	umlauts	"äöüßÄÖÜ"
 	"Dieses Objekt ist nur ein Test, um die Darstellung der Umlaute überprüfen zu können."
+item small INVENTORY	flask	"Flask"
+	"The label on the flask says ", '"', "Potion of strength", '"', "."
 # There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
 # be moved around by the script (to move the player).
 
@@ -90,9 +92,13 @@ loc location_name
 #	the player enters that location.
 #	one location MUST be called "start", this is where the game begins.
 #	the first text line (see below) will be the "title" of this location.
-using itemA itemB
+use itemA
+#	defines what happens if the player uses an items. the code
+#	sequence is executed whenever the player enters "use X" and has
+#	access to that item.
+combine itemA itemB
 #	defines what happens if the player uses two items together. the code
-#	sequence is executed whenever the player enters "use X with Y" and has
+#	sequence is executed whenever the player enters "combine X with Y" and has
 #	access to both items.
 proc proc_name
 #	starts a procedure definition. the named procedure can then be
@@ -168,14 +174,19 @@ gain some_item
 
 */ (end of comment)
 
-# "using" defines what happens if player tries to "use item X with item Y" (and has access to both):
-using bow1 string
+# "use" defines what happens if player tries to "use item X" (and has access to it):
+use flask
+	hide flask	# flask disappears
+	"You feel much stronger now, and a little bit dizzy."
+
+# "combine" defines what happens if player tries to "combine item X with item Y" (and has access to both):
+combine bow1 string
 	hide string	# string disappears
 	hide bow1	# broken bow disappears
 	gain bow2	# repaired bow appears
 	"Der Bogen ist nun funktionsbereit!"
 
-using bow2 hippo
+combine bow2 hippo
 	move hippo NOWHERE
 	"Der Pfeil geht durch das Nilpferd hindurch, welches sich in Luft auflöst."
 

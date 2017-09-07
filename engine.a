@@ -109,18 +109,11 @@ itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!
 			bne ---
 		rts	; X returns limiting (illegal!) index
 
-engine_use_A_with_X ; scan "usages" for correct code sequence and execute
-		; if A is larger, exchange A and X
-		sta .hinz
-		stx .kunz
-		cpx .hinz
-		bcs +
-			; exchange
-			stx .hinz
-			sta .kunz
-+		; scan chain
-		lda #<usages
-		ldx #>usages
+engine_use_X ; scan "usages" for correct code sequence and execute	FIXME - better use a table than a list!
+		stx .hinz
+		; scan chain
+		lda #<uses
+		ldx #>uses
 		jmp .entry
 .next_entry		lda #MODIFIED8	: .link_lo = * - 1
 			ldx #MODIFIED8	: .link_hi = * - 1
@@ -136,7 +129,54 @@ engine_use_A_with_X ; scan "usages" for correct code sequence and execute
 				sec	; return "no match found"
 				rts
 +			sta .link_hi
-			; now check current usage
+			; now check current combination
+			iny
+			lda (runptr), y	; get item
+			cmp #MODIFIED8	: .hinz = * - 1
+			bne .next_entry
+		; found match
+		ldy runptr + 1
+		lda #3
+		clc
+		adc runptr
+		bcc +
+			iny
++		jsr interpreter_run_YYAA
+		lda #cr
+		jsr my_chrout
+		clc	; return "ok, usage has been found and called"
+		rts
+
+!zone
+
+engine_combine_A_with_X ; scan "combinations" for correct code sequence and execute
+		; if A is larger, exchange A and X
+		sta .hinz
+		stx .kunz
+		cpx .hinz
+		bcs +
+			; exchange
+			stx .hinz
+			sta .kunz
++		; scan chain
+		lda #<combis
+		ldx #>combis
+		jmp .entry
+.next_entry		lda #MODIFIED8	: .link_lo = * - 1
+			ldx #MODIFIED8	: .link_hi = * - 1
+.entry			sta runptr
+			stx runptr + 1
+			ldy #0
+			lda (runptr), y	; get link, low
+			sta .link_lo
+			iny
+			lda (runptr), y	; get link, high
+			bne +
+				; end_of_chain
+				sec	; return "no match found"
+				rts
++			sta .link_hi
+			; now check current combination
 			iny
 			lda (runptr), y	; get first item
 			;beq .match1	; zero matches ANYTHING
@@ -158,7 +198,7 @@ engine_use_A_with_X ; scan "usages" for correct code sequence and execute
 +		jsr interpreter_run_YYAA
 		lda #cr
 		jsr my_chrout
-		clc	; return "ok, usage has been found and called"
+		clc	; return "ok, combination has been found and called"
 		rts
 
 engine_check_restart
@@ -293,7 +333,8 @@ interpreter_go_on ; enter with A = offset to add
 ; all command handlers are entered with runptr pointing to command and Y=0
 ;---------------------------------------
 	!macro end_itemdesc	{!by CMD_ENDOFBLOCK	}
-	!macro end_usage	{!by CMD_ENDOFBLOCK	}
+	!macro end_use		{!by CMD_ENDOFBLOCK	}
+	!macro end_combi	{!by CMD_ENDOFBLOCK	}
 	!macro end_procedure	{!by CMD_ENDOFBLOCK	}
 	!macro end_location	{!by CMD_ENDOFBLOCK	}
 +instruction ~CMD_ENDOFBLOCK, ~cmd_endofblock

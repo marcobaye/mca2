@@ -80,7 +80,7 @@ help ; "?" command
 !if DEUTSCH {	!tx cr, "M", ö, "gliche Befehle:", cr, color_emph
 		!tx "  Nord S", ü, "d West Ost Hoch Runter", cr
 		!tx "  Inventar(=F3) Grabsch Verliere", cr
-		!tx "  Untersuche Benutze", cr, color_std
+		!tx "  Untersuche Benutze Kombiniere", cr, color_std
 		!tx "Immer nur den ersten Buchstaben tippen!", cr
 		!tx "CLR/HOME(=F1) baut den Bildschirm neu auf.", cr
 		!tx "Zum Bewegen k", ö, "nnen auch "
@@ -95,7 +95,7 @@ help ; "?" command
 } else {	!tx "Allowed commands:", cr
 		!tx "  North South West East Up Down", cr
 		!tx "Inventory(=F3) Take Lose", cr
-		!tx "eXamine Combine", cr
+		!tx "eXamine Apply Combine", cr
 		!tx "Type the first character only!", cr
 		!tx "CLR/HOME(=F1) will redisplay the screen.", cr
 		!tx "Moving around can also be done using "
@@ -125,9 +125,9 @@ keys_start
 		}
 		!tx petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3
 		!if DEUTSCH {
-			!tx "?nswohrigvub"
+			!tx "?nswohrigvubk"
 		} else {
-			!tx "?nsweuditlxc"
+			!tx "?nsweuditlxac"
 		}
 keys_end
 
@@ -142,7 +142,7 @@ action_lo
 			!by <go_n, <go_s, <go_w, <go_e, <redisp
 		}
 		!by <redisp, <redisp, <redisp, <inventory
-		!by <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <combine
+		!by <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <use, <combine
 action_hi
 		!if ALLOW_CURSOR {
 			!by >go_n, >go_s, >go_w, >go_e
@@ -152,7 +152,7 @@ action_hi
 			!by >go_n, >go_s, >go_w, >go_e, >redisp
 		}
 		!by >redisp, >redisp, >redisp, >inventory
-		!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >combine
+		!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >use, >combine
 
 ; "redisplay" command
 	redisp = engine_new_location
@@ -293,10 +293,10 @@ examine ; "examine" command
 		jsr my_primm	: !tx color_std, cr, 0
 		rts
 
-combine ; "combine" command
+use ; "use" command
 		jsr my_primm
 !if DEUTSCH {	!tx "Benutze:", cr, 0
-} else {	!tx "Combine:", cr, 0	}
+} else {	!tx "Use:", cr, 0	}
 		; get list of items in inventory
 		ldy #>location_INVENTORY
 		lda #<location_INVENTORY
@@ -308,6 +308,37 @@ combine ; "combine" command
 		bne +
 			jsr my_primm
 !if DEUTSCH {		!tx " Nichts da zum Benutzen!", cr, 0
+} else {		!tx " There is nothing to use!", cr, 0	}
+			rts
++		ldx #0	; no size check
+		jsr itemlist_menu_X_X	; returns first illegal index in X
+		jsr select	; returns status in C and maybe index in X
+		bcc +
+.no_use			jsr my_primm
+!if DEUTSCH {		!tx "- nichts benutzt!", cr, 0
+} else {		!tx "- nothing used!", cr, 0	}
+			rts
++		jsr my_primm	: !tx ":", cr, 0
+		; use: execute item's usage code
+		jsr indent1
+		jsr engine_use_X
+		jmp end_of_use_and_combine
+
+combine ; "combine" command
+		jsr my_primm
+!if DEUTSCH {	!tx "Kombiniere:", cr, 0
+} else {	!tx "Combine:", cr, 0	}
+		; get list of items in inventory
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA_new
+		; extend list with items at location
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_at_YYAA_add	; returns number in Y, A and Z ;)
+		bne +
+			jsr my_primm
+!if DEUTSCH {		!tx " Nichts da zum Kombinieren!", cr, 0
 } else {		!tx " There is nothing to combine!", cr, 0	}
 			rts
 +		; choose first item
@@ -316,11 +347,12 @@ combine ; "combine" command
 		jsr select	; returns status in C and maybe index in X
 		bcc +
 .no_combi		jsr my_primm
-!if DEUTSCH {		!tx "- nichts benutzt!", cr, 0
+!if DEUTSCH {		!tx "- nichts kombiniert!", cr, 0
 } else {		!tx "- nothing combined!", cr, 0	}
 			rts
 +		stx .hinz
 		; choose second item
+		; FIXME - inhibit "use X with X"!
 		jsr my_primm
 !if DEUTSCH {	!tx " mit:", cr, 0
 } else {	!tx " with:", cr, 0	}
@@ -332,7 +364,8 @@ combine ; "combine" command
 		jsr my_primm	: !tx ":", cr, 0
 		lda #MODIFIED8	: .hinz = * - 1
 		; use: call engine with both items
-		jsr engine_use_A_with_X
+		jsr engine_combine_A_with_X
+end_of_use_and_combine
 		bcc +
 			jsr my_primm
 !if DEUTSCH {		!tx "Das geht nicht!", cr, 0
