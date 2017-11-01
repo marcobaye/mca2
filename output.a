@@ -121,8 +121,7 @@ my_primm	pla	; get low byte of return address - 1
 +			iny
 			bne +
 				inc .primm_ptr + 1	; fix high byte
-+			; high byte gets MODIFIED, but low byte stays zero!
-			lda addr($ff00), y	: .primm_ptr = * - 2
++			lda MODIFIED16 & $ff00, y	: .primm_ptr = * - 2	; low byte stays zero!
 			bne ---
 		; push updated address onto stack
 		lda .primm_ptr + 1
@@ -134,13 +133,12 @@ my_primm	pla	; get low byte of return address - 1
 
 print_AAYY ; print zero-terminated string. keeps X.
 		sta .print_ptr + 1
-		; high byte gets MODIFIED, but low byte stays zero!
 		jmp +
 ---			jsr my_chrout
 			iny
 			bne +
 				inc .print_ptr + 1	; fix high byte
-+			lda addr($ff00), y	: .print_ptr = * - 2
++			lda MODIFIED16 & $ff00, y	: .print_ptr = * - 2	; low byte stays zero!
 			bne ---
 		rts
 
