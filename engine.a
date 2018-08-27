@@ -308,6 +308,7 @@ interpreter_go_on ; enter with A = offset to add
 			+unknown_cmd
 +		asl
 		tax
+; FIXME - why this ASL:TAX stuff? Just use separate tables for lo/hi!
 		lda cmd_table, x
 		sta .vector
 		lda cmd_table + 1, x

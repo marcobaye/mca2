@@ -16,7 +16,7 @@
 ; zero page
 !addr	runptr		= $00	; 16bit, points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $02	; 8bit, counts recursion levels (okay, this need not really be in zp)
-!addr	z_quote_mode	= $03	; 8bit - if you system does not know any "quote mode", just consider this to be a write-only variable)
+!addr	z_quote_mode	= $03	; 8bit - if your system does not know any "quote mode", just consider this to be a write-only variable)
 
 ; system area
 !addr	is_PAL		= $0815	; zero for NTSC, nonzero for PAL (needed so "delay" can convert seconds to video frames)

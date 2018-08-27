@@ -75,7 +75,7 @@ class mca2obj(object):
 	'parent class for everything defined in game description file'
 	def __init__(self, name):
 		self.name = name	# symbolic name
-		self.referenced = False	# for debugging output ("object XYZ never used!)
+		self.referenced = False	# for debugging output ("object XYZ never used!")
 	def reference(self):
 		self.referenced = True
 
@@ -123,7 +123,7 @@ class itemdesc(codeseq):
 	def set_dir(self, dir, target):
 		# this returns whether direction was already possible
 		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
-		return False	# procedures do not have "directions" like locations
+		return False	# items do not have "directions" like locations
 	def output(self):
 		print self.label()
 		for line in self.code:

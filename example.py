@@ -334,7 +334,7 @@ loc storage
 	"Storage room", cr
 	"There are some storage containers in this room."
 	# no need to specify connection as it is done from the other end.
-	dwarfmood = MOOD_IN_LOVE	# assigment to variable
+	dwarfmood = MOOD_IN_LOVE	# assignment to variable
 
 # "back" room
 loc engine_room
