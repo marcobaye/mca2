@@ -68,7 +68,7 @@ utf8conv	!by $00
 +		; 80..9f are handled as control codes to get CLEAR to work
 		jmp wordwrapped	; get CLEAR to work
 
-.setcolor ; hande own color codes ($bX or $fX)
+.setcolor ; handle own color codes ($bX)
 		; set color
 		pha
 		lda #0	; output dummy code to flush buffer
