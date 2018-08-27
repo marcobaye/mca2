@@ -18,6 +18,7 @@
 !addr	runptr		= $61	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $63	; counts recursion levels
 !addr	is_PAL		= $64	; zero for NTSC, nonzero for PAL (CAUTION - own var, nothing official!)
+!addr	z_revsflag	= $c2
 !addr	z_quote_mode	= $cb
 
 ; system area
@@ -36,8 +37,9 @@
 !addr	ted_ff1c	= $ff1c	; lsb is msb of raster line
 
 ; kernal rom
+!addr	editor_putAX	= $e001	; output screencode A and attribute X
 !addr	kernal_version	= $ff80	; msb contains PAL/NTSC info
-!addr	sys_chrout	= $ffd2
+!addr	k_chrout	= $ffd2
 !addr	sys_getin	= $ffe4
 
 ; new color codes (because some PetSCII codes clash with the UTF8 conversion):
@@ -65,6 +67,29 @@
 ; look-up table to convert vic colors to matching ted color/luma combo
 ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
 		!by $48, $19, $42, $11, $31, $65, $56, $51
+; copied from 128:
+sys_chrout ;
+		pha
+		stx .tmp_x
+		sty .tmp_y
+		cmp #32
+		bcc .kernal
+		cmp #128
+		bcc .put
+		cmp #$e0
+		bcc .kernal	; CLEAR, for example
+		and #31
+.put		ldx z_revsflag
+		beq +
+			ora #$80	; reverse
++		ldx currentcolor
+		jsr editor_putAX
+		lda #petscii_RIGHT
+.kernal		jsr k_chrout
+		pla
+		ldx #MODIFIED8	: .tmp_x = * - 1
+		ldy #MODIFIED8	: .tmp_y = * - 1
+		rts
 }
 
 !macro arch_basicstuff {

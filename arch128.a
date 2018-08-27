@@ -17,6 +17,7 @@
 
 ; zero page
 !addr	currentcolor	= $f1
+!addr	z_revsflag	= $f3
 !addr	z_quote_mode	= $f4
 !addr	cbmshift	= $f7
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
@@ -179,7 +180,10 @@ sys_chrout ;
 		cmp #$e0
 		bcc .kernal	; CLEAR, for example
 		and #31
-.put		ldx currentcolor
+.put		ldx z_revsflag
+		beq +
+			ora #$80	; reverse
++		ldx currentcolor
 		jsr editor_putAX
 		lda #petscii_RIGHT
 .kernal		jsr k_chrout

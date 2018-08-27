@@ -79,7 +79,10 @@ item small NOWHERE	bow2	"Bogen"	# script code can later replace it with this one
 item large start	hippo	"Nilpferd"	# put a hippo into start location
 	"hierbei handelt es sich um ein ganz normales Nilpferd"
 item small start	umlauts	"äöüßÄÖÜ"
-	"Dieses Objekt ist nur ein Test, um die Darstellung der Umlaute überprüfen zu können."
+	"Dieses Objekt ist nur ein Test, um die Darstellung der Sonderzeichen überprüfen zu können. "
+	"Neben äöü, ÄÖÜ und ß funktionieren auch noch áàãâ, éèëê, íìïî, óòõô, ùûú, çÇñøÿ sowie "
+	"<Ñ> (0xd1) und <", 0x7f, "> (0x7f).", cr
+
 # There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
 # be moved around by the script (to move the player).
 
