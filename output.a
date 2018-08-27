@@ -10,19 +10,11 @@
 ; helper values
 	CR		= sys_NEWLINE
 	cr		= sys_NEWLINE
-!if UTF8 {
-	; UTF-8 (0xc2 prefix will be just ignored)
-	Ä		= $84
-	Ö		= $96
-	Ü		= $9c
-	ß		= $9f
-	ä		= $a4
-	ö		= $b6
-	ü		= $bc
-	colorbase	= $f0	; f0..ff
-} else {
-	; ISO 8859-1
 	colorbase	= $b0	; b0..bf
+!if UTF8 {
+	UTF8IGNORE	= $c2	; prefix byte for 0x80..0xbf
+	UTF8CONVERT	= $c3	; prefix byte to convert 0x80..0xbf to 0xc0..0xff
+}
 	Ä		= $c4
 	Ö		= $d6
 	Ü		= $dc
@@ -30,7 +22,6 @@
 	ä		= $e4
 	ö		= $f6
 	ü		= $fc
-}
 
 ;ISO encodes as 0xc0 .. 0xdf,
 ;UTF8 encodes as 0xc3 0x80 .. 0xc3 0x9f:
@@ -49,24 +40,34 @@ my_chrout ; must keep X/Y!
 			jmp wordwrapped	; 00..7f are handled right away
 +
 !if UTF8 {
-		cmp #colorbase
-		bcs .setcolor
-		cmp #$c0
-		bcs .rts	; ignore (includes prefix code $c3)
-		cmp #$a0
-		bcs .xor1
-		bcc .down
-} else {
+		; "convert" flag set?
+		bit utf8conv
+		bpl +
+			lsr utf8conv	; clear flag
+			ora #$40	; convert
++		cmp #UTF8IGNORE
+		beq .rts
+		cmp #UTF8CONVERT
+		bne +
+			sec		; set flag
+			ror utf8conv
+			rts
+utf8conv	!by $00
++
+}
 		cmp #$e0
 		bcs .xor1
 		cmp #$c0
 		bcs .down
 		cmp #colorbase
 		bcs .setcolor
-		;ignore 80..af
-	jmp wordwrapped	; get CLEAR to work
-		rts
-}
+		cmp #$a0
+		bcc +
+			inc $d020	; ignore
+			rts
++		; 80..9f are handled as control codes to get CLEAR to work
+		jmp wordwrapped	; get CLEAR to work
+
 .setcolor ; hande own color codes ($bX or $fX)
 		; set color
 		pha
