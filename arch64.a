@@ -16,6 +16,7 @@
 ; zero page
 !addr	cpu_port	= $01
 ;!addr	fac1		= $61	; floating point registers could be used for temp storage
+!addr	z_revsflag	= $c7
 !addr	z_quote_mode	= $d4
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $fd	; counts recursion levels
@@ -36,7 +37,8 @@
 !addr	cia2_port_a	= $dd00
 
 ; kernal rom
-!addr	sys_chrout	= $ffd2
+!addr	editor_putAX	= $ea13	; output screencode A and attribute X
+!addr	k_chrout	= $ffd2
 !addr	sys_getin	= $ffe4
 
 ; new color codes (because some PetSCII codes clash with the UTF8 conversion):
@@ -147,7 +149,29 @@
 }
 
 !macro arch_bulk {
-		; nothing needed
+; copied from 128:
+sys_chrout ;
+		pha
+		stx .tmp_x
+		sty .tmp_y
+		cmp #32
+		bcc .kernal
+		cmp #128
+		bcc .put
+		cmp #$e0
+		bcc .kernal	; CLEAR, for example
+		and #31
+.put		ldx z_revsflag
+		beq +
+			ora #$80	; reverse
++		ldx currentcolor
+		jsr editor_putAX
+		lda #petscii_RIGHT
+.kernal		jsr k_chrout
+		pla
+		ldx #MODIFIED8	: .tmp_x = * - 1
+		ldy #MODIFIED8	: .tmp_y = * - 1
+		rts
 }
 
 !macro arch_check_memlimit {
