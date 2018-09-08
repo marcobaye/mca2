@@ -63,8 +63,7 @@ utf8conv	!by $00
 		bcs .setcolor
 		cmp #$a0
 		bcc +
-			inc $d020	; ignore
-			rts
+			lda #$7f	; map to last, unused character
 +		; 80..9f are handled as control codes to get CLEAR to work
 		jmp wordwrapped	; get CLEAR to work
 

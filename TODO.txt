@@ -81,3 +81,8 @@ tweak aotb.py so it can be used as an example:
 	move items to PLAYER instead of to specific locations
 "Raummeldungen" für Atmosphäre (frag Shmendric)
 pimp vdc? code works, but not in VICE!
+
+add RANDOM var
+add TIME var?
+add npc category, then "talk to".
+compress strings
