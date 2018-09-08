@@ -80,7 +80,7 @@ class mca2obj(object):
 		self.referenced = True
 
 class symbol(mca2obj):
-	'parent class for item, var and fakevar'
+	'parent class for npc, item, var and fakevar'
 	def __init__(self, name):
 		super(symbol, self).__init__(name)
 		self.default = None	# default value at start of game
@@ -90,7 +90,7 @@ class symbol(mca2obj):
 		self.default = value
 
 class item(symbol):
-	'game item player can interact with'
+	'game item player can interact with, this includes NPCs, which are subclassed'
 	def __init__(self, name):
 		super(item, self).__init__(name)
 		self.game_name = None
@@ -100,6 +100,14 @@ class item(symbol):
 		self.game_name = name
 	def set_weight(self, weight):
 		self.weight = weight
+
+class npc(item):
+	'non-player characters - just like items, but player can talk to them'
+	def __init__(self, name):
+		super(npc, self).__init__(name)
+		self.talkto = None
+	def set_talkto(self, FIXME):
+	    self.talkto = FIXME
 
 class codeseq(mca2obj):
 	'parent class for all bytecode sequences'
@@ -114,36 +122,38 @@ class codeseq(mca2obj):
 		self.code.append(line)
 	def add_code(self, line):
 		self.code.append(self.indents * '\t' + line)
+	# default set_dir (location will replace this method)
+	def set_dir(self, dir, target):
+		# this returns whether direction was already possible
+		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
+		return False	# npcs/items/procedures do not have "directions" like locations
+	# default output method
+	def output(self, endcmd):
+		print self.label()
+		for line in self.code:
+			print line
+		print self.indents * '\t' + endcmd
 
 class itemdesc(codeseq):
 	'code to output item description'
 	def label(self):
 		return 'itde_' + self.name
-	# setters:
-	def set_dir(self, dir, target):
-		# this returns whether direction was already possible
-		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
-		return False	# items do not have "directions" like locations
 	def output(self):
-		print self.label()
-		for line in self.code:
-			print line
-		print self.indents * '\t' + '+end_itemdesc'
+	    super(itemdesc, self).output('+end_itemdesc')
+
+class talkto(codeseq):
+	'code for talking to npc'
+	def label(self):
+		return 'npctalk_' + self.name
+	def output(self):
+	    super(talkto, self).output('+end_npctalk')
 
 class procedure(codeseq):
 	'callable code'
 	def label(self):
 		return 'proc_' + self.name
-	# setters:
-	def set_dir(self, dir, target):
-		# this returns whether direction was already possible
-		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
-		return False	# procedures do not have "directions" like locations
 	def output(self):
-		print self.label()
-		for line in self.code:
-			print line
-		print self.indents * '\t' + '+end_procedure'
+	    super(procedure, self).output('+end_procedure')
 
 class use(codeseq):
 	'code to execute when player enters USE A'
@@ -227,8 +237,10 @@ class convertor(object):
 		self.procedures = mydict(procedure)	# procedures
 		self.locations = mydict(location)	# locations
 		self.uses = mydict(use)		# usages ("use A")
-		self.combis = mydict(combi)		# combinations ("combine A with B")
+		self.combis = mydict(combi) # combinations ("combine A with B")
+		self.npcs = mydict(npc)     # NPCs player can interact with
 		self.items = mydict(item)	# items player can interact with
+		self.dictof = dict()     # mapping from name to npcs dict or items dict
 		self.vars = mydict(symbol)	# game variables
 		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
 		# make sure "start" location is marked as referenced to inhibit confusing error
@@ -237,24 +249,35 @@ class convertor(object):
 		# create some reserved names:
 		# special value for lines below
 		self.line_number = '<predefined>'
-		# create pseudo item "PLAYER"
-		PLAYER_item = self.get_object(self.items, 'PLAYER', define=True)
-		PLAYER_item.reference()	# suppress warning if never referenced
-		PLAYER_item.set_game_name('nullstring')
-		PLAYER_item.set_weight('$80')	# make sure player cannot put player into inventory ;)
-		PLAYER_item.set_default(start.label())
-		# create pseudo location "NOWHERE" to be able to hide items and disable directions
+		# create pseudo npc "PLAYER"
+		PLAYER_npc = self.get_object(self.npcs, 'PLAYER', define=True)
+		self.dictof['PLAYER'] = self.npcs
+		PLAYER_npc.reference()	# suppress warning if never referenced
+		PLAYER_npc.set_game_name('nullstring')
+		PLAYER_npc.set_talkto('nullstring')
+		PLAYER_npc.set_weight('$80')	# make sure player cannot put player into inventory ;)
+		PLAYER_npc.set_default(start.label())
+		# create pseudo location "NOWHERE" to be able to hide npcs/items and disable directions
 		NOWHERE_location = self.get_object(self.locations, 'NOWHERE', define=True)
 		NOWHERE_location.reference()	# suppress warning if never referenced
 		NOWHERE_location.set_forced_value(0)
-		# create pseudo location "INVENTORY" where items can be moved
+		# create pseudo location "INVENTORY" where npcs/items can be moved
 		INVENTORY_location = self.get_object(self.locations, 'INVENTORY', define=True)
 		INVENTORY_location.reference()	# suppress warning if never referenced
 		INVENTORY_location.set_forced_value(1)
-		# create pseudo var "__TMP__" for holding literal
+		# create pseudo vars:
+		#   "__TMP__" for holding literal
 		TMP_var = self.get_object(self.vars, '__TMP__', define=True)
 		TMP_var.reference()	# suppress warning if never referenced
 		TMP_var.set_default(0)
+		#   "RANDOM" for random number
+		RND_var = self.get_object(self.vars, 'RANDOM', define=True)
+		RND_var.reference()	# suppress warning if never referenced
+		RND_var.set_default(0)
+		#   "TIME_s" for holding seconds counter
+		TIME_var = self.get_object(self.vars, 'TIME_s', define=True)
+		TIME_var.reference()	# suppress warning if never referenced
+		TIME_var.set_default(0)
 		# correct start value for later
 		self.line_number = 0
 	def error(self, msg):
@@ -333,11 +356,12 @@ class convertor(object):
 			#if loc.referenced and not loc.line_of_def:
 			#	self.error('location "' + loc.name + '" referenced but not defined')
 	def output(self):
+		self.check_refs(self.npcs, 'npc')
 		self.check_refs(self.items, 'item')
 		self.check_refs(self.vars, 'variable')
 		self.check_refs(self.procedures, 'procedure')
 		self.check_refs(self.locations, 'location')
-		print ';ACME 0.96.2'
+		print ';ACME 0.96.4'
 		print ';'
 		print '; DO NOT EDIT THIS FILE! THIS FILE IS AUTOMATICALLY GENERATED!'
 		print ';'
@@ -351,23 +375,28 @@ class convertor(object):
 
 		var_index = 0
 		print '; var offsets:'
+		print '\t; npcs:'
+		for npc in self.npcs.get_defined():	# use unref'd npcs as well, they might be red herrings
+			print '\t' + npc.offset_name() + '\t= ' + str(var_index) + '\t; default value is', npc.default
+			var_index += 1
+		print '\tgamevars_NPCCOUNT\t=', var_index	# == len(self.npcs)
 		print '\t; items:'
 		for item in self.items.get_defined():	# use unref'd items as well, they might be red herrings
 			print '\t' + item.offset_name() + '\t= ' + str(var_index) + '\t; default value is', item.default
 			var_index += 1
-		print '\tgamevars_ITEMCOUNT\t=', var_index	# == len(self.items)
+		print '\tgamevars_ITEMCOUNT\t=', var_index	# == len(self.npcs) + len(self.items)
 		print '\t; game vars:'
 		for var in self.vars.get_defd_and_refd():
 			# FIXME - compare "referenced vars" to actual list!
 			print '\t' + var.offset_name() + '\t= ' + str(var_index) + '\t; default value is', var.default
 			var_index += 1
 
-		print '\tgamevars_SAVECOUNT\t=', var_index	# == len(self.items) + len(self.vars)
+		print '\tgamevars_SAVECOUNT\t=', var_index	# == len(self.npcs) + len(self.items) + len(self.vars)
 		print '\t; fake vars (literals):'
 		for fakevar in self.fakevars.get_referenced():
 			print '\t' + fakevar.offset_name() + '\t= ' + str(var_index)
 			var_index += 1
-		print '\tgamevars_COUNT\t=', var_index	# == len(self.items) + len(self.vars) + len(self.fakevars)
+		print '\tgamevars_COUNT\t=', var_index	# == len(self.npcs) + len(self.items) + len(self.vars) + len(self.fakevars)
 		print
 
 		# all data tables are put into macro so backend can put where needed:
@@ -375,45 +404,62 @@ class convertor(object):
 		print '!macro game_tables {'
 		print
 
+		npcs_defaults = [str(npc.default) for npc in self.npcs.get_defined()]	# use unref'd npcs as well, they might be red herrings
 		items_defaults = [str(item.default) for item in self.items.get_defined()]	# use unref'd items as well, they might be red herrings
 		vars_defaults = [str(symbol.default) for symbol in self.vars.get_defd_and_refd()]
 		fakevars_defaults = [str(symbol.default) for symbol in self.fakevars.get_referenced()]
 		print 'gamevars_defaults_lo'
+		print '\t!by <' + ', <'.join(npcs_defaults) + '\t; npcs'
 		print '\t!by <' + ', <'.join(items_defaults) + '\t; items'
 		print '\t!by <' + ', <'.join(vars_defaults) + '\t; variables'
 		if len(fakevars_defaults):
 			print '\t!by <' + ', <'.join(fakevars_defaults) + '\t; literals'
 		print 'gamevars_defaults_hi'
+		print '\t!by >' + ', >'.join(npcs_defaults) + '\t; npcs'
 		print '\t!by >' + ', >'.join(items_defaults) + '\t; items'
 		print '\t!by >' + ', >'.join(vars_defaults) + '\t; variables'
 		if len(fakevars_defaults):
 			print '\t!by >' + ', >'.join(fakevars_defaults) + '\t; literals'
 		print
 
-		# item weights
-		print '; item weights:'
-		items_weights = [item.weight for item in self.items.get_defined()]	# use unref'd items as well, they might be red herrings
-		print 'item_weight\t!by ' + ', '.join(items_weights)
+		# npc/item weights
+		print '; npc/item weights:'
+		print 'npcitem_weight'
+		npc_weights = [npc.weight for npc in self.npcs.get_defined()]	# use unref'd npcs as well, they might be red herrings
+		print '\t\t!by ' + ', '.join(npc_weights) + '\t; npcs'
+		item_weights = [item.weight for item in self.items.get_defined()]	# use unref'd items as well, they might be red herrings
+		print '\t\t!by ' + ', '.join(item_weights) + '\t; items'
 		print
 
 		# pointer arrays and actual strings
 		print '; string pointers:'
-		items_names = [item.game_name for item in self.items.get_defined()]	# use unref'd items as well, they might be red herrings
-		print 'item_name_lo\t!by <' + ', <'.join(items_names)
-		print 'item_name_hi\t!by >' + ', >'.join(items_names)
+		npc_names = [npc.game_name for npc in self.npcs.get_defined()]	# use unref'd npcs as well, they might be red herrings
+		item_names = [item.game_name for item in self.items.get_defined()]	# use unref'd items as well, they might be red herrings
+		print 'npcitem_name_lo\t!by <' + ', <'.join(npc_names) + '\t; npcs'
+		print '\t\t!by <' + ', <'.join(item_names) + '\t; items'
+		print 'npcitem_name_hi\t!by >' + ', >'.join(npc_names) + '\t; npcs'
+		print '\t\t!by >' + ', >'.join(item_names) + '\t; items'
 		print '; strings:'
 		for label, string in self.stringcoll.get_all():
 			print label + '\t!tx ' + string + ', 0'
 		print
 
-		# item description pointers
-		print '; item description pointers:'
-		items_descs = [item.description.label() for item in self.items.get_defined()]	# use unref'd items as well, they might be red herrings
-		print 'item_desc_lo\t!by <' + ', <'.join(items_descs)
-		print 'item_desc_hi\t!by >' + ', >'.join(items_descs)
+		# npc/item description pointers
+		print '; npc/item description pointers:'
+		npc_descs = [npc.description.label() for npc in self.npcs.get_defined()]	# use unref'd npcs as well, they might be red herrings
+		item_descs = [item.description.label() for item in self.items.get_defined()]	# use unref'd items as well, they might be red herrings
+		print 'npcitem_desc_lo\t!by <' + ', <'.join(npc_descs) + '\t; npcs'
+		print '\t\t!by <' + ', <'.join(item_descs) + '\t; items'
+		print 'npcitem_desc_hi\t!by >' + ', >'.join(npc_descs) + '\t; npcs'
+		print '\t\t!by >' + ', >'.join(item_descs) + '\t; items'
 		# FIXME - solve weight/size issue: split items into two groups to get rid of lookup table?
 		# FIXME - in future, iterate over items twice and do mobile/fixed items separately?
 		print
+
+		print '; npc descriptions:'
+		for npc in self.npcs.get_defined():	# use unref'd npcs as well, they might be red herrings
+			npc.description.output()
+			print
 
 		print '; item descriptions:'
 		for item in self.items.get_defined():	# use unref'd items as well, they might be red herrings
@@ -520,7 +566,7 @@ class convertor(object):
 	def process_asm_line(self, line):
 		'line to pass to assembler unchanged'
 		if self.codeseq != None:
-			self.error_line('Please put "asm" lines before all items/locations/procedures/usages/combinations')
+			self.error_line('Please put "asm" lines before all npcs/items/locations/procedures/usages/combinations')
 		self.add_code(' '.join(line[1:]))
 	def process_text_line(self, line):
 		'text line'
@@ -611,23 +657,24 @@ class convertor(object):
 		# get actual number for start value
 		num = self.get_value(start_value)
 		var.set_default(num)
-	def process_item_line(self, line):
-		'declare item for player to interact with'
+	def process_npcitem_line(self, line, dict):
+		'declare npc or item for player to interact with'
 		self.new_code()	# close previous code sequence, if there was one
 		weight, location, name, game_name = self.get_args(line, 4)
 		location = self.get_object(self.locations, location).label()
-		item = self.get_object(self.items, name, define=True)
+		npcitem = self.get_object(dict, name, define=True)
+		self.dictof[name] = dict    # map name to dictionary
 		game_name = self.stringcoll.add(game_name)
 		if weight == 'small':
-			item.set_weight('0')
+			npcitem.set_weight('0')
 		elif weight == 'large':
-			item.set_weight('$80')
+			npcitem.set_weight('$80')
 		else:
-			self.error_line('Item size must be "small" or "large"')
-		item.set_default(location)
-		item.set_game_name(game_name)
+			self.error_line('NPC/item size must be "small" or "large"')
+		npcitem.set_default(location)
+		npcitem.set_game_name(game_name)
 		# make current
-		self.codeseq = item.description
+		self.codeseq = npcitem.description
 	def process_delay_line(self, line):
 		'wait for given number of .1 seconds'
 		self.no_text()
@@ -648,9 +695,9 @@ class convertor(object):
 			return
 		if op.endswith('@'):
 			'args are expected to be ITEM/ITEM or ITEM/LOCATION'
-			var1 = self.get_object(self.items, hinz)
-			if kunz in self.items:
-				var2 = self.get_object(self.items, kunz)
+			var1 = self.get_object(self.dictof[hinz], hinz)
+			if kunz in self.dictof:
+				var2 = self.get_object(self.dictof[kunz], kunz)
 			else:
 				loc = self.get_object(self.locations, kunz)
 				var2 = self.get_object(self.vars, '__TMP__')
@@ -708,29 +755,29 @@ class convertor(object):
 		self.codeseq.add_code('} ; end of zone')
 # var changing:
 	def process_move_line(self, line):
-		'move an item to a different location'
+		'move an npc/item to a different location'
 		self.no_text()
-		item, target = self.get_args(line, 2)
-		item = self.get_object(self.items, item)
-		if target in self.items:
-			itemsrc = self.get_object(self.items, target)
-			self.codeseq.add_code('+varcopy ' + item.offset_name() + ', ' + itemsrc.offset_name())
+		npcitem, target = self.get_args(line, 2)
+		npcitem = self.get_object(self.dictof[npcitem], npcitem)
+		if target in self.dictof:
+			npcitemsrc = self.get_object(self.dictof[target], target)
+			self.codeseq.add_code('+varcopy ' + npcitem.offset_name() + ', ' + npcitemsrc.offset_name())
 		else:
 		#elif target in self.locations:
 			location = self.get_object(self.locations, target)
 			# FIXME - check for "large" item and "INVENTORY" target and complain?
 			# but still the problem remains if moving large item @ small item in INV!
-			self.codeseq.add_code('+varloadimm ' + item.offset_name() + ', ' + location.label())
+			self.codeseq.add_code('+varloadimm ' + npcitem.offset_name() + ', ' + location.label())
 		#else:
-		#	self.error_line('Target is neither location nor item')
+		#	self.error_line('Target is neither location nor npc/item')
 	def process_gain_line(self, line):
-		'move an item to INVENTORY'
-		item = self.get_args(line, 1)[0]
-		self.process_move_line(['move', item, 'INVENTORY'])
+		'move an npc/item to INVENTORY'
+		npcitem = self.get_args(line, 1)[0]
+		self.process_move_line(['move', npcitem, 'INVENTORY'])
 	def process_hide_line(self, line):
-		'move an item to NOWHERE'
-		item = self.get_args(line, 1)[0]
-		self.process_move_line(['move', item, 'NOWHERE'])
+		'move an npc/item to NOWHERE'
+		npcitem = self.get_args(line, 1)[0]
+		self.process_move_line(['move', npcitem, 'NOWHERE'])
 	def process_let_line(self, line):
 		'writing to variable'
 		self.no_text()
@@ -782,8 +829,10 @@ class convertor(object):
 				self.process_incdec_line('varinc', line)
 			elif key == 'dec':
 				self.process_incdec_line('vardec', line)
+			elif key == 'npc':
+				self.process_npcitem_line(line, self.npcs)
 			elif key == 'item':
-				self.process_item_line(line)
+				self.process_npcitem_line(line, self.items)
 			elif key == 'move':
 				self.process_move_line(line)
 			elif key == 'gain':

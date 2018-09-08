@@ -44,8 +44,8 @@ itemlist_list ; list items
 			ldx #MODIFIED8	: .idx = * - 1
 			lda itemlist_buf, x
 			tax
-			ldy item_name_lo, x
-			lda item_name_hi, x
+			ldy npcitem_name_lo, x
+			lda npcitem_name_hi, x
 			jsr print_AAYY
 			;lda #color_std	; this would allow the comma separator to appear at start of next line!
 			;jsr my_chrout
@@ -87,7 +87,7 @@ itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!
 				ldx .idx
 				lda itemlist_buf, x
 				tax
-				lda item_weight, x
+				lda npcitem_weight, x
 				bpl .show_char
 					; change color to "item cannot be used"
 					lda #color_out
@@ -97,8 +97,8 @@ itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!
 			ldx #MODIFIED8	: .idx = * - 1
 			lda itemlist_buf, x
 			tax
-			ldy item_name_lo, x
-			lda item_name_hi, x
+			ldy npcitem_name_lo, x
+			lda npcitem_name_hi, x
 			jsr print_AAYY
 			lda #cr
 			jsr my_chrout
@@ -286,8 +286,8 @@ show_paths ; output list of possible directions:
 ; bytecode interpreter:
 
 engine_describe_X ; execute code to describe item X
-		lda item_desc_lo, x
-		ldy item_desc_hi, x
+		lda npcitem_desc_lo, x
+		ldy npcitem_desc_hi, x
 		; FALLTHROUGH
 interpreter_run_YYAA ; execute bytecode block
 		sta runptr

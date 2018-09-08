@@ -84,6 +84,11 @@ item small start	umlauts	"äöüßÄÖÜ"
 	"<Ñ> (0xd1) und <", 0x7f, "> (0x7f).", cr
 item small INVENTORY	flask	"Flask"
 	"The label on the flask says ", '"', "Potion of strength", '"', "."
+# "npc" is a non-player character. Parameters are the same as for items. The single difference:
+# NPCs can be given another code sequence, to be run upon "talk to npc".
+npc large start dwarf "fieser Zwerg"
+    "Der Zwerg sieht ziemlich ramponiert aus."
+    
 # There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
 # be moved around by the script (to move the player).
 

@@ -214,7 +214,7 @@ take ; "take" command
 			rts
 +		jsr my_primm	: !tx ":", cr, 0
 		; check size
-		lda item_weight, x
+		lda npcitem_weight, x
 		bpl +
 			jsr my_primm
 !if DEUTSCH {		!tx "Nein, das kann man nicht mitnehmen!", cr, 0
