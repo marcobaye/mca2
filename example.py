@@ -64,29 +64,29 @@ var cows_killed	0
 # script language:
 
 # "item" defines a game item the player can interact with:
-# parameters are size (small/large), start location in game, in-script name, in-game name
+# parameters are in-script name, start location in game, size (small/large), in-game name
 # small items can be taken by player (put into inventory), large items can only be moved around by script code.
 # in-script names must be unique, in-game names can be re-used (so player thinks it's the same item)
 # script code after the "item" line gets executed when player examines the item.
-item small INVENTORY	string	"Sehne"
+item string INVENTORY	small	"Sehne"
 	"eine ganz normale Bogensehne, Du kannst auch bei genauester Untersuchung "
 	"nichts ungewöhnliches daran entdecken."
-item small INVENTORY	bow1	"Bogen"	# player starts with a broken bow in inventory
+item bow1 INVENTORY	small	"Bogen"	# player starts with a broken bow in inventory
 	"Dieser Bogen ist kaputt, die Sehne ist gerissen.", cr
 	"Man könnte ihn sicher reparieren, wenn man eine neue Sehne auftreibt..."
-item small NOWHERE	bow2	"Bogen"	# script code can later replace it with this one!
+item bow2 NOWHERE	small	"Bogen"	# script code can later replace it with this one!
 	"Seit der Reparatur sieht der Bogen wieder aus wie neu!"
-item large start	hippo	"Nilpferd"	# put a hippo into start location
+item hippo start	large	"Nilpferd"	# put a hippo into start location
 	"hierbei handelt es sich um ein ganz normales Nilpferd"
-item small start	umlauts	"äöüßÄÖÜ"
+item umlauts start	small	"äöüßÄÖÜ"
 	"Dieses Objekt ist nur ein Test, um die Darstellung der Sonderzeichen überprüfen zu können. "
 	"Neben äöü, ÄÖÜ und ß funktionieren auch noch áàãâ, éèëê, íìïî, óòõô, ùûú, çÇñøÿ sowie "
 	"<Ñ> (0xd1) und <", 0x7f, "> (0x7f).", cr
-item small INVENTORY	flask	"Flask"
+item flask INVENTORY	small	"Flask"
 	"The label on the flask says ", '"', "Potion of strength", '"', "."
 # "npc" is a non-player character. Parameters are the same as for items. The single difference:
 # NPCs can be given another code sequence, to be run upon "talk to npc".
-npc large start dwarf "fieser Zwerg"
+npc dwarf start large "fieser Zwerg"
     "Der Zwerg sieht ziemlich ramponiert aus."
     
 # There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can

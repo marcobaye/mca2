@@ -23,8 +23,11 @@ import sys
 #	the undefined item is thought to be a location!
 #	so either add a possibility to define the description code long after the item,
 #	or add some sort of "declare item" line!
+#	option 1 seems natural because I need something like that anyway to implement npc's "talkto",
+#	but option 2 seems simpler because option 1 would need some way to indicate "no code here, defined later!"
 
 
+# mapping operators from source format to macro format:
 operators = {
 	'==': 'equal',
 	'!=': 'not_equal',
@@ -690,7 +693,7 @@ class convertor(object):
 	def process_npcitem_line(self, line, dict):
 		'declare npc or item for player to interact with'
 		self.new_code()	# close previous code sequence, if there was one
-		weight, location, name, game_name = self.get_args(line, 4)
+		name, location, weight, game_name = self.get_args(line, 4)
 		location = self.get_object(self.locations, location).label()
 		npcitem = self.get_object(dict, name, define=True)
 		self.dictof[name] = dict    # map name to dictionary

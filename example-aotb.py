@@ -47,153 +47,153 @@ var mistle_cut	FALSE
 var chest_opened	FALSE
 
 # items:
-# (args are size, location, skript name, game name)
+# (args are script name, location, weight, game name)
 #	(must be followed by script code to output description)
 
 ## Bücher in der Bibliothek
-item small library book1 "Ein großes Buch"
+item book1 library small "Ein großes Buch"
 	'"', "DAS IST DOCH NUR EINE SICHERUNGSKOPIE!",cr
 	"...und andere Ausreden", '"'
-item small NOWHERE book2 "Ein kleines Buch"
+item book2 NOWHERE small "Ein kleines Buch"
 	'"', "ER WAR DOCH NICHT SEIN VATER!",cr
 	"Die größte Lüge der Filmgeschichte", '"'
-item small NOWHERE book3 "Ein interessantes Buch"
+item book3 NOWHERE small "Ein interessantes Buch"
 	'"', "BESTIARUM MYSTERICA II", '"', cr
 	"Kalahuii sollen laut diesem Fachbuch nur mit Waffengewalt zu besiegen "
 	"sein. Aber man sollte dafür ganz schön kräftig sein..."
-item small NOWHERE book4 "Ein altes Buch"
+item book4 NOWHERE small "Ein altes Buch"
 	'"', "TITANIK II - Sie ist wieder da!", '"', cr
 	"Du blätterst vor und liest gleich das Ende.", cr
 	"Na toll. Sie geht wieder unter."
-item small NOWHERE book5 "Ein braunes Buch"
+item book5 NOWHERE small "Ein braunes Buch"
 	'"', "TT64",cr
 	" Wahnsinnig toll oder nur Wahnsinnig?", '"'
-item small NOWHERE book6 "Ein uraltes Buch"
+item book6 NOWHERE small "Ein uraltes Buch"
 	'"', "KRISTALLOGRAPHIE (c) by Sheltem", '"', cr
 	"Die Schwarte handelt von magischen Kristallen. Sollen irgendwie gut "
 	"gegen Untote sein, steht hier..."
-item small NOWHERE book7 "Ein vergilbtes Buch"
+item book7 NOWHERE small "Ein vergilbtes Buch"
 	'"', "HAT SCHON JEMAND CHOPLIFTER GESAGT?", '"', cr
 	"Komisches Buch... Egal, unwichtig."
-item small NOWHERE book8 "Ein grünes Buch"
+item book8 NOWHERE small "Ein grünes Buch"
 	'"', "VERPOLTE NETZTEILE UND ANDERE ÄRGERNISSE", '"', cr
 	"Hmm... da steht irgendetwas von geplatzten Kondensatoren...",cr
 	"Uninteressant."
-item small NOWHERE book9 "Ein winziges Buch"
+item book9 NOWHERE small "Ein winziges Buch"
 	'"', "REZEPT FÜR STÄRKETRANK", '"', cr
 	'"', "Eine Mistel, ein Sumpfkraut, Haare eines Toten, eine frische "
 	"Alraune, SCUMM und etwas ranziges Eulenfett, sowie eine Rabenfeder.", '"', cr
 	"Dann braucht es noch etwas total unwichtiges, das ebenfalls in den "
 	"Kessel geworfen werden muss.",cr
 	'"', "Lasse zuletzt deine Magie auf das Gebräu einwirken!", '"'
-item small NOWHERE book10 "Ein schwarzes Buch"
+item book10 NOWHERE small "Ein schwarzes Buch"
 	'"', "ARCANA MAGICA III", '"', cr
 	" Das ultimative Nachschlagewerk"
-item small NOWHERE book11 "Ein bläuliches Buch"
+item book11 NOWHERE small "Ein bläuliches Buch"
 	'"', "DURCHKÄMMT DIE WÜSTE!", cr
 	" ...und andere Missverständnisse", '"'
-item small NOWHERE book12 "Ein Buch mit Runen"
+item book12 NOWHERE small "Ein Buch mit Runen"
 	"Hmm... Ein alchemistischer Prozess um magische Runen zu "
 	"kristallifizieren..."
-item small NOWHERE book13 "Ein winziges Buch"
+item book13 NOWHERE small "Ein winziges Buch"
 	'"', "DER KOPIERSCHUTZ VON ELITE",cr
 	" und andere Verbrechen", '"'
-item small NOWHERE book14 "Ein unscheinbares Buch"
+item book14 NOWHERE small "Ein unscheinbares Buch"
 	'"', "BESTIARUM MYSTERICA I", '"', cr
 	"Hmm... Laut diesem Buch sollen Palawaume angeblich immun gegen "
 	"Magieschaden sein..."
 ## Inventar beim Spielstart
-item small INVENTORY sickle "Eine goldene Sichel"
+item sickle INVENTORY small "Eine goldene Sichel"
 	"Mit dieser magischen Sichel kann man hervorragend Misteln schneiden."
-item small INVENTORY wand "Ein Zauberstab"
+item wand INVENTORY small "Ein Zauberstab"
 	"Dieser magische Zauberstab ist dein wichtigster Besitz."
 ## Kräuter im Garten, braucht erst Sichel oder Spaten
-item large garden marten "Ein toter Marder"
+item marten garden large "Ein toter Marder"
 	"Hier liegt ein toter Marder.",cr
 	" Das stinkende Ding wirst du auf keinen Fall anfassen!"
-item large garden tree "Ein großer Baum"
+item tree garden large "Ein großer Baum"
 	"Ein einzelner Baum steht hier im Garten."
 	if mistle_cut == FALSE
 		"", cr
 		"Ein kleine, grünliche Mistel wächst an einem seiner Äste. Sie "
 		"kann von dir abgeschnitten werden."
 	endif
-item large garden herb "Ein Büschel Sumpfkraut"
+item herb garden large "Ein Büschel Sumpfkraut"
 	"Etwas Sumpfgras von allerfeinster Qualität.",cr
 	" Du kannst es abschneiden."
-item large NOWHERE alraun "Eine Alraune"
+item alraun NOWHERE large "Eine Alraune"
 	"Eine ganz normale Alraune, sie scheint noch recht frisch zu sein.",cr
 	"Sie steckt fest in der Erde und muss erst ausgegraben werden."
 ## Nach dem schneiden kann man sie auch nehmen
-item small NOWHERE mistle "Eine kleine Mistel"
+item mistle NOWHERE small "Eine kleine Mistel"
 	"Ein kleiner, grünlicher Mistelzweig."
-item small NOWHERE herb2 "Ein Büschel Sumpfkraut"
+item herb2 NOWHERE small "Ein Büschel Sumpfkraut"
 	"Etwas Sumpfgras von allerfeinster Qualität."
-item small NOWHERE alraun2 "Eine Alraune"
+item alraun2 NOWHERE small "Eine Alraune"
 	"Eine ganz normale Alraune, sie scheint noch recht frisch zu sein."
 ## NPC
-item large tomb ghoul "Ein ekeliger Ghoul"
+item ghoul tomb large "Ein ekeliger Ghoul"
 	"Igitt, ist das ein madiges Kerlchen! Der ist ja schon total verwest "
 	"und verfault."
-item large bedroom pala "Ein echter Palawaum"
+item pala bedroom large "Ein echter Palawaum"
 	"Wow! Ein krasser Palawaum!"
-item large bedroom kala "Ein toller Kalahuii"
+item kala bedroom large "Ein toller Kalahuii"
 	"Boah ey! Voll geil, ein Kalahuii!"
-item large observatory raven "Ein schwarzer Rabe"
+item raven observatory large "Ein schwarzer Rabe"
 	"Ein majestätischer Rabe, mit pechschwarzem, leicht bläulich schimmernden "
 	"Gefieder. Klug blickt er Dich aus seinen kleinen Augen an. Eine erhabene "
 	"magische Aura scheint ihn zu umgeben."
 ## Nicht verwendet
-item large NOWHERE flonk "Ein lebendiger Flonk"
+item flonk NOWHERE large "Ein lebendiger Flonk"
 	"Wie niedlich, ein Flonk!"
 ## Nur für Bonuspunkt
-item small kitchen burger "Ein Hamburger"
+item burger kitchen small "Ein Hamburger"
 	"Lecker, mit Käse und Speck!",cr
 	" Scheint ein Mac Bacon zu sein."
 ## Hilfsmittel
-item small NOWHERE sword "Ein Schwert"
+item sword NOWHERE small "Ein Schwert"
 	"Bei dieser Waffe handelt es sich um das magische Schwert 'Thunderblade'."
-item small NOWHERE crystal "Ein Kristall"
+item crystal NOWHERE small "Ein Kristall"
 	"Dieser magische Kristall soll angeblich Untote bannen können."
-item small NOWHERE spade "Ein rostiger Spaten"
+item spade NOWHERE small "Ein rostiger Spaten"
 	"Ein ganz normaler, alter Spaten."
-item small NOWHERE rune "Eine Rune"
+item rune NOWHERE small "Eine Rune"
 	"Diese Rune strahlt geradezu vor magischer Energie."
-item small NOWHERE jemmy "Ein Brecheisen"
+item jemmy NOWHERE small "Ein Brecheisen"
 	"Ein schwerer Kuhfuß aus Stahl."
-item small kitchen cheese "Ein kleines Stück Käse"
+item cheese kitchen small "Ein kleines Stück Käse"
 	"Boah, stinkt der!!!",cr
 	"Muss wohl ein Oobdooländer oder was anderes kurioses sein.",cr
 	"Essen wirst du diesen Sondermüll jedenfalls nicht. Sowas schmeckt "
 	"Dir nicht."
-item small tomb key "Ein Schlüssel"
+item key tomb small "Ein Schlüssel"
 	"Ein ziemlich altes, rostiges Ding."
 ## Zauberzutaten (Ohne die Gartenkräuter)
-item small laboratory fat "Etwas Eulenfett"
+item fat laboratory small "Etwas Eulenfett"
 	"Fein abgetriebenes, ranziges Eulenfett."
-item small NOWHERE feath "Eine Feder"
+item feath NOWHERE small "Eine Feder"
 	"Eine schwarze Rabenfeder."
-item small NOWHERE hair "Ein Büschel Haare"
+item hair NOWHERE small "Ein Büschel Haare"
 	"Die Haare eines toten Menschen..."
-item small observatory scumm "Etwas SCUMM"
+item scumm observatory small "Etwas SCUMM"
 	"Erstklassiges SCUMM. Damit kann man sicher tolle Sachen machen."
-item small bathroom hering "Ein Hering"
+item hering bathroom small "Ein Hering"
 	"Ein roter Hering?",cr
 	"Sieht ja enorm wichtig aus...",cr
 	"Aber sicher zu nichts zu gebrauchen."
 ## Einrichtung
-item large kitchen kettle "Ein großer Kessel"
+item kettle kitchen large "Ein großer Kessel"
 	"Ein riesiger Hexenkessel aus Gußeisen."
-item large tomb coffin "Ein schwerer Sarg"
+item coffin tomb large "Ein schwerer Sarg"
 	"Ein großer Sarg, der aus einem Stück Stein gemeißelt worden zu sein "
 	"scheint."
-item large laboratory chem "Lauter alchemistisches Gerümpel"
+item chem laboratory large "Lauter alchemistisches Gerümpel"
 	"Gläser und Flaschen und Kolben und Phiolen und Becher und Röhrchen..."
-item large library shelf "Drei Bücherregale"
+item shelf library large "Drei Bücherregale"
 	"Die hohen Regale an den Wänden bedecken alle Wände und nehmen den "
 	"Großteil des Raumes ein.",cr
 	"Sie sind rappelvoll mit dicken Schwarten."
-item large study chest "Eine Truhe"
+item chest study large "Eine Truhe"
 	"Ein schwere, eisenbeschlagene Truhe aus Eichholz.",cr
 	if chest_opened == FALSE
 		"Was da wohl drin sein mag?"
