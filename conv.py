@@ -1,5 +1,29 @@
 #!/usr/bin/python2
 import sys
+#TODO:
+#	get rid of mydict class and clean up
+#	make list of classes linked to name:
+#		line_keyword?	(defined at startup, body is function to handle line)
+#		userdefined	(defined by user in file: has line number)	except PLAYER, INVENTORY, etc...
+#			const?
+#			symbol	(has start value) used for vars and fakevars
+#				moveable	(has game name, weight, description)
+#					item
+#					npc	(has talkto method)
+#			codeseq	(has output method, code, indents)	WHY is this derived from userdefined?
+#				itemdesc
+#				talkto
+#				procedure
+#				use		(has item)
+#				combi		(has items)
+#				location	(has directions, set_extdir method)
+# TODO: split procedure and location into named game object and actual code, just as it is with item/itemdesc!
+# afterward, subclass codeseq from object instead of userdefined.
+# FIXME: atm, items i1 and i2 cannot reference each other in their descriptions:
+#	the undefined item is thought to be a location!
+#	so either add a possibility to define the description code long after the item,
+#	or add some sort of "declare item" line!
+
 
 operators = {
 	'==': 'equal',
@@ -71,15 +95,17 @@ class stringcoll(object):
 		all.sort()
 		return all
 
-class mca2obj(object):
+class userdefined(object):
 	'parent class for everything defined in game description file'
+	# FIXME - by that definition, must have line number, so add a member here.
+	# Though Python can add members at any time, it would be much more readable.
 	def __init__(self, name):
 		self.name = name	# symbolic name
 		self.referenced = False	# for debugging output ("object XYZ never used!")
 	def reference(self):
 		self.referenced = True
 
-class symbol(mca2obj):
+class symbol(userdefined):
 	'parent class for npc, item, var and fakevar'
 	def __init__(self, name):
 		super(symbol, self).__init__(name)
@@ -89,10 +115,10 @@ class symbol(mca2obj):
 	def set_default(self, value):
 		self.default = value
 
-class item(symbol):
-	'game item player can interact with, this includes NPCs, which are subclassed'
+class moveable(symbol):
+	'things that can move in the game - namely items and npcs'
 	def __init__(self, name):
-		super(item, self).__init__(name)
+		super(moveable, self).__init__(name)
 		self.game_name = None
 		self.weight = 0
 		self.description = itemdesc(name)
@@ -101,7 +127,10 @@ class item(symbol):
 	def set_weight(self, weight):
 		self.weight = weight
 
-class npc(item):
+class item(moveable):
+	'game item player can interact with'
+
+class npc(moveable):
 	'non-player characters - just like items, but player can talk to them'
 	def __init__(self, name):
 		super(npc, self).__init__(name)
@@ -109,8 +138,9 @@ class npc(item):
 	def set_talkto(self, FIXME):
 	    self.talkto = FIXME
 
-class codeseq(mca2obj):
+class codeseq(userdefined):
 	'parent class for all bytecode sequences'
+	#FIXME - why is this derived from userdefined? why not just from object?
 	def __init__(self, name):
 		super(codeseq, self).__init__(name)
 		self.code = []	# holds lines for assembler
