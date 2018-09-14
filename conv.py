@@ -7,6 +7,7 @@ import sys
 #		userdefined	(defined by user in file: has line number)	except PLAYER, INVENTORY, etc...
 #			const?
 #			symbol	(has start value) used for vars and fakevars
+#				variable
 #				moveable	(has game name, weight, description)
 #					item
 #					npc	(has talkto method)
@@ -48,7 +49,7 @@ def message(msg):
 def warning(msg):
 	message('Warning: ' + msg)
 
-class mydict(dict):
+class mydict_FIXME_remove(dict):
 	'helper class for object dictionaries'
 	def __init__(self, constructor):
 		super(mydict, self).__init__()
@@ -104,39 +105,37 @@ class userdefined(object):
 	# Though Python can add members at any time, it would be much more readable.
 	def __init__(self, name):
 		self.name = name	# symbolic name
-		self.referenced = False	# for debugging output ("object XYZ never used!")
-	def reference(self):
-		self.referenced = True
+		self.defline = None
 
 class symbol(userdefined):
-	'parent class for npc, item, var and fakevar'
-	def __init__(self, name):
+	'parent class for npc, item, variable and fakevar'
+	def __init__(self, name, default):
 		super(symbol, self).__init__(name)
-		self.default = None	# default value at start of game
+		self.default = default	# default value at start of game
 	def offset_name(self):
 		return 'vo_' + self.name
-	def set_default(self, value):
-		self.default = value
+
+class variable(symbol):
+	'game var scripts can use'
+
+class literalnumber(symbol):
+	'pseudo var to hold literal'
 
 class moveable(symbol):
 	'things that can move in the game - namely items and npcs'
-	def __init__(self, name):
-		super(moveable, self).__init__(name)
-		self.game_name = None
-		self.weight = 0
-		self.description = itemdesc(name)
-	def set_game_name(self, name):
-		self.game_name = name
-	def set_weight(self, weight):
+	def __init__(self, name, start_location, weight, game_name):
+		super(moveable, self).__init__(name, 'location_' + start_location)
+		self.game_name = game_name
 		self.weight = weight
+		self.description = itemdesc(name)
 
 class item(moveable):
 	'game item player can interact with'
 
 class npc(moveable):
 	'non-player characters - just like items, but player can talk to them'
-	def __init__(self, name):
-		super(npc, self).__init__(name)
+	def __init__(self, name, start_location, weight, game_name):
+		super(npc, self).__init__(name, start_location, weight, game_name)
 		self.talkto = None
 	def set_talkto(self, FIXME):
 	    self.talkto = FIXME
@@ -263,56 +262,68 @@ class convertor(object):
 		self.codeseq = None	# needed to track locations/procedures/combinations/usages
 		self.cond_state = [0]	# keeps track of "if/elif/else/endif" and nesting
 		self.code = []	# for stuff from "asm" lines
-		self.subst = dict()	# dictionary for "define/enum" substitutions
+		self.subst = dict()	# dictionary for "define/enum" substitutions	FIXME - move to some input preprocessor
 		self.stringcoll = stringcoll()
 		self.line_of_def = dict()	# object name to line of definition
 		# special dictionaries with constructor for new entries
-		self.procedures = mydict(procedure)	# procedures
-		self.locations = mydict(location)	# locations
-		self.uses = mydict(use)		# usages ("use A")
-		self.combis = mydict(combi) # combinations ("combine A with B")
-		self.npcs = mydict(npc)     # NPCs player can interact with
-		self.items = mydict(item)	# items player can interact with
-		self.dictof = dict()     # mapping from name to npcs dict or items dict
-		self.vars = mydict(symbol)	# game variables
-		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
-		# make sure "start" location is marked as referenced to inhibit confusing error
-		start = self.get_object(self.locations, 'start')
-		self.get_object(self.procedures, 'intro')
+		self.references = dict()
+		self.definitions = dict()
+#		self.procedures = mydict(procedure)	# procedures
+#		self.locations = mydict(location)	# locations
+#		self.uses = mydict(use)		# usages ("use A")
+#		self.combis = mydict(combi) # combinations ("combine A with B")
+#		self.npcs = mydict(npc)     # NPCs player can interact with
+#		self.items = mydict(item)	# items player can interact with
+#		self.dictof = dict()     # mapping from name to npcs dict or items dict
+#		self.vars = mydict(symbol)	# game variables
+#		self.fakevars = mydict(symbol)	# constant values (used in comparisons and assignments), handled as if game vars
 		# create some reserved names:
 		# special value for lines below
 		self.line_number = '<predefined>'
-		# create pseudo npc "PLAYER"
-		PLAYER_npc = self.get_object(self.npcs, 'PLAYER', define=True)
-		self.dictof['PLAYER'] = self.npcs
-		PLAYER_npc.reference()	# suppress warning if never referenced
-		PLAYER_npc.set_game_name('nullstring')
+
+		# create pseudo npc 'PLAYER'
+		PLAYER_npc = npc('PLAYER', start_location = 'start', weight = '$80', game_name = 'nullstring')
 		PLAYER_npc.set_talkto('nullstring')
-		PLAYER_npc.set_weight('$80')	# make sure player cannot put player into inventory ;)
-		PLAYER_npc.set_default(start.label())
-		# create pseudo location "NOWHERE" to be able to hide npcs/items and disable directions
-		NOWHERE_location = self.get_object(self.locations, 'NOWHERE', define=True)
-		NOWHERE_location.reference()	# suppress warning if never referenced
-		NOWHERE_location.set_forced_value(0)
 		# create pseudo location "INVENTORY" where npcs/items can be moved
-		INVENTORY_location = self.get_object(self.locations, 'INVENTORY', define=True)
-		INVENTORY_location.reference()	# suppress warning if never referenced
-		INVENTORY_location.set_forced_value(1)
+		INVENTORY_location = location('INVENTORY')
+		INVENTORY_location.set_forced_value(0)
+		# create pseudo location "NOWHERE" to be able to hide npcs/items and disable directions
+		NOWHERE_location = location('NOWHERE')
+		NOWHERE_location.set_forced_value(1)
 		# create pseudo vars:
-		#   "__TMP__" for holding literal
-		TMP_var = self.get_object(self.vars, '__TMP__', define=True)
-		TMP_var.reference()	# suppress warning if never referenced
-		TMP_var.set_default(0)
-		#   "RANDOM" for random number
-		RND_var = self.get_object(self.vars, 'RANDOM', define=True)
-		RND_var.reference()	# suppress warning if never referenced
-		RND_var.set_default(0)
-		#   "TIME_s" for holding seconds counter
-		TIME_var = self.get_object(self.vars, 'TIME_s', define=True)
-		TIME_var.reference()	# suppress warning if never referenced
-		TIME_var.set_default(0)
+		TMP_var = variable('__TMP__', '0')	# for holding literal
+		RND_var = variable('RANDOM', '0')	# for random number
+		TIME_var = variable('TIME_s', '0')	# for holding seconds counter
+		# register definitions
+		self.add_symbol_definition(PLAYER_npc)
+		self.add_symbol_definition(INVENTORY_location)
+		self.add_symbol_definition(NOWHERE_location)
+		self.add_symbol_definition(TMP_var)
+		self.add_symbol_definition(RND_var)
+		self.add_symbol_definition(TIME_var)
+		# make sure some things are marked as referenced even if not ref'd in script, to inhibit confusing errors
+		self.add_symbol_reference('intro', procedure)
+		self.add_symbol_reference('start', location)
+		self.add_symbol_reference('INVENTORY', location)
+		self.add_symbol_reference('NOWHERE', location)
+		self.add_symbol_reference('PLAYER', npc)
+		self.add_symbol_reference('__TMP__', variable)
+		self.add_symbol_reference('RND', variable)
+		self.add_symbol_reference('TIME', variable)
 		# correct start value for later
 		self.line_number = 0
+	def add_symbol_definition(self, obj):
+		if obj.name in self.definitions:
+			self.error_line('object already defined in line ' + str(self.definitions[obj.name].defline))
+		obj.defline = self.line_number
+		self.definitions[obj.name] = obj
+	def add_symbol_reference(self, label, objtype):
+		if label in self.references:
+			if self.references[label]['type'] == objtype:
+				return
+			self.error_line('object type in ref is different from first ref (line ' + str(self.references[label]['firstrefline']) + ')')
+		else:
+			self.references[label] = {'type': objtype, 'firstrefline' : self.line_number }
 	def error(self, msg):
 		message('Error: ' + msg)
 		if self.allowed_errors == 0:
@@ -371,14 +382,20 @@ class convertor(object):
 	def get_force2var(self, string):
 		'convert literal/var name string to var object'
 		string = nospace(string)
-		if string in self.vars:
-			self.vars[string].reference()
-			return self.vars[string]	# return var object
+		if string in self.definitions:
+			o = self.definitions[string]
+			if type(o) == variable:
+				self.add_symbol_reference(string, variable)
+				return o	# return var object
+			else:
+				self.error_line('symbol defined on line ' + str(o.defline) + ' is not a variable.')
 		# if no var, must be literal - convert to number strings
 		value = self.get_value(string)
-		fakevar = self.get_object(self.fakevars, str(value))
-		fakevar.set_default(value)
-		return fakevar
+		fakename = 'literal ' + str(value)
+		literal = literalnumber(fakename, str(value))
+		self.add_symbol_definition(literal)
+		self.add_symbol_reference(fakename, literalnumber)
+		return literal
 	def add_code(self, line):
 		self.code.append('\t' + line)
 	def check_refs(self, dict, name):
@@ -627,7 +644,7 @@ class convertor(object):
 		item2 = self.get_object(self.items, item2)
 		combi = self.process_code_line(self.combis, str(id(item1)) + '_' + str(id(item2)))
 		combi.set_items(item1, item2)
-	def process_proc_loc_line(self, line, dict):
+	def process_proc_loc_line(self, line, objclass):
 		'new procedure or location'
 		name = self.get_args(line, 1)[0]
 		self.process_code_line(dict, name)
@@ -686,26 +703,21 @@ class convertor(object):
 		'variable declaration'
 		#self.no_text()		this can actually be given inside of text as it does not inject code into output!
 		name, start_value = self.get_args(line, 2)
-		var = self.get_object(self.vars, name, define=True)
-		# get actual number for start value
-		num = self.get_value(start_value)
-		var.set_default(num)
-	def process_npcitem_line(self, line, dict):
+		num = self.get_value(start_value)	# get actual number for start value		FIXME - move this to some pre-processor
+		self.add_symbol_definition(variable(name, num))
+	def process_npcitem_line(self, line, constructor):
 		'declare npc or item for player to interact with'
 		self.new_code()	# close previous code sequence, if there was one
-		name, location, weight, game_name = self.get_args(line, 4)
-		location = self.get_object(self.locations, location).label()
-		npcitem = self.get_object(dict, name, define=True)
-		self.dictof[name] = dict    # map name to dictionary
-		game_name = self.stringcoll.add(game_name)
-		if weight == 'small':
-			npcitem.set_weight('0')
+		name, initial_location, weight, game_name = self.get_args(line, 4)
+		if weight == 'small':	# FIXME - use script's "const" facility for this?
+			weight = '0'
 		elif weight == 'large':
-			npcitem.set_weight('$80')
+			weight = '$80'
 		else:
 			self.error_line('NPC/item size must be "small" or "large"')
-		npcitem.set_default(location)
-		npcitem.set_game_name(game_name)
+		npcitem = constructor(name, start_location = initial_location, weight = weight, game_name = game_name)
+		self.add_symbol_definition(npcitem)
+		self.add_symbol_reference(initial_location, location)
 		# make current
 		self.codeseq = npcitem.description
 	def process_delay_line(self, line):
@@ -863,9 +875,9 @@ class convertor(object):
 			elif key == 'dec':
 				self.process_incdec_line('vardec', line)
 			elif key == 'npc':
-				self.process_npcitem_line(line, self.npcs)
+				self.process_npcitem_line(line, npc)
 			elif key == 'item':
-				self.process_npcitem_line(line, self.items)
+				self.process_npcitem_line(line, item)
 			elif key == 'move':
 				self.process_move_line(line)
 			elif key == 'gain':
@@ -883,7 +895,7 @@ class convertor(object):
 			elif key == 'endif':
 				self.process_endif_line(line)
 			elif key == 'loc':
-				self.process_proc_loc_line(line, self.locations)
+				self.process_proc_loc_line(line, location)
 			elif key == 'use':
 				self.process_use_line(line)
 			elif key == 'combine':
@@ -891,7 +903,7 @@ class convertor(object):
 			elif key == 'using':	# older form of "combine"
 				self.process_combi_line(line)
 			elif key == 'proc':
-				self.process_proc_loc_line(line, self.procedures)
+				self.process_proc_loc_line(line, procedure)
 			elif key == 'callproc':
 				self.process_callproc_line(line)
 			elif key == 'callasm':
