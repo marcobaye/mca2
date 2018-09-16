@@ -112,8 +112,8 @@ itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!
 engine_use_X ; scan "usages" for correct code sequence and execute	FIXME - better use a table than a list!
 		stx .hinz
 		; scan chain
-		lda #<uses
-		ldx #>uses
+		lda #<usages
+		ldx #>usages
 		jmp .entry
 .next_entry		lda #MODIFIED8	: .link_lo = * - 1
 			ldx #MODIFIED8	: .link_hi = * - 1
