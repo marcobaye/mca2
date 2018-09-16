@@ -1,8 +1,6 @@
 #!/usr/bin/python2
 import sys
-#TODO:
-#	get rid of mydict class and clean up
-#	make list of classes linked to name:
+#	list of classes linked to name:
 #		line_keyword?	(defined at startup, body is function to handle line)
 #		userdefined	(defined by user in file: has line number)	except PLAYER, INVENTORY, etc...
 #			const?
@@ -14,17 +12,17 @@ import sys
 #					npc	(has talkto method)
 #			usage	(has item and scriptcode)
 #			combi	(has items and scriptcode)
-#			talkto		FIXME - add!
-#			procedure	(FIXME - add scriptcode!)
+#			talkto		FIXME - add way for user to define this!
+#			procedure
 #			location	(has directions)
 #		scriptcode (was codeseq, has output method, code, indents)
-# TODO: split procedure and location into named game object and actual code, just as it is with item/itemdesc!
 # FIXME: atm, items i1 and i2 cannot reference each other in their descriptions:
 #	the undefined item is thought to be a location!
 #	so either add a possibility to define the description code long after the item,
 #	or add some sort of "declare item" line!
 #	option 1 seems natural because I need something like that anyway to implement npc's "talkto",
 #	but option 2 seems simpler because option 1 would need some way to indicate "no code here, defined later!"
+# TODO: cleanup line "preprocessor"
 
 
 # mapping operators from source format to macro format:
@@ -47,31 +45,6 @@ def message(msg):
 	print >> sys.stderr, msg
 def warning(msg):
 	message('Warning: ' + msg)
-
-class mydict_FIXME_remove(dict):
-	'helper class for object dictionaries'
-	def __init__(self, constructor):
-		super(mydict, self).__init__()
-		self.constructor = constructor
-		self.defined = []
-		self.referenced = []
-	def define(self, obj):
-		self.defined.append(obj)
-	def reference(self, obj):
-		self.referenced.append(obj)
-	def get_defined(self):
-		return self.defined[:]
-	def get_undefd_and_refd(self):
-		ret = []
-		for obj in self.referenced:
-			if obj not in self.defined:
-				ret.append(obj)
-		return ret
-	def get_referenced(self):
-		ret = []
-		for obj in self.referenced:
-			ret.append(obj)
-		return ret
 
 class stringcoll(object):
 	'collects strings so multiple copies are only put into assembler source once'
@@ -167,12 +140,10 @@ class scriptcode(object):
 		self.code.append(line)
 	def add_code(self, line):
 		self.code.append(self.indents * '\t' + line)
-	# default set_dir (location will replace this method)	FIXME - move to location?
 	def set_dir(self, dir, target):
-		# this returns whether direction was already possible
 		self.code.append(self.indents * '\t' + '+' + dir + ' ' + asmlabel_location(target))
-		return False	# npcs/items/procedures do not have "directions" like locations
-	# default output method
+		# TODO - add warning if direction has already been set on outermost block level!
+		# self.warning_line('Direction "' + direction + '" was already set')
 	def output(self, endcmd):
 		for line in self.code:
 			print line
@@ -226,29 +197,23 @@ class location(userdefined):
 		self.code = None
 	def set_code(self, code):
 		self.code = code
-	# setters:
-	def set_dir(self, dir, target):
-		# this returns whether direction was already possible
-		result = dir in self.extdirs
-		self.code.append(self.indents * '\t' + '+' + dir + ' ' + target.label())
-		return result
 	def set_forced_value(self, value):
 		self.forced_value = value
 	def code_label(self):
 		return asmlabel_location(self.name)
-	def output(self):
+	def output(self, extdirdict):
 		if self.forced_value != None:
 			print '!addr\t' + self.code_label() + '\t= ' + str(self.forced_value) + '\t; pseudo location'
 		else:
 			print self.code_label()
-#			for dir in self.extdirs:
-#				print self.indents * '\t' + '+' + dir + ' ' + self.extdirs[dir].label()
+			for dir in extdirdict:
+				print self.code.indents * '\t' + '+' + dir + ' ' + asmlabel_location(extdirdict[dir]) + '\t; autocreated by target'
 			self.code.output('+end_location')
 
-class convertor(object):
+class converter(object):
 	'converts MCA2 source to ACME source'
 	def __init__(self):
-		self.allowed_errors = 5	# convertor stops after this many errors
+		self.allowed_errors = 5	# converter stops after this many errors
 		self.in_comment = False	# for c-style multi-line comments
 		self.text_mode = False	# needed to add command prefix and trailing NUL char
 		self.codeseq = None	# needed to track locations/procedures/combinations/usages
@@ -256,10 +221,9 @@ class convertor(object):
 		self.code = []	# for stuff from "asm" lines
 		self.subst = dict()	# dictionary for "define/enum" substitutions	FIXME - move to some input preprocessor
 		self.stringcoll = stringcoll()
-		self.line_of_def = dict()	# object name to line of definition
-		# special dictionaries with constructor for new entries
+		self.definitions = dict()	# maps object names to objects
+		self.ordered_defs = []	# helper list so order of definitions is kept
 		self.references = dict()
-		self.definitions = dict()
 		self.current_location = None	# name of "current" location, for backlinks
 
 		# create some pre-defined stuff:
@@ -269,20 +233,20 @@ class convertor(object):
 		PLAYER_npc = npc('PLAYER', start_location = 'start', weight = '$80', game_name = 'nullstring')
 		PLAYER_npc.set_description(scriptcode())
 		PLAYER_npc.set_talkto('nullstring')
-		# create pseudo location "INVENTORY" where npcs/items can be moved
-		INVENTORY_location = location('INVENTORY')
-		INVENTORY_location.set_forced_value(0)
 		# create pseudo location "NOWHERE" to be able to hide npcs/items and disable directions
 		NOWHERE_location = location('NOWHERE')
-		NOWHERE_location.set_forced_value(1)
+		NOWHERE_location.set_forced_value(0)
+		# create pseudo location "INVENTORY" where npcs/items can be moved
+		INVENTORY_location = location('INVENTORY')
+		INVENTORY_location.set_forced_value(1)
 		# create pseudo vars:
 		TMP_var = variable('__TMP__', '0')	# for holding literal
 		RND_var = variable('RANDOM', '0')	# for random number
 		TIME_var = variable('TIME_s', '0')	# for holding seconds counter
 		# register definitions
 		self.add_symbol_definition(PLAYER_npc)
-		self.add_symbol_definition(INVENTORY_location)
 		self.add_symbol_definition(NOWHERE_location)
+		self.add_symbol_definition(INVENTORY_location)
 		self.add_symbol_definition(TMP_var)
 		self.add_symbol_definition(RND_var)
 		self.add_symbol_definition(TIME_var)
@@ -306,6 +270,7 @@ class convertor(object):
 				self.error_line('expected object "' + name + '" to be of different type, see line ' + str(self.references[name]['firstrefline']))
 		obj.defline = self.line_number
 		self.definitions[obj.name] = obj
+		self.ordered_defs.append(obj.name)
 	def add_symbol_reference(self, name, objtype):
 		if name in self.references:
 			if issubclass(objtype, self.references[name]['type']):
@@ -317,7 +282,7 @@ class convertor(object):
 				self.error_line(str(objtype) + str(self.references[name]['type']))
 		else:
 			self.references[name] = {'type': objtype, 'firstrefline' : self.line_number}
-			# if obj is location, "back directions" may be added to this dict!
+			# if obj is location, "backdir" dict may be added to this dict!
 	def ensure_defined(self, name, objtype):
 		if name not in self.definitions:
 			self.error_line('object "' + name + '" used but not defined.')
@@ -330,7 +295,7 @@ class convertor(object):
 	def get_defined(self, objtype):
 		'return list of all defined objects of the given type'
 		list = []
-		for key in self.definitions:
+		for key in self.ordered_defs:
 			obj = self.definitions[key]
 			if type(obj) == objtype:
 				list.append(obj)
@@ -338,7 +303,7 @@ class convertor(object):
 	def get_defd_and_refd(self, objtype):
 		'return list of all defined objects of the given type that were actually referenced'
 		list = []
-		for key in self.definitions:
+		for key in self.ordered_defs:
 			obj = self.definitions[key]
 			if type(obj) == objtype and key in self.references:
 				list.append(obj)
@@ -355,41 +320,20 @@ class convertor(object):
 	#def err_serious_line(self, msg):
 	#	print >> sys.stderr, 'Serious error in line %d: %s!' % (self.line_number, msg)
 	#	sys.exit(1)
-	def get_object_FIXME_remove(self, dict, name, define = False):
-		'get const/var/procedure/location/whatever by name. if it does not exist, create'
-		'if "define" is given, store current line number.'
-		'otherwise, set "referenced" to True.'
-		name = nospace(name)	# remove spaces before/after
-		if name in dict:
-			obj = dict[name]	# use existing
-			just_created = False
-		else:
-			obj = dict.constructor(name)	# create new
-			dict[name] = obj	# and store
-			just_created = True
-		if define:
-			if name in self.line_of_def:
-				self.error_line('Object "' + name + '" has already been defined in line ' + self.line_of_def[name])
-			else:
-				self.line_of_def[name] = str(self.line_number)
-				dict.define(obj)
-		else:
-			obj.reference()
-			if just_created:
-				dict.reference(obj)
-		return obj
-
 	def add_location_direction(self, direction, target_name):
 		# add direction possibility to current location
 		self.add_symbol_reference(target_name, location)
-		if self.codeseq.set_dir(direction, target_name):
-			self.warning_line('Direction "' + direction + '" was already set')
+		self.codeseq.set_dir(direction, target_name)
 	def add_location_backdirection(self, target_name, direction):
 		# add current location as direction possibility to other location
 		# (when going from target_name in direction, result is current_location)
 		self.add_symbol_reference(target_name, location)
-		# FIXME - add reference for _current_ location as well!	self.codeseq.reference()
-		locdict = self.references[target_name]
+		self.add_symbol_reference(self.current_location, location)
+		# if there is no backdir dict yet, create one:
+		if 'backdir' not in self.references[target_name]:
+			self.references[target_name]['backdir'] = dict()
+		# get backdir dict
+		locdict = self.references[target_name]['backdir']
 		if direction in locdict:
 			if locdict[direction] != self.current_location:
 				self.warning_line('Back-direction "' + direction + '" was already set for target')
@@ -453,7 +397,6 @@ class convertor(object):
 		var_index = 0
 		print '; var offsets:'
 		print '\t; npcs:'
-		# FIXME - make sure PLAYER is first (offset 0), which is currently not enforced!
 		for npcs in self.get_defined(npc):	# use unref'd npcs as well, they might be red herrings
 			print '\t' + npcs.offset_symbol() + '\t= ' + str(var_index) + '\t; default value is', npcs.default
 			var_index += 1
@@ -563,9 +506,12 @@ class convertor(object):
 			print
 		print '; locations:'
 		for loc in self.get_defd_and_refd(location):
-			# FIXME - give self.references[name] dict as arg so back directions can be added!
-			loc.output()
+			if 'backdir' in self.references[loc.name]:
+				loc.output(self.references[loc.name]['backdir'])
+			else:
+				loc.output(dict())
 			print
+
 		print '; end of actual data'
 		print
 		print '} ; end of macro'
@@ -724,8 +670,8 @@ class convertor(object):
 				self.add_location_backdirection(target_loc_name2, dir1)
 	def add_substitution(self, name, value):
 		'helper function for "define" and "enum" lines'
-		if name in self.line_of_def:
-			self.error_line('Name "' + name + '" has already been assigned to an object in line ' + self.line_of_def[name])
+		if name in self.definitions:
+			self.error_line('Name "' + name + '" has already been assigned to an object in line ' + self.definitions[name].defline)
 		else:
 			self.subst[name] = value
 	def process_define_line(self, line):
@@ -1024,7 +970,7 @@ def main():
 		print >> sys.stderr, 'Error: wrong number of arguments'
 		sys.exit(1)
 	source_file = sys.argv[1]
-	conv = convertor()
+	conv = converter()
 	conv.parse_file(source_file)
 	conv.output()
 
