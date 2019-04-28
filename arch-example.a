@@ -13,6 +13,16 @@
 ; libraries
 	;!src <>
 
+; constants
+	controlcode_HOME	= petscii_HOME
+	controlcode_CLEAR	= petscii_CLEAR
+	controlcode_REVSON	= petscii_REVSON
+	controlcode_REVSOFF	= petscii_REVSOFF
+	controlcode_UP		= petscii_UP
+	controlcode_DOWN	= petscii_DOWN
+	controlcode_LEFT	= petscii_LEFT
+	controlcode_RIGHT	= petscii_RIGHT
+
 ; zero page
 !addr	runptr		= $00	; 16bit, points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $02	; 8bit, counts recursion levels (okay, this need not really be in zp)

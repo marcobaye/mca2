@@ -43,7 +43,7 @@ entry ; entry point for SYS
 		+arch_init
 		+arch_output_init	; setup own charset, vic registers, etc.
 		; FIXME - fade in!
-		jsr my_primm	: !tx color_std, petscii_CLEAR, 0
+		jsr my_primm	: !tx color_std, controlcode_CLEAR, 0
 		+arch_set_colors	; FIXME - should be called after credits screen!
 ; now enter actual main loop:
 		jsr engine_check_restart	; reset vars to default?
@@ -111,27 +111,27 @@ help ; "?" command
 		!tx cr, 0
 		rts
 
-!if KEYBOARD_IS_PETSCII {
-	!ct pet	; if sys_getin returns petscii, use petscii for these tables as well:
-}
+!ct raw {
+	!if KEYBOARD_IS_PETSCII {
+		!ct pet	; if sys_getin returns petscii, use petscii for these tables as well:
+	}
 
 keys_start
 		!if ALLOW_CURSOR {
-			!tx petscii_UP, petscii_DOWN, petscii_LEFT, petscii_RIGHT
+			!tx controlcode_UP, controlcode_DOWN, controlcode_LEFT, controlcode_RIGHT
 		}
 		!tx "+-"
 		!if ALLOW_KEYPAD {
 			!tx "82465"
 		}
-		!tx petscii_CLEAR, petscii_HOME, petscii_F1, petscii_F3
+		!tx controlcode_CLEAR, controlcode_HOME, petscii_F1, petscii_F3	; FIXME - move F1/F3 to arch macro!
 		!if DEUTSCH {
 			!tx "?nswohrigvubk"
 		} else {
 			!tx "?nsweuditlxac"
 		}
 keys_end
-
-	!ct raw	; back to standard
+}	; back to standard encoding
 
 action_lo
 		!if ALLOW_CURSOR {

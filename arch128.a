@@ -6,7 +6,7 @@
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 1
 	INCLUDE_CHARSET		= 1
-	KEYBOARD_IS_PETSCII	= 1
+	KEYBOARD_IS_PETSCII	= 1	; FIXME - move conversion code to this file?
 	LINE_LENGTH		= 80
 	sys_NEWLINE		= 13
 
@@ -14,6 +14,18 @@
 	!src <cbm/c128/vic.a>	; only needed for timing via frame counting
 	!src <cbm/c128/mmu.a>
 	!src <cbm/c128/vdc.a>
+	!src <cbm/petscii.a>
+	petscii_LOWERCASE	=  14	; switch to lowercase/uppercase character set
+
+; constants
+	controlcode_HOME	= petscii_HOME
+	controlcode_CLEAR	= petscii_CLEAR
+	controlcode_REVSON	= petscii_REVSON
+	controlcode_REVSOFF	= petscii_REVSOFF
+	controlcode_UP		= petscii_UP
+	controlcode_DOWN	= petscii_DOWN
+	controlcode_LEFT	= petscii_LEFT
+	controlcode_RIGHT	= petscii_RIGHT
 
 ; zero page
 !addr	currentcolor	= $f1
