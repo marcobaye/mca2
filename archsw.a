@@ -179,8 +179,8 @@ color_buffer=$e700
     adc temp
     tax
     lda temp_3
-    cmp #color_std
-    bne l1
+    cmp #color_emph
+    beq l1
     lda _bitmask,y
     eor #$ff
     and color_buffer,x
