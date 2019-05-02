@@ -2,11 +2,14 @@ ASSEMBLER6502	= acme
 AS_FLAGS	= -v1 -Wtype-mismatch
 RM		= rm
 
-PROGS		= game64.prg game128.prg game264.prg example.prg
+PROGS		= game64.prg game128.prg game264.prg gamesw.prg example.prg
 SRCS		= mca2.a charset.a engine.a output.a tail.a	# order is important: mca first, tail last, engine before output
 
 all: $(PROGS)
 
+gamesw.prg: archsw.a _game.tmp.a $(SRCS)
+	$(ASSEMBLER6502) $(AS_FLAGS) --cpu 65c02 --format cbm --outfile gamesw.prg archsw.a _game.tmp.a $(SRCS)
+  
 game64.prg: arch64.a _game.tmp.a $(SRCS)
 	$(ASSEMBLER6502) $(AS_FLAGS) --format cbm --outfile game64.prg arch64.a _game.tmp.a $(SRCS)
 	#exomizer sfx basic game64.prg sfx.prg
@@ -37,3 +40,6 @@ xplus4: game264.prg
 
 clean:
 	-$(RM) -f *.o *.tmp $(PROGS) *~ core
+
+mca2:
+	../../transfer.py gamesw.prg -s 0x1000
