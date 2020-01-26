@@ -9,7 +9,7 @@ all: $(PROGS)
 
 game64.prg: arch64.a _game.tmp.a $(SRCS)
 	$(ASSEMBLER6502) $(AS_FLAGS) --format cbm --outfile game64.prg arch64.a _game.tmp.a $(SRCS)
-	#exomizer sfx basic game64.prg sfx.prg
+	#exomizer sfx basic game64.prg -o sfx.prg
 
 game128.prg: arch128.a _game.tmp.a $(SRCS)
 	$(ASSEMBLER6502) $(AS_FLAGS) --format cbm --outfile game128.prg arch128.a _game.tmp.a $(SRCS)
