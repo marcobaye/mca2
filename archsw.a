@@ -53,7 +53,7 @@ Gray           =$0e ;204 204 204	"CCCCCC"
 White          =$0f ;255 255 255	"white"
 
 screen_buffer=$df00
-color_buffer=$e700
+!addr color_buffer=$e700
 
 ; zero page
 !addr	runptr		= $00	; 16bit, points to next bytecode instruction (also used for inline text output and scanning of usage list)
@@ -101,17 +101,11 @@ color_buffer=$e700
 
 ; code macros
 
-; if architecture uses MAKE_BASIC_HEADER, this macro will be called just before
-; generating the SYS instruction, so you can insert other instructions
-!macro arch_basicstuff {
-		!by $99, $22, $58, $22, $3a	; print"x":
-}
-
 ; if architecture does NOT use MAKE_BASIC_HEADER, this macro will be called to
 ; create your own program header. enter the program with a jump to "entry".
 !macro arch_header {
 		jsr entry
-		jmp ($da)	; return to shell
+		jmp (address($da))	; return to shell
 }
 
 ; this is used to delay execution
@@ -129,7 +123,7 @@ color_buffer=$e700
 ; this is used early on so machine can be initialised
 ; (memory configuration, find out whether PAL/NTSC, fade to black, ...)
 !macro arch_init {
-    jsr $FFC2
+    jsr address($FFC2)
 }
 
 ; this is used a bit later to init output system (init video chip, setup
@@ -217,14 +211,12 @@ sw_chrout
     lda _codemap,x
 +
     phy
-    jsr $FFB3
+    jsr address($FFB3)
     ply
     plx
     pla
 ex: 
     rts
-    
-my_lookup_table	!by 1, 2, 3
 }
 
 ; this is called at end of assembly so you can check for memory limits
