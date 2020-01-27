@@ -758,7 +758,7 @@ class converter(object):
 # if/elif/else/endif:
 	def process_if_line(self, line):
 		self.text_close()
-		self.codeseq.add_code('!zone {')
+		self.codeseq.add_code('!zone {')	# TODO: get rid of zone, add an "if" nesting counter to labels instead. I need "zone" for loops/break/continue!
 		self.cond_state.append(1)	# go deeper, then in 1st block of if/elif/else/endif
 		self.process_condition(line)
 		self.codeseq.change_indent(1)
