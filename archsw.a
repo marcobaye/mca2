@@ -3,30 +3,72 @@
 
 ; config
 	MAKE_BASIC_HEADER	= 0	; set to nonzero to create a CBM-style basic header
-	ALLOW_CURSOR		= 0	; set to nonzero to allow cursor navigation (currently needs petscii codes)
-	ALLOW_KEYPAD		= 1	; set to nonzero to allow keypad navigation
+	ALLOW_CURSOR		= 1	; set to nonzero to allow cursor navigation (currently needs petscii codes)
+	ALLOW_KEYPAD		= 0	; set to nonzero to allow keypad navigation
 	INCLUDE_CHARSET		= 0	; set to nonzero to include own charset
 	KEYBOARD_IS_PETSCII	= 0	; set to nonzero if "sys_getin" function returns petscii codes
 	LINE_LENGTH		= 80	; system's screen width (needed for location title and word wrap)
-	sys_NEWLINE		= 10	; system's newline character (probably 10 or 13)
+	sys_NEWLINE		= $0a	; system's newline character (probably 10 or 13)
 
 ; libraries
 	;!src <>
+  
+KEY_CRSR_UP       = $1E
+KEY_CRSR_DOWN     = $1F
+KEY_CRSR_RIGHT 	 	= $10
+KEY_CRSR_LEFT     = $11
 
 ; constants
-	controlcode_HOME	= petscii_HOME
-	controlcode_CLEAR	= petscii_CLEAR
-	controlcode_REVSON	= petscii_REVSON
-	controlcode_REVSOFF	= petscii_REVSOFF
-	controlcode_UP		= petscii_UP
-	controlcode_DOWN	= petscii_DOWN
-	controlcode_LEFT	= petscii_LEFT
-	controlcode_RIGHT	= petscii_RIGHT
+	controlcode_HOME	= 1
+  petscii_HOME=controlcode_HOME
+  
+  controlcode_CLEAR	= 2
+	petscii_CLEAR=controlcode_CLEAR
+  
+  controlcode_REVSON	= 3
+  petscii_REVSON=controlcode_REVSON
+  
+	controlcode_REVSOFF	= 4
+	controlcode_UP		= KEY_CRSR_UP
+	controlcode_DOWN	= KEY_CRSR_DOWN
+	controlcode_LEFT	= KEY_CRSR_LEFT
+	controlcode_RIGHT	= KEY_CRSR_RIGHT 
+  
+  
+Transparent    =$00
+Black          =$01	;0	0	0		"black"
+Medium_Green   =$02 ;35	203	50		"23
+Light_Green    =$03	;96	221	108
+Dark_Blue      =$04 ;84	78	255		"544EFF"
+Light_Blue     =$05 ;125 112 255	"7D70FF"
+Dark_Red       =$06 ;210 84	66		"D25442"
+Cyan           =$07 ;69 232	255		(Aqua Blue)
+Medium_Red     =$08 ;250 89	72 		"FA5948"
+Light_Red      =$09 ;255 124 108	"FF7C6C"
+Dark_Yellow    =$0a ;211 198 60		"D3C63C"
+Light_Yellow   =$0b ;229 210 109	"E5D26D"
+Dark_Green     =$0c ;35 178	44
+Magenta        =$0d ;200 90	198 	"C85AC6" (Purple)
+Gray           =$0e ;204 204 204	"CCCCCC"
+White          =$0f ;255 255 255	"white"
+
+screen_buffer=$df00
+!addr color_buffer=$e700
 
 ; zero page
 !addr	runptr		= $00	; 16bit, points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $02	; 8bit, counts recursion levels (okay, this need not really be in zp)
 !addr	z_quote_mode	= $03	; 8bit - if your system does not know any "quote mode", just consider this to be a write-only variable)
+
+!addr temp    = $10
+!addr temp_2  = $11
+!addr temp_3  = $12
+
+
+; extended zp
+!addr crs_x   = $028c
+!addr crs_y   = $028d
+
 
 ; system area
 !addr	is_PAL		= $0815	; zero for NTSC, nonzero for PAL (needed so "delay" can convert seconds to video frames)
@@ -35,8 +77,8 @@
 	load_addr	= $1000	; program counter at start of assembly
 
 ; kernal
-!addr	sys_chrout	= $ffd2	; system function to output a character - MUST PRESERVE A/X/Y!
-!addr	sys_getin	= $ffe4	; system function to read a character from keyboard
+!addr	sys_chrout	= sw_chrout	; system function to output a character - MUST PRESERVE A/X/Y!
+!addr	sys_getin	= $FFB0 	    ; system function to read a character from keyboard
 
 ; color codes:
 ; (names are from C64 colors, but architecture can change values in 0..f range)
@@ -59,32 +101,35 @@
 
 ; code macros
 
-; if architecture uses MAKE_BASIC_HEADER, this macro will be called just before
-; generating the SYS instruction, so you can insert other instructions
-!macro arch_basicstuff {
-		!by $99, $22, $58, $22, $3a	; print"x":
-}
-
 ; if architecture does NOT use MAKE_BASIC_HEADER, this macro will be called to
 ; create your own program header. enter the program with a jump to "entry".
 !macro arch_header {
 		jsr entry
-		jmp $4711	; return to shell
+		jmp (address($da))	; return to shell
 }
 
 ; this is used to delay execution
 ; if X is zero on call, just wait for vblank
 !macro arch_wait_X_frames {
+      a_vdp     = $0220
+      a_vram    = a_vdp
+      a_vreg    = a_vdp+1
+;-     bit a_vreg
+ ;     bpl -
+  ;    dex
+   ;   bne -
 }
 
 ; this is used early on so machine can be initialised
 ; (memory configuration, find out whether PAL/NTSC, fade to black, ...)
 !macro arch_init {
+    jsr address($FFC2)
 }
 
 ; this is used a bit later to init output system (init video chip, setup
 ; charset, clear screen, enable display)
 !macro arch_output_init {
+
 }
 
 ; set screen colors:
@@ -93,34 +138,88 @@
 ; ...and if system does not support changing text color during game, you should
 ; set global text color to (color_std & 0xf)
 !macro arch_set_colors {
+  
 }
 
 ; this is used when entering a new location, just after clearing the screen.
 ; it should paint a reverse title bar on the screen
 !macro arch_invert_title {
+  
 }
 
 ; change text color to that given in A.
 ; do not clobber X or Y! if you need one or both of them, restore their old contents (see arch264.a)
 !macro arch_set_text_color_A {
-		and #%....####	; keep color, remove base code
+    phx
+    phy
+      
+    sta temp_3
+    
+    lda crs_x
+    and #$07
+    tay
+    lda crs_x
+    lsr
+    lsr
+    lsr
+    sta temp
+    lda crs_y   ; 80cols => y*10 = y*8+y*2
+    asl
+    sta temp_2
+    asl
+    asl
+    clc
+    adc temp_2
+    adc temp
+    tax
+    lda temp_3
+    cmp #color_emph
+    beq l1
+    lda _bitmask,y
+    eor #$ff
+    and color_buffer,x
+    bra l2
+l1: lda _bitmask,y
+    ora color_buffer,x
+l2:
+    sta color_buffer,x
+    
+    ply
+    plx
+;		and #%....####	; keep color, remove base code
 		;sta whereever_your_system_stores_attribute_of_future_chars	; and store
 }
 
 ; all macros above are inserted directly into code, without JSR/RTS.
 ; if your code needs special routines to call and/or tables, put those here:
 !macro arch_bulk {
-my_special_routine1
-		sed
-		tax
-		lda my_lookup_table, x
-		tay
-		rts
-
-my_lookup_table	!by 1, 2, 3
+_bitmask:  !byte $80,$40,$20,$10,$08,$04,$02,$01
+_codemap:
+    !raw "    ",$8e,$84,"                ",$99,$94,"    ",$9a,$81," ",$e1,0
+sw_chrout
+    cmp #0
+    beq ex
+    pha
+    phx
+    ; 0x00..0x1f	áàãâÄäçÇéèëêíìïîñ#óòõôÖöùøûúÜüÿß	hash is graphics characters (i.e. unused)
+    ;e0-ff		àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	äöü clash with line above! so
+    ;e0-ff XOR 1	áàãâåäçæéèëêíìïîñðóòõô÷öùøûúýüÿþ	let's do a simple permutation.
+    cmp #$e0  ;
+    bcc +
+    and #$1f
+    tax
+    lda _codemap,x
++
+    phy
+    jsr address($FFB3)
+    ply
+    plx
+    pla
+ex: 
+    rts
 }
 
 ; this is called at end of assembly so you can check for memory limits
 !macro arch_check_memlimit {
-	!if * >= $abcd {	!error "Reached kernal area, overwriting it! Shorten program or kernal!" }
+	!if * >= $d000 {	!error "Reached kernal area, overwriting it! Shorten program or kernal!" }
 }

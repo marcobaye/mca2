@@ -12,6 +12,17 @@
 
 ; libraries
 	!src <cbm/c64/vic.a>
+	!src <cbm/petscii.a>
+
+; constants
+	controlcode_HOME	= petscii_HOME
+	controlcode_CLEAR	= petscii_CLEAR
+	controlcode_REVSON	= petscii_REVSON
+	controlcode_REVSOFF	= petscii_REVSOFF
+	controlcode_UP		= petscii_UP
+	controlcode_DOWN	= petscii_DOWN
+	controlcode_LEFT	= petscii_LEFT
+	controlcode_RIGHT	= petscii_RIGHT
 
 ; zero page
 !addr	cpu_port	= $01

@@ -1,7 +1,5 @@
 ;ACME 0.96.2
 
-	!src <cbm/petscii.a>
-	petscii_LOWERCASE	=  14	; switch to lowercase/uppercase character set
 	petscii_F1	= 133:	petscii_F2	= 137
 	petscii_F3	= 134:	petscii_F4	= 138
 	petscii_F5	= 135:	petscii_F6	= 139

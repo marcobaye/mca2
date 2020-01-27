@@ -115,10 +115,11 @@ proc proc_name
 # a code sequence ends where the next one begins, or at end-of-file.
 
 # "instructions" of the actual script language:
-"This is some text", petscii_REVSON, "!", petscii_REVSOFF, cr
+"This is some text", controlcode_REVSON, "!", controlcode_REVSOFF, cr
 #	lines beginning with single or double quotes are text to output.
-#	You can use predefined petscii codes like petscii_CLEAR or petscii_REVSON,
-#	but do NOT use petscii codes for colors! Use "color_WHITE" etc. instead.
+#   Do NOT use petscii codes! Valid pre-mapped codes are:
+#	controlcode_CLEAR, controlcode_REVSON, controlcode_REVSOFF.
+#	Do NOT use petscii codes for colors! Use "color_WHITE" etc. instead.
 #	"cr" adds a carriage return.
 #	Do NOT add null terminators! the converter will do that by itself.
 n some_location
@@ -204,7 +205,7 @@ loc deck4_transporter_room
 	"You are in what looks like a transporter room right out of ", color_WHITE, "Star Trek", color_GREEN, ".", cr
 	"There is a corridor to the north, a turbolift to the east, and an opening to a vertical Jefferies tube."
 	"To output double quotes, put them in single quotes as a separate character, like this:", '"', cr
-	"", petscii_REVSON, "<= if you want a line to start with a control code, put an empty string before it.", cr
+	"", controlcode_REVSON, "<= if you want a line to start with a control code, put an empty string before it.", cr
 	n corridor_transp_room	# going north leads to the "corridor outside the transporter room" stuation
 	e turbolift		# going east leads to the turbolift location
 	u deck3_jefferies	# going up leads to "jefferies tube on deck 3" location
