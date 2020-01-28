@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 import sys
 #	list of classes linked to name:
 #		line_keyword?	(defined at startup, body is function to handle line)
