@@ -19,7 +19,7 @@ asm color_out		= color_GRAY1	# "disabled" text color
 # this one _must_ be defined, it tells the engine what umlaut encoding to expect:
 #	set UTF8 to 0 if _this_ file uses ISO 8859-1 encoding
 #	set UTF8 to 1 if _this_ file uses UTF-8 encoding
-asm UTF8	= 0
+asm UTF8	= 1
 # this one _must_ be defined, it tells the engine which messages to output:
 #	set DEUTSCH to 0 to make the engine use english messages
 #	set DEUTSCH to 1 to make the engine use german messages
@@ -50,20 +50,20 @@ var chest_opened	FALSE
 # (args are script name, location, weight, game name)
 #	(must be followed by script code to output description)
 
-## Bücher in der Bibliothek
-item book1 library small "Ein großes Buch"
+## BÃ¼cher in der Bibliothek
+item book1 library small "Ein groÃŸes Buch"
 	'"', "DAS IST DOCH NUR EINE SICHERUNGSKOPIE!",cr
 	"...und andere Ausreden", '"'
 item book2 NOWHERE small "Ein kleines Buch"
 	'"', "ER WAR DOCH NICHT SEIN VATER!",cr
-	"Die größte Lüge der Filmgeschichte", '"'
+	"Die grÃ¶ÃŸte LÃ¼ge der Filmgeschichte", '"'
 item book3 NOWHERE small "Ein interessantes Buch"
 	'"', "BESTIARUM MYSTERICA II", '"', cr
 	"Kalahuii sollen laut diesem Fachbuch nur mit Waffengewalt zu besiegen "
-	"sein. Aber man sollte dafür ganz schön kräftig sein..."
+	"sein. Aber man sollte dafÃ¼r ganz schÃ¶n krÃ¤ftig sein..."
 item book4 NOWHERE small "Ein altes Buch"
 	'"', "TITANIK II - Sie ist wieder da!", '"', cr
-	"Du blätterst vor und liest gleich das Ende.", cr
+	"Du blÃ¤tterst vor und liest gleich das Ende.", cr
 	"Na toll. Sie geht wieder unter."
 item book5 NOWHERE small "Ein braunes Buch"
 	'"', "TT64",cr
@@ -75,23 +75,23 @@ item book6 NOWHERE small "Ein uraltes Buch"
 item book7 NOWHERE small "Ein vergilbtes Buch"
 	'"', "HAT SCHON JEMAND CHOPLIFTER GESAGT?", '"', cr
 	"Komisches Buch... Egal, unwichtig."
-item book8 NOWHERE small "Ein grünes Buch"
-	'"', "VERPOLTE NETZTEILE UND ANDERE ÄRGERNISSE", '"', cr
+item book8 NOWHERE small "Ein grÃ¼nes Buch"
+	'"', "VERPOLTE NETZTEILE UND ANDERE Ã„RGERNISSE", '"', cr
 	"Hmm... da steht irgendetwas von geplatzten Kondensatoren...",cr
 	"Uninteressant."
 item book9 NOWHERE small "Ein winziges Buch"
-	'"', "REZEPT FÜR STÄRKETRANK", '"', cr
+	'"', "REZEPT FÃœR STÃ„RKETRANK", '"', cr
 	'"', "Eine Mistel, ein Sumpfkraut, Haare eines Toten, eine frische "
 	"Alraune, SCUMM und etwas ranziges Eulenfett, sowie eine Rabenfeder.", '"', cr
 	"Dann braucht es noch etwas total unwichtiges, das ebenfalls in den "
 	"Kessel geworfen werden muss.",cr
-	'"', "Lasse zuletzt deine Magie auf das Gebräu einwirken!", '"'
+	'"', "Lasse zuletzt deine Magie auf das GebrÃ¤u einwirken!", '"'
 item book10 NOWHERE small "Ein schwarzes Buch"
 	'"', "ARCANA MAGICA III", '"', cr
 	" Das ultimative Nachschlagewerk"
-item book11 NOWHERE small "Ein bläuliches Buch"
-	'"', "DURCHKÄMMT DIE WÜSTE!", cr
-	" ...und andere Missverständnisse", '"'
+item book11 NOWHERE small "Ein blÃ¤uliches Buch"
+	'"', "DURCHKÃ„MMT DIE WÃœSTE!", cr
+	" ...und andere MissverstÃ¤ndnisse", '"'
 item book12 NOWHERE small "Ein Buch mit Runen"
 	"Hmm... Ein alchemistischer Prozess um magische Runen zu "
 	"kristallifizieren..."
@@ -107,28 +107,28 @@ item sickle INVENTORY small "Eine goldene Sichel"
 	"Mit dieser magischen Sichel kann man hervorragend Misteln schneiden."
 item wand INVENTORY small "Ein Zauberstab"
 	"Dieser magische Zauberstab ist dein wichtigster Besitz."
-## Kräuter im Garten, braucht erst Sichel oder Spaten
+## KrÃ¤uter im Garten, braucht erst Sichel oder Spaten
 item marten garden large "Ein toter Marder"
 	"Hier liegt ein toter Marder.",cr
 	" Das stinkende Ding wirst du auf keinen Fall anfassen!"
-item tree garden large "Ein großer Baum"
+item tree garden large "Ein groÃŸer Baum"
 	"Ein einzelner Baum steht hier im Garten."
 	if mistle_cut == FALSE
 		"", cr
-		"Ein kleine, grünliche Mistel wächst an einem seiner Äste. Sie "
+		"Ein kleine, grÃ¼nliche Mistel wÃ¤chst an einem seiner Ã„ste. Sie "
 		"kann von dir abgeschnitten werden."
 	endif
-item herb garden large "Ein Büschel Sumpfkraut"
-	"Etwas Sumpfgras von allerfeinster Qualität.",cr
+item herb garden large "Ein BÃ¼schel Sumpfkraut"
+	"Etwas Sumpfgras von allerfeinster QualitÃ¤t.",cr
 	" Du kannst es abschneiden."
 item alraun NOWHERE large "Eine Alraune"
 	"Eine ganz normale Alraune, sie scheint noch recht frisch zu sein.",cr
 	"Sie steckt fest in der Erde und muss erst ausgegraben werden."
 ## Nach dem schneiden kann man sie auch nehmen
 item mistle NOWHERE small "Eine kleine Mistel"
-	"Ein kleiner, grünlicher Mistelzweig."
-item herb2 NOWHERE small "Ein Büschel Sumpfkraut"
-	"Etwas Sumpfgras von allerfeinster Qualität."
+	"Ein kleiner, grÃ¼nlicher Mistelzweig."
+item herb2 NOWHERE small "Ein BÃ¼schel Sumpfkraut"
+	"Etwas Sumpfgras von allerfeinster QualitÃ¤t."
 item alraun2 NOWHERE small "Eine Alraune"
 	"Eine ganz normale Alraune, sie scheint noch recht frisch zu sein."
 ## NPC
@@ -140,40 +140,40 @@ item pala bedroom large "Ein echter Palawaum"
 item kala bedroom large "Ein toller Kalahuii"
 	"Boah ey! Voll geil, ein Kalahuii!"
 item raven observatory large "Ein schwarzer Rabe"
-	"Ein majestätischer Rabe, mit pechschwarzem, leicht bläulich schimmernden "
+	"Ein majestÃ¤tischer Rabe, mit pechschwarzem, leicht blÃ¤ulich schimmernden "
 	"Gefieder. Klug blickt er Dich aus seinen kleinen Augen an. Eine erhabene "
 	"magische Aura scheint ihn zu umgeben."
 ## Nicht verwendet
 item flonk NOWHERE large "Ein lebendiger Flonk"
 	"Wie niedlich, ein Flonk!"
-## Nur für Bonuspunkt
+## Nur fÃ¼r Bonuspunkt
 item burger kitchen small "Ein Hamburger"
-	"Lecker, mit Käse und Speck!",cr
+	"Lecker, mit KÃ¤se und Speck!",cr
 	" Scheint ein Mac Bacon zu sein."
 ## Hilfsmittel
 item sword NOWHERE small "Ein Schwert"
 	"Bei dieser Waffe handelt es sich um das magische Schwert 'Thunderblade'."
 item crystal NOWHERE small "Ein Kristall"
-	"Dieser magische Kristall soll angeblich Untote bannen können."
+	"Dieser magische Kristall soll angeblich Untote bannen kÃ¶nnen."
 item spade NOWHERE small "Ein rostiger Spaten"
 	"Ein ganz normaler, alter Spaten."
 item rune NOWHERE small "Eine Rune"
 	"Diese Rune strahlt geradezu vor magischer Energie."
 item jemmy NOWHERE small "Ein Brecheisen"
-	"Ein schwerer Kuhfuß aus Stahl."
-item cheese kitchen small "Ein kleines Stück Käse"
+	"Ein schwerer KuhfuÃŸ aus Stahl."
+item cheese kitchen small "Ein kleines StÃ¼ck KÃ¤se"
 	"Boah, stinkt der!!!",cr
-	"Muss wohl ein Oobdooländer oder was anderes kurioses sein.",cr
-	"Essen wirst du diesen Sondermüll jedenfalls nicht. Sowas schmeckt "
+	"Muss wohl ein OobdoolÃ¤nder oder was anderes kurioses sein.",cr
+	"Essen wirst du diesen SondermÃ¼ll jedenfalls nicht. Sowas schmeckt "
 	"Dir nicht."
-item key tomb small "Ein Schlüssel"
+item key tomb small "Ein SchlÃ¼ssel"
 	"Ein ziemlich altes, rostiges Ding."
-## Zauberzutaten (Ohne die Gartenkräuter)
+## Zauberzutaten (Ohne die GartenkrÃ¤uter)
 item fat laboratory small "Etwas Eulenfett"
 	"Fein abgetriebenes, ranziges Eulenfett."
 item feath NOWHERE small "Eine Feder"
 	"Eine schwarze Rabenfeder."
-item hair NOWHERE small "Ein Büschel Haare"
+item hair NOWHERE small "Ein BÃ¼schel Haare"
 	"Die Haare eines toten Menschen..."
 item scumm observatory small "Etwas SCUMM"
 	"Erstklassiges SCUMM. Damit kann man sicher tolle Sachen machen."
@@ -182,31 +182,31 @@ item hering bathroom small "Ein Hering"
 	"Sieht ja enorm wichtig aus...",cr
 	"Aber sicher zu nichts zu gebrauchen."
 ## Einrichtung
-item kettle kitchen large "Ein großer Kessel"
-	"Ein riesiger Hexenkessel aus Gußeisen."
+item kettle kitchen large "Ein groÃŸer Kessel"
+	"Ein riesiger Hexenkessel aus GuÃŸeisen."
 item coffin tomb large "Ein schwerer Sarg"
-	"Ein großer Sarg, der aus einem Stück Stein gemeißelt worden zu sein "
+	"Ein groÃŸer Sarg, der aus einem StÃ¼ck Stein gemeiÃŸelt worden zu sein "
 	"scheint."
-item chem laboratory large "Lauter alchemistisches Gerümpel"
-	"Gläser und Flaschen und Kolben und Phiolen und Becher und Röhrchen..."
-item shelf library large "Drei Bücherregale"
-	"Die hohen Regale an den Wänden bedecken alle Wände und nehmen den "
-	"Großteil des Raumes ein.",cr
+item chem laboratory large "Lauter alchemistisches GerÃ¼mpel"
+	"GlÃ¤ser und Flaschen und Kolben und Phiolen und Becher und RÃ¶hrchen..."
+item shelf library large "Drei BÃ¼cherregale"
+	"Die hohen Regale an den WÃ¤nden bedecken alle WÃ¤nde und nehmen den "
+	"GroÃŸteil des Raumes ein.",cr
 	"Sie sind rappelvoll mit dicken Schwarten."
 item chest study large "Eine Truhe"
 	"Ein schwere, eisenbeschlagene Truhe aus Eichholz.",cr
 	if chest_opened == FALSE
 		"Was da wohl drin sein mag?"
 	else
-		"Sie ist geöffnet und leer."
+		"Sie ist geÃ¶ffnet und leer."
 	endif
 
 # usages:
 
-## Die Bücher im Regal
+## Die BÃ¼cher im Regal
 proc bookswap
 	"Die Regale sind gestopft voll. Also nimmst du erst ein neues Buch "
-	"heraus und steckst das alte dann in die freie Lücke.", cr
+	"heraus und steckst das alte dann in die freie LÃ¼cke.", cr
 	"Buch gegen Buch, toller Tausch."
 using shelf book1
 	hide book1
@@ -294,7 +294,7 @@ using spade alraun
 	gain alraun2
 	"Du buddelst die Alraune mit dem Spaten aus und steckst sie gleich "
 	"ein.",cr
-	"Alraunen kann ein Zauberer schließlich immer gebrauchen."
+	"Alraunen kann ein Zauberer schlieÃŸlich immer gebrauchen."
 
 using sickle herb
 	hide herb
@@ -317,31 +317,31 @@ using jemmy coffin
 		coffin_used = TRUE # Damit man nur einmal Haare holen kann
 		inc score
 		gain hair
-		"Du öffnest den Sarg mit dem Kuhfuß.",cr
-		"Dein Großvater reicht dir ein Büschel seiner Haare. Du "
-		"bedankst dich und schließt den Sarg wieder."
+		"Du Ã¶ffnest den Sarg mit dem KuhfuÃŸ.",cr
+		"Dein GroÃŸvater reicht dir ein BÃ¼schel seiner Haare. Du "
+		"bedankst dich und schlieÃŸt den Sarg wieder."
 	else
 		"Du willst gerade wieder das Brecheisen am Sargdeckel "
-		"ansetzen, entsinnst dich dann aber doch anders und lässt "
+		"ansetzen, entsinnst dich dann aber doch anders und lÃ¤sst "
 		"deiner toten Verwandtschaft ihre Ruhe.",cr
-		"Mehr als ein Haarbüschel brauchst du ja nicht."
+		"Mehr als ein HaarbÃ¼schel brauchst du ja nicht."
 	endif
 using rune chem
 	hide rune
 	inc score
 	gain crystal
-	"Du wendest das alchemistische Verfahren auf die Rune an und erhältst "
-	"nach kurzer Zeit einen hübschen Kristall."
+	"Du wendest das alchemistische Verfahren auf die Rune an und erhÃ¤ltst "
+	"nach kurzer Zeit einen hÃ¼bschen Kristall."
 using cheese raven
 	hide cheese
 	hide raven
 	inc score
 	gain feath
-	"Der Rabe macht sich gierig über den Käse her.",cr
+	"Der Rabe macht sich gierig Ã¼ber den KÃ¤se her.",cr
 	"Blitzschnell greifst du zu, und rupfst ihm eine Feder aus.",cr
 	"Na wer sagts denn, das verfressene Vogeltier hat es gar nicht "
 	"mitbekommen."
-## Die Kämpfe
+## Die KÃ¤mpfe
 using sword pala
 	if  potion == 9
 		hide pala
@@ -350,11 +350,11 @@ using sword pala
 		"Ja, mit dem Schwert und genug Schmalz in den Oberarmen kann "
 		"man einen Palawaum besiegen!", cr, cr
 		delay 2
-		"Du hackst das dumme, magieresistente Ding in Stücke!", cr, cr
-		"Aus der Leiche fällt eine Rune."
+		"Du hackst das dumme, magieresistente Ding in StÃ¼cke!", cr, cr
+		"Aus der Leiche fÃ¤llt eine Rune."
 	else
-		"Du bist viel zu schwach, du Hänfling!", cr
-		"Iss erstmal dein Müsli auf!"
+		"Du bist viel zu schwach, du HÃ¤nfling!", cr
+		"Iss erstmal dein MÃ¼sli auf!"
 	endif
 using wand kala
 	hide kala
@@ -362,19 +362,19 @@ using wand kala
 	move spade bedroom
 	"Na also, mit Magie kann man so einen Kalahuii besiegen!",cr,cr
 	delay 2
-	"Du pulverisierst das dämliche, gegen physischen Schaden gefeite "
+	"Du pulverisierst das dÃ¤mliche, gegen physischen Schaden gefeite "
 	"Mistding!",cr,cr
-	"Aus der Leiche fällt ein alter Spaten."
+	"Aus der Leiche fÃ¤llt ein alter Spaten."
 using crystal ghoul
 	hide ghoul
 	inc score
 	"Jawoll, das haut ja prima hin!",cr
-	"Die magischen Kräfte des Kristalls blasen dem ollen Ghoul sein "
+	"Die magischen KrÃ¤fte des Kristalls blasen dem ollen Ghoul sein "
 	"untotes Dasein aus!", cr, cr
 	delay 2
-	"Der Bursche zerfällt zu Staub!",cr,cr
+	"Der Bursche zerfÃ¤llt zu Staub!",cr,cr
 	delay 2
-	"", color_magic, "DU HAST DAS ADVENTURE GELÖST!", color_std
+	"", color_magic, "DU HAST DAS ADVENTURE GELÃ–ST!", color_std
 	callasm keep_spinning	# endless loop
 	#delay 10
 	#callasm get_key
@@ -405,7 +405,7 @@ using kettle hair
 	hide hair
 	inc potion
 	inc score
-	"Du wirfst das Büschel Haare in den Kessel."
+	"Du wirfst das BÃ¼schel Haare in den Kessel."
 using kettle fat
 	hide fat
 	inc potion
@@ -434,7 +434,7 @@ using kettle wand
 		delay 2
 		"Der Trank ist fertig!",cr
 		"Sofort trinkst du ihn aus.",cr,cr
-		"WOW! Fühlst du dich jetzt kräftig!"
+		"WOW! FÃ¼hlst du dich jetzt krÃ¤ftig!"
 	else
 		"Du hast noch nicht alle Zutaten in den Kessel geworfen!",cr
 		"Erst wenn die Mischung komplett ist, kannst du deine Magie "
@@ -446,13 +446,13 @@ using key chest
 		chest_opened = TRUE	# Nicht nochmal!
 		move sword study
 		move jemmy study
-		"Du öffnest die Truhe mit dem Schlüssel. Sie enthält ein "
+		"Du Ã¶ffnest die Truhe mit dem SchlÃ¼ssel. Sie enthÃ¤lt ein "
 		"Schwert und ein Brecheisen."
 	else
-		"Du hast die Kiste bereits geöffnet."
+		"Du hast die Kiste bereits geÃ¶ffnet."
 	endif
 using sword cheese
-	"Oh nein, der Käse wird nicht aufgeschnitten!",cr
+	"Oh nein, der KÃ¤se wird nicht aufgeschnitten!",cr
 	"Dann stinkt das ganze Schwert nach dem Zeug!"
 using ghoul burger
 	hide burger
@@ -461,7 +461,7 @@ using ghoul burger
 	"einmal ein Untoter mag die.", cr
 	"Dann verschlingt er schmatzend den leckeren Hamburger.", cr,cr
 	"Das bringt dich aber leider nicht weiter.",cr,cr
-	"Vielleicht hättest du ihn vorher vergiften sollen?",cr
+	"Vielleicht hÃ¤ttest du ihn vorher vergiften sollen?",cr
 	"Nee, falsches Spiel...",cr
 	"Das war bei ROBOX..."
 proc sichel_statt_schwert
@@ -489,28 +489,28 @@ using scumm chem
 	callproc wirf_in_kessel
 using hair chem
 	callproc wirf_in_kessel
-## Kämpfe die nicht zum Ziel führen
+## KÃ¤mpfe die nicht zum Ziel fÃ¼hren
 using wand pala
 	"Der Palawaum ist gegen Magieschaden immun und lacht dich aus!"
 using sword kala
-	"Der Kalahuii ist gegen physische Schäden immun und verspottet dich!"
+	"Der Kalahuii ist gegen physische SchÃ¤den immun und verspottet dich!"
 using sword ghoul
 	if sword !@ INVENTORY
 		"Dazu musst du es erstmal aufheben, Hirni!"
 	else
 		move sword tomb
 		inc score
-		"Gelangweilt haut dir der Ghoul dein Schwert aus den Händen."
+		"Gelangweilt haut dir der Ghoul dein Schwert aus den HÃ¤nden."
 	endif
 using jemmy pala
 	move jemmy garden
 	inc score
-	"Kichernd schnappt sich das Palawaum deinen Kuhfuß und rennt damit "
+	"Kichernd schnappt sich das Palawaum deinen KuhfuÃŸ und rennt damit "
 	"davon.",cr
 	"Blitzschnell ist es wieder da und grinst dich an.",cr
 	"Dein Brecheisen hat es anscheinend irgendwo im Turm versteckt..."
 using jemmy kala
-	"Du haust dem Kalahuii das Brecheisen auf den Döz.",cr
+	"Du haust dem Kalahuii das Brecheisen auf den DÃ¶z.",cr
 	"Es guckt dich treuherzig an.",cr
 	"Das scheint ihm gefallen zu haben."
 using jemmy ghoul
@@ -518,14 +518,14 @@ using jemmy ghoul
 	"Mit so einer Waffe kommt man dem Kerl nicht bei..."
 using wand ghoul
 	"Der Ghoul guckt dich nur dumm an.",cr,cr
-	"Deine üblichen Zaubersprüche scheinen bei dem gar nichts zu bringen."
+	"Deine Ã¼blichen ZaubersprÃ¼che scheinen bei dem gar nichts zu bringen."
 using sword raven
 	"Der Rabe flattert dir davon, als er Dich mit dem Schwert ankommen "
 	"sieht. Der scheint clever zu sein."
 using jemmy raven
 	"Der Rabe flattert vor dir davon, als er Dich mit dem Brecheisen "
 	"sieht.",cr
-	"Der will wohl nicht gekeult werden. Irgendwie auch verständlich..."
+	"Der will wohl nicht gekeult werden. Irgendwie auch verstÃ¤ndlich..."
 using wand raven
 	"Du fuchtelst mit deinem Zauberstab.",cr
 	delay 3
@@ -541,14 +541,14 @@ using spade pala
 	"Mit einem Spaten?",cr
 	"Besorg dir eine bessere Waffe!"
 using spade ghoul
-	"Der Ghoul schmeißt sich weg vor Lachen, als du unbeholfen mit dem "
+	"Der Ghoul schmeiÃŸt sich weg vor Lachen, als du unbeholfen mit dem "
 	"Spaten auf ihn einschlagen willst."
 using spade raven
-	"Der Rabe kräht und faucht dich wütend an, als du mit dem dem Spaten "
+	"Der Rabe krÃ¤ht und faucht dich wÃ¼tend an, als du mit dem dem Spaten "
 	"auf ihn losgehen willst.",cr,cr
-	"Erschrocken weichst du einen Schritt zurück."
+	"Erschrocken weichst du einen Schritt zurÃ¼ck."
 using sickle pala
-	"Mit einer Sichel kann man keine Palawaume töten."
+	"Mit einer Sichel kann man keine Palawaume tÃ¶ten."
 using sickle kala
 	"Du haust dem Kalahuii deine Sichel auf die Birne.",cr
 	"Sinnlos, das macht ihm gar nichts aus."
@@ -557,39 +557,39 @@ using sickle raven
 		"Heb deine Sichel erst einmal auf."
 	else
 		move sickle observatory
-		"Der Rabe hackt dir Krallen in den Arm. Erschrocken lässt du "
+		"Der Rabe hackt dir Krallen in den Arm. Erschrocken lÃ¤sst du "
 		"deine Sichel fallen."
 	endif
 using sickle ghoul
 	"Der Ghoul meckert nur ein wenig, als du versuchst ihn mit deiner "
 	"goldenen Sichel anzugreifen.",cr
-	"Du hörst lieber auf, bevor er noch richtig wütend wird."
+	"Du hÃ¶rst lieber auf, bevor er noch richtig wÃ¼tend wird."
 ## Noch ein paar Versuche was zu zaubern
 using wand shelf
-	"Du kennst leider keinen Zauberspruch, mit dem sich Bücher sortieren "
+	"Du kennst leider keinen Zauberspruch, mit dem sich BÃ¼cher sortieren "
 	"lassen."
 using wand coffin
 	if coffin_used == FALSE
 		"Du traust dich nicht, an dem Sarg herumzuzaubern. Da liegt "
-		"dein Großvater drin und du willst ihn nicht wütend machen.",cr
-		"Einen Zauberer sollte man auch dann nicht verärgern, wenn "
+		"dein GroÃŸvater drin und du willst ihn nicht wÃ¼tend machen.",cr
+		"Einen Zauberer sollte man auch dann nicht verÃ¤rgern, wenn "
 		"er schon lange tot ist."
 	else
 		"Du traust dich nicht, an dem Sarg herumzuzaubern. Du hast "
-		"deinen Großvater heute schon genug gestört."
+		"deinen GroÃŸvater heute schon genug gestÃ¶rt."
 	endif
 using wand chem
-	"Was willst du denn an deiner Laborausrüstung verzaubern? Da ist "
+	"Was willst du denn an deiner LaborausrÃ¼stung verzaubern? Da ist "
 	"alles so wie es sein soll."
 using wand sickle
 	"Die Sichel besteht aus Gold und kann nicht verzaubert werden.",cr
 	"Jedenfalls nicht von dir, da braucht es schon einen zwergischen "
-	"Runenmagier. Die können sowas angeblich."
+	"Runenmagier. Die kÃ¶nnen sowas angeblich."
 using wand sword
 	"Das Schwert muss nicht verzaubert werden, das ist schon eine "
 	"magische Waffe."
 using wand jemmy
-	"Ein Brecheisen verzaubern? Auf was für Ideen kommst du denn?"
+	"Ein Brecheisen verzaubern? Auf was fÃ¼r Ideen kommst du denn?"
 
 # procedures:
 proc intro
@@ -598,7 +598,7 @@ proc intro
 	#1234567890123456789012345678901234567890
 	"                Saufbox!", cr, cr, cr, cr
 	delay 10
-	"              präsentiert:", cr, cr, cr, cr
+	"              prÃ¤sentiert:", cr, cr, cr, cr
 	delay 5
 	"      Adventure of the Bunkerparty", cr
 	"                  V1.1", cr, cr, cr
@@ -606,25 +606,25 @@ proc intro
 	"     Code:  TheIncredibleBauchspeck", cr
 	"     Story:           Clumsy Wizard", cr, cr, cr, cr, cr
 	delay 5
-	"Bitte eine Taste drücken..."
+	"Bitte eine Taste drÃ¼cken..."
 	# "Welcome to Multiple Choice Adventure 2!", cr, cr
 	# "Press any key..."
 	callasm get_key
 	"", color_std, controlcode_CLEAR
 	"Der Magier Petrosilius hat sich letztens mit dem Gebiet der Nekromantie "
 	"befasst und hat seither ein kleines Problem. In seinem Keller haust nun ein "
-	"dämlicher Ghoul, den er nicht mehr los wird. Hätte er das gewusst, wäre er "
+	"dÃ¤mlicher Ghoul, den er nicht mehr los wird. HÃ¤tte er das gewusst, wÃ¤re er "
 	"lieber bei seinen Fachgebieten Elementarismus und Illusionsmagie geblieben, "
-	"aber nun ist es zu spät.", cr
-	"Als ob das nicht schon genug Ärger wäre, hat es sein Zaubererfreund Mabruk "
+	"aber nun ist es zu spÃ¤t.", cr
+	"Als ob das nicht schon genug Ã„rger wÃ¤re, hat es sein Zaubererfreund Mabruk "
 	"auch noch gut mit ihm gemeint. Er versuchte den Ghoul mit einem "
-	"Beschwörungsritual zu vernichten, doch leider laufen seither auch noch ein "
+	"BeschwÃ¶rungsritual zu vernichten, doch leider laufen seither auch noch ein "
 	"Kalahuii und ein Palawaum in Petrosilius Turm herum...", cr
-	"Nun... Dann mal auf, mal schauen wie man die ungebetenen Gäste wieder "
+	"Nun... Dann mal auf, mal schauen wie man die ungebetenen GÃ¤ste wieder "
 	"loswerden kann...", cr
 	"Deinen Zauberstab und deine goldene Sichel hast du schon einmal "
 	"eingesteckt, diese Sachen wirst du sicher brauchen. Vermutlich "
-	"wäre es das Schlaueste, erstmal ein wenig in der Bibliothek zu "
+	"wÃ¤re es das Schlaueste, erstmal ein wenig in der Bibliothek zu "
 	"recherchieren..."
 	callasm get_key
 
@@ -632,8 +632,8 @@ proc intro
 loc start
 	"Flur im Erdgeschoss",cr
 	"Du stehst im Eingangsbereich deines Magierturmes.",cr
-	"Im Süden befindet sich die Haustür, "
-	"nach Osten und Westen führen Durchgänge. Im Norden des Raumes führt "
+	"Im SÃ¼den befindet sich die HaustÃ¼r, "
+	"nach Osten und Westen fÃ¼hren DurchgÃ¤nge. Im Norden des Raumes fÃ¼hrt "
 	"eine steinerne Treppe in die oberen "
 	"Stockwerke oder hinab in den Keller.",cr
 	w2 kitchen
@@ -650,7 +650,7 @@ loc floor1
 	"unten weiter windet. Es ist hier zwar "
 	"weder kalt noch muffig, aber doch "
 	"etwas trostlos. Ein schwacher Lichtschimmer dringt aus einem Durchgang im "
-	"Osten. Eine Tür aus dunklem Holz führt "
+	"Osten. Eine TÃ¼r aus dunklem Holz fÃ¼hrt "
 	"nach Westen.",cr
 	w2 study
 	e2 bedroom
@@ -661,9 +661,9 @@ loc floor2
 	"Eng windet sich die Wendeltreppe nach "
 	"oben und unten. Du fragst Dich, wann "
 	"die Treppe endlich ein Ende hat. Ein "
-	"kleiner Nebengang führt nach Westen, "
-	"im Osten befindet sich eine hölzerne "
-	"Türe mit Eisenbeschlägen. Ein kleines "
+	"kleiner Nebengang fÃ¼hrt nach Westen, "
+	"im Osten befindet sich eine hÃ¶lzerne "
+	"TÃ¼re mit EisenbeschlÃ¤gen. Ein kleines "
 	"Fenster spendet etwas Licht.",cr
 	w2 laboratory
 	e2 library
@@ -672,98 +672,98 @@ loc floor2
 loc observatory
 	"Observatorium",cr
 	"Hier oben im Observatorium deines Turms "
-	"hast Du einen großartigen Blick über "
+	"hast Du einen groÃŸartigen Blick Ã¼ber "
 	"den Zauberwald. Im Westen siehst Du die "
-	"berühmten Silberberge mit ihren schneebedeckten Gipfeln. Der Ausblick lässt "
-	"Dich den beschwerlichen Aufgang über "
-	"die Wendeltreppe vergessen. Ein einfacher Tisch mit einem hölzernen Stuhl "
+	"berÃ¼hmten Silberberge mit ihren schneebedeckten Gipfeln. Der Ausblick lÃ¤sst "
+	"Dich den beschwerlichen Aufgang Ã¼ber "
+	"die Wendeltreppe vergessen. Ein einfacher Tisch mit einem hÃ¶lzernen Stuhl "
 	"sind neben deinem Teleskop die einzigen "
-	"Einrichtungsgegenstände hier.",cr
+	"EinrichtungsgegenstÃ¤nde hier.",cr
 
 loc tomb
 	"Gruft",cr
-	"Du bist nun in einem uralten, unterirdischen Grabgewölbe, der Gruft in der "
+	"Du bist nun in einem uralten, unterirdischen GrabgewÃ¶lbe, der Gruft in der "
 	"deine Ahnen ruhen. Zu beiden Seiten "
 	"stehen alte Grabsteine, deren Inschriften nicht mehr zu entziffern "
-	"sind. Die Wände bestehen aus gemauertem "
-	"Stein, der von Moder überzogen ist.",cr
-	"Eine ideale Umgebung für alle "
+	"sind. Die WÃ¤nde bestehen aus gemauertem "
+	"Stein, der von Moder Ã¼berzogen ist.",cr
+	"Eine ideale Umgebung fÃ¼r alle "
 	"Kreaturen, die das Licht scheuen.",cr
 	"Mitten im Raum steht ein schlichter "
 	"Altar, an der Nordmauer ist ein Sarg "
 	"abgestellt.",cr
 
 loc garden
-	"Kräutergarten", cr
-	"Du stehst in einem kleinen, hübschen Vorgarten. Der Garten ist von einem "
+	"KrÃ¤utergarten", cr
+	"Du stehst in einem kleinen, hÃ¼bschen Vorgarten. Der Garten ist von einem "
 	"kleinen Zaun umgeben. Unmittelbar "
-	"dahinter beginnt im Süden das Modermoor, während der Turm von allen "
+	"dahinter beginnt im SÃ¼den das Modermoor, wÃ¤hrend der Turm von allen "
 	"anderen Seiten vom Salamanderwald "
 	"eingeschlossen ist. Neben einem "
 	"Blumenbeet siehst Du vor allem "
-	"mehrere Kräuterbeete.",cr
+	"mehrere KrÃ¤uterbeete.",cr
 	"Nach Norden kannst du deinen Magierturm betreten.",cr
 
 loc kitchen
-	"Küche", cr
-	"Hier in der Küche bereitet deine Ehegattin ihre leckeren Sachen zu. Unter "
-	"Kennern sind ihre Kochkünste weit bekannt. Leider ist sie momentan auf "
+	"KÃ¼che", cr
+	"Hier in der KÃ¼che bereitet deine Ehegattin ihre leckeren Sachen zu. Unter "
+	"Kennern sind ihre KochkÃ¼nste weit bekannt. Leider ist sie momentan auf "
 	"Reisen. Du siehst einen Herd, einen "
-	"Küchenschrank, einen Tisch und Stühle. "
-	"Neben dem Herd ist eine Spüle. An "
-	"einer Wand hängt ein Regal. Im Süden "
+	"KÃ¼chenschrank, einen Tisch und StÃ¼hle. "
+	"Neben dem Herd ist eine SpÃ¼le. An "
+	"einer Wand hÃ¤ngt ein Regal. Im SÃ¼den "
 	"steht die Schlafpritsche deines "
 	"Lehrlings.", cr
 
 loc bathroom
 	"Badezimmer", cr
 	"Das ist der Baderaum. Eine Dusche steht "
-	"in einer Ecke. Über dem Waschbecken "
+	"in einer Ecke. Ãœber dem Waschbecken "
 	"kannst Du einen Spiegel erkennen. Die "
 	"Badematte am Boden ist feucht, wahrscheinlich wurde hier vor kurzem gerade "
 	"geduscht. Ein kleiner Schemel und ein "
-	"hölzerner Eimer stehen im Raum.", cr
+	"hÃ¶lzerner Eimer stehen im Raum.", cr
 
 loc study
 	"Wohn- und Studienzimmer", cr
-	"Eine Vitrine, ein Regal und ein abschließbares Schränkchen hängen hier "
-	"in deinem Wohnzimmer an den Wänden. "
+	"Eine Vitrine, ein Regal und ein abschlieÃŸbares SchrÃ¤nkchen hÃ¤ngen hier "
+	"in deinem Wohnzimmer an den WÃ¤nden. "
 	"Ein magischer Schreibtisch, der aussieht, als ob er aus einem riesigen "
 	"Tigerauge gefertigt wurde, befindet "
 	"sich in der Mitte des Raumes. Dann "
 	"steht da noch ein bequemer Sessel "
 	"beim Kamin an der Westwand. Ein "
-	"Durchgang führt zurück nach Osten.", cr
+	"Durchgang fÃ¼hrt zurÃ¼ck nach Osten.", cr
 
 loc bedroom
 	"Schlafzimmer",cr
 	"Das Schlafzimmer ist recht spartanisch "
-	"eingerichtet. An der Südwand steht ein "
-	"großes Bett, an der Ostwand ein riesiger Schrank. Rund um das Bett ist "
-	"ein Läufer ausgelegt und neben dem Bett "
-	"steht ein kleines Nachtschränkchen. "
-	"Eine Tür aus schwerem Holz führt im "
-	"Westen zurück ins Treppenhaus.",cr
+	"eingerichtet. An der SÃ¼dwand steht ein "
+	"groÃŸes Bett, an der Ostwand ein riesiger Schrank. Rund um das Bett ist "
+	"ein LÃ¤ufer ausgelegt und neben dem Bett "
+	"steht ein kleines NachtschrÃ¤nkchen. "
+	"Eine TÃ¼r aus schwerem Holz fÃ¼hrt im "
+	"Westen zurÃ¼ck ins Treppenhaus.",cr
 
 loc laboratory
 	"Alchemie-Labor", cr
 	"Du bist in einem Turmzimmer gelandet, "
-	"das über und über mit merkwürdigen "
-	"Apparaten gefüllt ist. Da brodelt, "
+	"das Ã¼ber und Ã¼ber mit merkwÃ¼rdigen "
+	"Apparaten gefÃ¼llt ist. Da brodelt, "
 	"funkt und zischt es, dass es eine reine "
-	"Freude ist. Natürlich weiß ein Fachmann wie du genauestens Bescheid, wozu "
+	"Freude ist. NatÃ¼rlich weiÃŸ ein Fachmann wie du genauestens Bescheid, wozu "
 	"die Apparate dienen, die auf dem Tisch "
 	"stehen. In manchen brodeln Dir wohlbekannte Chemikalien vor sich hin. Sie "
-	"sehen wunderschön giftig aus. Nach "
+	"sehen wunderschÃ¶n giftig aus. Nach "
 	"Osten kannst du den Raum durch eine "
-	"Tür verlassen.",cr
+	"TÃ¼r verlassen.",cr
 
 loc library
 	"Bibliothek", cr
-	"An sämtlichen Wänden des Raumes stehen "
+	"An sÃ¤mtlichen WÃ¤nden des Raumes stehen "
 	"Regale bis unter die Decke, und alle "
-	"Regale sind mit Büchern und anderen "
-	"Schriftstücken vollgestopft. Wie soll "
+	"Regale sind mit BÃ¼chern und anderen "
+	"SchriftstÃ¼cken vollgestopft. Wie soll "
 	"ein zerstreuter Zauberer hier bloss "
 	"finden, wonach er sucht?",cr
 	"Ohne Bibliothekar erscheint Dir das "
