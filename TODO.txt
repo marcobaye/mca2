@@ -86,3 +86,5 @@ add RANDOM var
 add TIME var?
 add npc category, then "talk to".
 compress strings
+
+change 4-way movements to 8-way movements
