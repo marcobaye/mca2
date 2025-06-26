@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+
 import sys
+
 #   list of classes linked to name:
 #       line_keyword?   (defined at startup, body is function to handle line)
 #       userdefined (defined by user in file: has line number)  except PLAYER, INVENTORY, etc...
@@ -37,27 +39,36 @@ operators = {
     '!@': 'not_equal'   # actually "not at", specially handled
 }
 
+
 def nospace(string):
-    'helper function to remove leading/trailing spaces'
+    """helper function to remove leading/trailing spaces"""
     return string.split()[0]
+
 
 def message(msg):
     print(msg, file=sys.stderr)
+
+
 def warning(msg):
     message('Warning: ' + msg)
 
+
 class stringcoll(object):
-    'collects strings so multiple copies are only put into assembler source once'
+    """collects strings so multiple copies are only put into assembler source once"""
+
     def __init__(self):
         self.dict = dict()
+
     def add(self, string):
-        'convert string to label'
+        """convert string to label"""
         if string in self.dict:
             return self.dict[string]
+
         # FIXME - add code to check if one endswith() another
         label = 'string_' + str(len(self.dict))
         self.dict[string] = label
         return label
+
     def get_all(self):
         all = []
         for e in self.dict:
@@ -65,142 +76,185 @@ class stringcoll(object):
         all.sort()
         return all
 
+
 def asmlabel_location(name):
-    'returns assembler label associated with location name'
-    'this is defined outside of "location" class because it might be needed before location is defined'
+    """returns assembler label associated with location name
+    this is defined outside of "location" class because it might be needed before location is defined"""
     return 'location_' + name
 
+
 def asmsymbol_symbol(name):
-    'returns assembler symbol associated with script symbol'
-    'this is defined outside of "symbol" class because it might be needed before symbol is defined'
+    """returns assembler symbol associated with script symbol
+    this is defined outside of "symbol" class because it might be needed before symbol is defined"""
     return 'vo_' + name
 
+
 class userdefined(object):
-    'parent class for everything defined in game description file'
+    """parent class for everything defined in game description file"""
+
     def __init__(self, name):
         self.name = name    # symbolic name
         self.defline = None # line number of definition
 
+
 class symbol(userdefined):
-    'parent class for npc, item, variable and literalnumber'
+    """parent class for npc, item, variable and literalnumber"""
     def __init__(self, name, default):
         super(symbol, self).__init__(name)
         self.default = default  # default value at start of game
     def offset_symbol(self):
         return asmsymbol_symbol(self.name)
 
+
 class variable(symbol):
-    'game var scripts can use'
+    """game var scripts can use"""
+
 
 class literalnumber(symbol):
-    'pseudo var to hold literal'
-    'the name for e.g. 5 would be "5"'
+    """pseudo var to hold literal, the name for e.g. 5 would be "5"."""
+
 
 class moveable(symbol):
-    'things that can move in the game - namely items and npcs'
+    """things that can move in the game - namely items and npcs"""
+
     def __init__(self, name, start_location, weight, game_name):
         super(moveable, self).__init__(name, default = 'location_' + start_location)
         self.game_name = game_name
         self.weight = weight
         self.description = None
+
     def set_description(self, code):
         self.description = code
+
     def description_label(self):
         return 'itde_' + self.name
+
     def output_description(self):
         print(self.description_label())
         self.description.output('+end_itemdesc')
 
+
 class item(moveable):
-    'game item player can interact with'
+    """game item player can interact with"""
+
 
 class npc(moveable):
-    'non-player characters - just like items, but player can talk to them'
+    """non-player characters - just like items, but player can talk to them"""
+
     def __init__(self, name, start_location, weight, game_name):
         super(npc, self).__init__(name, start_location, weight, game_name)
         self.talkto = None
+
     def set_talkto(self, code):
         self.talkto = code
+
     def talkto_label(self):
         return 'npctalk_' + self.name
+
     def output_talkto(self):
         print(self.talkto_label())
         self.talkto.output('+end_npctalk')
 
+
 class scriptcode(object):
-    'parent class for all script code sequences'
+    """parent class for all script code sequences"""
+
     def __init__(self):
         super(scriptcode, self).__init__()
         self.code = []  # holds lines for assembler
         self.indents = 2
+
     def change_indent(self, n):
         self.indents += n
+
     # actually do something:
     def add_label(self, line):
         self.code.append(line)
+
     def add_code(self, line):
         self.code.append(self.indents * '\t' + line)
+
     def set_dir(self, dir, target):
         self.code.append(self.indents * '\t' + '+' + dir + ' ' + asmlabel_location(target))
         # TODO - add warning if direction has already been set on outermost block level!
         # self.warning_line('Direction "' + direction + '" was already set')
+
     def output(self, endcmd):
         for line in self.code:
             print(line)
         print(self.indents * '\t' + endcmd)
 
+
 class procedure(userdefined):
-    'callable code'
+    """callable code"""
+
     def __init__(self, name):
         super(procedure, self).__init__(name)
         self.code = None
+
     def set_code(self, code):
         self.code = code
+
     def code_label(self):
         return 'proc_' + self.name
+
     def output(self):
         print(self.code_label())
         self.code.output('+end_procedure')
 
+
 class usage(userdefined):
-    'what to do when player enters USE A'
+    """what to do when player enters USE A"""
+
     def __init__(self, hinz):
         super(usage, self).__init__('usage ' + hinz)
         self.hinz = hinz
         self.code = None
+
     def set_code(self, code):
         self.code = code
+
     def output(self):
         print('\t!wo +\t; link pointer')
         print('\t!by ' + asmsymbol_symbol(self.hinz))
         self.code.output('+end_use')
 
+
 class combi(userdefined):
-    'what to do when player enters COMBINE A WITH B'
+    """what to do when player enters COMBINE A WITH B"""
+
     def __init__(self, hinz, kunz):
         super(combi, self).__init__('combi ' + hinz + ' ' + kunz)
         self.hinz = hinz
         self.kunz = kunz
         self.code = None
+
     def set_code(self, code):
         self.code = code
+
     def output(self):
         print('\t!wo +\t; link pointer')
         print('\t+ordered ' + asmsymbol_symbol(self.hinz) + ', ' + asmsymbol_symbol(self.kunz))
         self.code.output('+end_combi')
 
+
 class location(userdefined):
-    'location definition'
+    """location definition"""
+
     def __init__(self, name):
         super(location, self).__init__(name)
         self.forced_value = None    # only used for "NOWHERE" and "INVENTORY"
         self.code = None
+
     def set_code(self, code):
         self.code = code
+
     def set_forced_value(self, value):
         self.forced_value = value
+
     def code_label(self):
         return asmlabel_location(self.name)
+
     def output(self, extdirdict):
         if self.forced_value != None:
             print('!addr\t' + self.code_label() + '\t= ' + str(self.forced_value) + '\t; pseudo location')
@@ -210,8 +264,10 @@ class location(userdefined):
                 print(self.code.indents * '\t' + '+' + dir + ' ' + asmlabel_location(extdirdict[dir]) + '\t; autocreated by target')
             self.code.output('+end_location')
 
+
 class converter(object):
-    'converts MCA2 source to ACME source'
+    """converts MCA2 source to ACME source"""
+
     def __init__(self):
         self.allowed_errors = 5 # converter stops after this many errors
         self.in_comment = False # for c-style multi-line comments
@@ -261,6 +317,7 @@ class converter(object):
         self.add_symbol_reference('TIME', variable)
         # correct start value for later
         self.line_number = 0
+
     def add_symbol_definition(self, obj):
         if obj.name in self.definitions:
             self.error_line('object "' + obj.name + '" already defined in line ' + str(self.definitions[obj.name].defline))
@@ -271,6 +328,7 @@ class converter(object):
         obj.defline = self.line_number
         self.definitions[obj.name] = obj
         self.ordered_defs.append(obj.name)
+
     def add_symbol_reference(self, name, objtype):
         if name in self.references:
             if issubclass(objtype, self.references[name]['type']):
@@ -283,50 +341,61 @@ class converter(object):
         else:
             self.references[name] = {'type': objtype, 'firstrefline' : self.line_number}
             # if obj is location, "backdir" dict may be added to this dict!
+
     def ensure_defined(self, name, objtype):
         if name not in self.definitions:
             self.error_line('object "' + name + '" used but not defined.')
             return
+
         if not isinstance(self.definitions[name], objtype):
             self.error_line('object "' + name + '" if of wrong type (defined on line ' + str(self.definitions[name].defline) + ').')
             return
+
         self.add_symbol_reference(name, objtype)
         return self.definitions[name]
+
     def get_defined(self, objtype):
-        'return list of all defined objects of the given type'
+        """return list of all defined objects of the given type"""
         list = []
         for key in self.ordered_defs:
             obj = self.definitions[key]
             if type(obj) == objtype:
                 list.append(obj)
         return list
+
     def get_defd_and_refd(self, objtype):
-        'return list of all defined objects of the given type that were actually referenced'
+        """return list of all defined objects of the given type that were actually referenced"""
         list = []
         for key in self.ordered_defs:
             obj = self.definitions[key]
             if type(obj) == objtype and key in self.references:
                 list.append(obj)
         return list
+
     def error(self, msg):
         message('Error: ' + msg)
         if self.allowed_errors == 0:
             sys.exit(1)
         self.allowed_errors -= 1
+
     def warning_line(self, msg):
         warning('in line %d: %s!' % (self.line_number, msg))
+
     def error_line(self, msg):
         self.error('in line %d: %s!' % (self.line_number, msg))
-    #def err_serious_line(self, msg):
-    #   print >> sys.stderr, 'Serious error in line %d: %s!' % (self.line_number, msg)
-    #   sys.exit(1)
+
+#    def err_serious_line(self, msg):
+#        print >> sys.stderr, 'Serious error in line %d: %s!' % (self.line_number, msg)
+#        sys.exit(1)
+
     def add_location_direction(self, direction, target_name):
-        # add direction possibility to current location
+        """add direction possibility to current location"""
         self.add_symbol_reference(target_name, location)
         self.codeseq.set_dir(direction, target_name)
+
     def add_location_backdirection(self, target_name, direction):
-        # add current location as direction possibility to other location
-        # (when going from target_name in direction, result is current_location)
+        """add current location as direction possibility to other location
+        (when going from target_name in direction, result is current_location)"""
         self.add_symbol_reference(target_name, location)
         self.add_symbol_reference(self.current_location, location)
         # if there is no backdir dict yet, create one:
@@ -338,16 +407,18 @@ class converter(object):
             if locdict[direction] != self.current_location:
                 self.warning_line('Back-direction "' + direction + '" was already set for target')
         locdict[direction] = self.current_location
+
     def get_value(self, string):
-        'return value of number literal'
+        """return value of number literal"""
         try:
             num = int(string)
         except:
             self.error_line('Cannot determine numerical value of "' + string + '"')
             num = 0 # make sure script does not crash
         return num
+
     def get_force2var(self, string):
-        'convert literal/var name string to var object'
+        """convert literal/var name string to var object"""
         string = nospace(string)
         if string in self.definitions:
             obj = self.definitions[string]
@@ -366,22 +437,25 @@ class converter(object):
         self.add_symbol_definition(literal)
         self.add_symbol_reference(fakename, literalnumber)
         return literal
+
     def add_code(self, line):
-        'this is for "asm" lines and other stuff not part of specific code sequences like procedures and/or locations'
+        """this is for "asm" lines and other stuff not part of specific code sequences like procedures and/or locations"""
         self.code.append('\t' + line)
+
     def check_refs_FIXME(self, dict, name):
         for thing in dict.get_undefd_and_refd():
             self.error(name + ' referenced but not defined: ' + thing.name)
             #if loc.line_of_def and not loc.referenced:
-            #   warning('location "' + loc.name + '" defined but never used')
+            #    warning('location "' + loc.name + '" defined but never used')
             #if loc.referenced and not loc.line_of_def:
-            #   self.error('location "' + loc.name + '" referenced but not defined')
+            #    self.error('location "' + loc.name + '" referenced but not defined')
+
     def output(self):
-#       self.check_refs(self.npcs, 'npc')
-#       self.check_refs(self.items, 'item')
-#       self.check_refs(self.vars, 'variable')
-#       self.check_refs(self.procedures, 'procedure')
-#       self.check_refs(self.locations, 'location')
+#        self.check_refs(self.npcs, 'npc')
+#        self.check_refs(self.items, 'item')
+#        self.check_refs(self.vars, 'variable')
+#        self.check_refs(self.procedures, 'procedure')
+#        self.check_refs(self.locations, 'location')
         print(';ACME 0.96.4')
         print(';')
         print('; DO NOT EDIT THIS FILE! THIS FILE IS AUTOMATICALLY GENERATED!')
@@ -518,9 +592,10 @@ class converter(object):
         print('!eof')
         #print 'debugging info:'
         print('; end of auto-generated file')
-# helper functions to parse lines:
+
+    # helper functions to parse lines:
     def preprocess(self, line_in):
-        'count and remove indentation characters, remove comments'
+        """count and remove indentation characters, remove comments"""
         indents = 1 # leading prefix for binary space/tab bit pattern
         count_indents = True
         quotes = None
@@ -566,45 +641,52 @@ class converter(object):
             if line_out[idx] in self.subst:
                 line_out[idx] = self.subst[line_out[idx]]
         return indents, line_out
+
     def get_args(self, line, howmany):
-        'ensure correct number of args and return them'
+        """ensure correct number of args and return them"""
         if len(line) < 1 + howmany:
             self.error_line('Too few arguments for keyword')
         elif len(line) > 1 + howmany:
             self.error_line('Too many arguments for keyword')
         return line[1:(1 + howmany)]
+
 # helper functions to open/close logical blocks:
     def text_close(self):
-        'if we are in text mode, terminate'
+        """if we are in text mode, terminate"""
         if self.text_mode:
             self.codeseq.add_code('+terminate')
             self.text_mode = False
+
     def code_open(self):
         sc = scriptcode()
         self.codeseq = sc
         return sc
+
     def code_close(self):
-        'if we are in description/location/procedure/usage/combination, terminate'
+        """if we are in description/location/procedure/usage/combination, terminate"""
         self.text_close()
         if self.codeseq != None:
             if self.cond_state != [0]:
                 self.error_line('cannot start new description/location/procedure/usage/combination, there are "if" blocks left open')
             self.codeseq = None
         self.current_location = None
+
 # functions to parse different line types:
     def process_asm_line(self, line):
-        'line to pass to assembler unchanged'
+        """line to pass to assembler unchanged"""
         if self.codeseq != None:
             self.error_line('Please put "asm" lines before all npcs/items/locations/procedures/usages/combinations')
         self.add_code(' '.join(line[1:]))
+
     def process_text_line(self, line):
-        'text line'
+        """text line"""
         if self.text_mode == False:
             self.codeseq.add_code('+print')
             self.text_mode = True
         self.codeseq.add_code('!tx ' + ' '.join(line))
+
     def process_use_line(self, line):
-        'code to call if player wants to use item'
+        """code to call if player wants to use item"""
         self.code_close()   # close previous code sequence, if there was one
         it = self.get_args(line, 1)[0]
         self.ensure_defined(it, item)
@@ -612,8 +694,9 @@ class converter(object):
         use = usage(it)
         self.add_symbol_definition(use)
         use.set_code(self.code_open())
+
     def process_combi_line(self, line):
-        'code to call if player wants to combine items'
+        """code to call if player wants to combine items"""
         self.code_close()   # close previous code sequence, if there was one
         it1, it2 = self.get_args(line, 2)
         self.ensure_defined(it1, item)
@@ -623,27 +706,31 @@ class converter(object):
         co = combi(it1, it2)
         self.add_symbol_definition(co)
         co.set_code(self.code_open())
+
     def process_proc_loc_line(self, line, objtype):
-        'new procedure or location'
+        """new procedure or location"""
         self.code_close()   # close previous code sequence, if there was one
         name = self.get_args(line, 1)[0]
         obj = objtype(name) # create
         self.add_symbol_definition(obj)
         obj.set_code(self.code_open())
         return name
+
     def process_callproc_line(self, line):
-        'call procedure'
+        """call procedure"""
         self.text_close()
         proc_name = self.get_args(line, 1)[0]
         proc = self.ensure_defined(proc_name, procedure)
         self.codeseq.add_code('+gosub ' + proc.code_label())
+
     def process_callasm_line(self, line):
-        'call machine language'
+        """call machine language"""
         self.text_close()
         asm_name = self.get_args(line, 1)[0]
         self.codeseq.add_code('+callasm ' + asm_name)
+
     def process_dir_line(self, direction, line, backdir=None):
-        'allow a direction of movement and specify target, with two-way option'
+        """allow a direction of movement and specify target, with two-way option"""
         self.text_close()
         target_loc_name = self.get_args(line, 1)[0]
         self.add_location_direction(direction, target_loc_name)
@@ -654,8 +741,9 @@ class converter(object):
                 self.error_line('two-way directions cannot be used in "if" blocks')
             else:
                 self.add_location_backdirection(target_loc_name, backdir)
+
     def process_dirs_line(self, dir1, dir2, line, two_way=False):
-        'allow two directions of movement and specify targets, with two-way option'
+        """allow two directions of movement and specify targets, with two-way option"""
         self.text_close()
         target_loc_name1, target_loc_name2 = self.get_args(line, 2)
         self.add_location_direction(dir1, target_loc_name1)
@@ -668,32 +756,37 @@ class converter(object):
             else:
                 self.add_location_backdirection(target_loc_name1, dir2)
                 self.add_location_backdirection(target_loc_name2, dir1)
+
     def add_substitution(self, name, value):
-        'helper function for "define" and "enum" lines'
+        """helper function for "define" and "enum" lines"""
         if name in self.definitions:
             self.error_line('Name "' + name + '" has already been assigned to an object in line ' + self.definitions[name].defline)
         else:
             self.subst[name] = value
+
     def process_define_line(self, line):
-        'definition for text substitution (basically symbolic constants)'
+        """definition for text substitution (basically symbolic constants)"""
         #self.text_close()      this can actually be given inside of text as it does not inject code into output!
         name, value = self.get_args(line, 2)
         self.add_substitution(name, value)
+
     def process_enum_line(self, line):
-        'enumerate symbolic constants'
+        """enumerate symbolic constants"""
         #self.text_close()      this can actually be given inside of text as it does not inject code into output!
         value = 0
         for word in line[1:]:   # remove 'enum' keyword, line is already split at spaces
             self.add_substitution(word, str(value))
             value += 1
+
     def process_var_line(self, line):
-        'variable declaration'
+        """variable declaration"""
         #self.text_close()      this can actually be given inside of text as it does not inject code into output!
         name, start_value = self.get_args(line, 2)
         num = self.get_value(start_value)   # get actual number for start value     FIXME - move this to some pre-processor
         self.add_symbol_definition(variable(name, num))
+
     def process_npcitem_line(self, line, objtype):
-        'declare npc or item for player to interact with'
+        """declare npc or item for player to interact with"""
         self.code_close()   # close previous code sequence, if there was one
         name, initial_location, weight, game_name = self.get_args(line, 4)
         if weight == 'small':   # FIXME - use script's "const" facility for this?
@@ -708,13 +801,15 @@ class converter(object):
         self.add_symbol_reference(initial_location, location)
         # make current
         npcitem.set_description(self.code_open())
+
     def process_delay_line(self, line):
-        'wait for given number of .1 seconds'
+        """wait for given number of .1 seconds"""
         self.text_close()
         var = self.get_force2var(self.get_args(line, 1)[0]) # arg could be var or const or literal
         self.codeseq.add_code('+delay ' + var.offset_symbol())
+
     def check_for_moveable(self, name):
-        'return TRUE if given name is moveable (npc/item)'
+        """return TRUE if given name is moveable (npc/item)"""
         if name in self.definitions:
             obj = self.definitions[name]
             return isinstance(obj, moveable)
@@ -722,6 +817,7 @@ class converter(object):
             infodict = self.references[name]
             return issubclass(infodict['type'], moveable)
         return False
+
 # if/elif/else/endif helpers:
     def process_condition(self, line):
         if len(line) == 2:
@@ -752,9 +848,11 @@ class converter(object):
             var2 = self.get_force2var(kunz)
         code = '+if_' + oper + ' ' + var1.offset_symbol() + ', ' + var2.offset_symbol()
         self.codeseq.add_code(code + ', .c_after' + str(self.cond_state[-1]))
+
     def end_cond_block(self):
         self.codeseq.add_code('+goto .c_end')
         self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
+
 # if/elif/else/endif:
     def process_if_line(self, line):
         self.text_close()
@@ -762,6 +860,7 @@ class converter(object):
         self.cond_state.append(1)   # go deeper, then in 1st block of if/elif/else/endif
         self.process_condition(line)
         self.codeseq.change_indent(1)
+
     def process_elif_line(self, line):
         self.text_close()
         if self.cond_state[-1] == 0:
@@ -773,6 +872,7 @@ class converter(object):
         self.codeseq.change_indent(-1)
         self.process_condition(line)
         self.codeseq.change_indent(1)
+
     def process_else_line(self, line):
         self.text_close()
         if ' '.join(line) != 'else':
@@ -786,6 +886,7 @@ class converter(object):
         self.codeseq.add_code(';else')
         self.codeseq.change_indent(1)
         self.cond_state[-1] = -1    # in ELSE block of if/elif/else/endif
+
     def process_endif_line(self, line):
         self.text_close()
         if ' '.join(line) != 'endif':
@@ -798,10 +899,11 @@ class converter(object):
         self.cond_state.pop()   # leave nesting level
         self.codeseq.change_indent(-1)
         self.codeseq.add_code('} ; end of zone')
+
 # var changing:
     def process_move_line(self, line):
-        'move an npc/item to a different location'
-        'args are expected to be MOVEABLE/MOVEABLE or MOVEABLE/LOCATION'
+        """move an npc/item to a different location
+        args are expected to be MOVEABLE/MOVEABLE or MOVEABLE/LOCATION"""
         self.text_close()
         thing, target = self.get_args(line, 2)
         npcitem = self.ensure_defined(thing, moveable)
@@ -814,16 +916,19 @@ class converter(object):
             # FIXME - check for "large" item and "INVENTORY" target and complain?
             # but still the problem remains if moving large item @ small item in INV!
             self.codeseq.add_code('+varloadimm ' + npcitem.offset_symbol() + ', ' + asmlabel_location(target))
+
     def process_gain_line(self, line):
-        'move an npc/item to INVENTORY'
+        """move an npc/item to INVENTORY"""
         npcitem = self.get_args(line, 1)[0]
         self.process_move_line(['move', npcitem, 'INVENTORY'])
+
     def process_hide_line(self, line):
-        'move an npc/item to NOWHERE'
+        """move an npc/item to NOWHERE"""
         npcitem = self.get_args(line, 1)[0]
         self.process_move_line(['move', npcitem, 'NOWHERE'])
+
     def process_let_line(self, line):
-        'writing to variable'
+        """writing to variable"""
         self.text_close()
         # arg checking was done by caller, to be able to recognize this type of line...
         target_varname = nospace(line[0])
@@ -831,16 +936,18 @@ class converter(object):
         source_var = self.get_force2var(line[2])
         # FIXME - make sure target var is not read-only!
         self.codeseq.add_code('+varcopy ' + target_var.offset_symbol() + ', ' + source_var.offset_symbol())
+
     def process_incdec_line(self, what, line):
-        'increment/decrement variable'
+        """increment/decrement variable"""
         self.text_close()
         varname = self.get_args(line, 1)[0]
         var = self.ensure_defined(varname, variable)
         # FIXME - make sure var is not read-only!
         self.codeseq.add_code('+' + what + ' ' + var.offset_symbol())
+
 # outer stuff:
     def process_line(self, line):
-        'process a single line of input'
+        """process a single line of input"""
         self.line_number += 1
         indents, line = self.preprocess(line)
         #print indents, line
