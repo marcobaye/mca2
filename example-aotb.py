@@ -439,7 +439,7 @@ using kettle wand
 		"Du hast noch nicht alle Zutaten in den Kessel geworfen!",cr
 		"Erst wenn die Mischung komplett ist, kannst du deine Magie "
 		"wirken lassen."
-	endif 
+	endif
 ## Bonuspunkt
 using key chest
 	if chest_opened == FALSE

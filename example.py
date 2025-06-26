@@ -88,7 +88,7 @@ item flask INVENTORY	small	"Flask"
 # NPCs can be given another code sequence, to be run upon "talk to npc".
 npc dwarf start large "fieser Zwerg"
     "Der Zwerg sieht ziemlich ramponiert aus."
-    
+
 # There is a pre-defined pseudo item called "PLAYER". This is invisible to the player, but can
 # be moved around by the script (to move the player).
 
