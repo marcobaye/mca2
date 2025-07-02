@@ -1,4 +1,4 @@
-;ACME 0.96.2
+;ACME 0.97
 ; architecture-specific stuff for C64
 
 ; config
@@ -140,8 +140,7 @@
 		lda #>SCREEN
 		sta screenpage
 		; now CLEAR to init screen
-		jsr my_primm
-		!tx color_std, petscii_CLEAR, 0
+		+primm [ color_std, petscii_CLEAR ]
 		; re-enable vic display
 		lda #%...##.##
 		sta vic_controlv

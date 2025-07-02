@@ -1,4 +1,4 @@
-;ACME 0.96.2
+;ACME 0.97
 ; architecture-specific stuff for C128
 
 ; config
@@ -131,8 +131,7 @@
 		lda #255
 		jsr c128_copycharset
 		; now CLEAR to init screen
-		jsr my_primm
-		!tx petscii_LOWERCASE, color_std, petscii_CLEAR, 0
+		+primm [ petscii_LOWERCASE, color_std, petscii_CLEAR ]
 }
 
 !macro arch_set_colors {

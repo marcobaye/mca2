@@ -1,10 +1,32 @@
-;ACME 0.96.2
+;ACME 0.97
 
 	!src <6502/std.a>	; for bit16 macro
 
 ; helper values
 !addr	MODIFIED16	= $ffff
 	MAX_RECURSIONS	= 64	; ought to be enough for anybody (tm)
+
+!if DEUTSCH {
+	i18n_NO_ITEMS	= " (keine)"
+	i18n_ITEMS	= "Dinge"
+	i18n_PATHS	= "Wege"
+	i18n_NORTH	= "Nord"
+	i18n_SOUTH	= "Süd"
+	i18n_WEST	= "West"
+	i18n_EAST	= "Ost"
+	i18n_UP		= "Hoch"
+	i18n_DOWN	= "Runter"
+} else {
+	i18n_NO_ITEMS	= " (none)"
+	i18n_ITEMS	= "Items"
+	i18n_PATHS	= "Paths"
+	i18n_NORTH	= "North"
+	i18n_SOUTH	= "South"
+	i18n_WEST	= "West"
+	i18n_EAST	= "East"
+	i18n_UP		= "Up"
+	i18n_DOWN	= "Down"
+}
 
 itemlist_at_YYAA_new ; make list of items at a given place
 		ldx #0	; delete old list
@@ -40,7 +62,7 @@ itemlist_list ; list items
 		lda #0	; dummy separator
 		sta .idx	; and start index
 ---			jsr my_chrout	; output separator (dummy or comma)
-			jsr my_primm	: !tx " ", color_emph, 0
+			+primm [ " ", color_emph ]
 			ldx #MODIFIED8	: .idx = * - 1
 			lda itemlist_buf, x
 			tax
@@ -54,13 +76,11 @@ itemlist_list ; list items
 			ldx .idx
 			cpx itemlist_len
 			bne ---
-		jsr my_primm	: !tx color_std, cr, 0
+		+primm [ color_std, cr ]
 		rts
 
 none ; show string instead of empty item list
-		jsr my_primm	: !tx color_out
-!if DEUTSCH {	!tx " (keine)"	} else {	!tx " (none)"	}
-		!tx color_std, cr, 0
+		+primm [ color_out, i18n_NO_ITEMS, color_std, cr ]
 		rts
 !zone
 itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!)
@@ -77,7 +97,7 @@ itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!
 		sta .character
 		lda #0	; start index
 		sta .idx
----			jsr my_primm	: !tx " [", 0
+---			+primm [ " [" ]
 			lda #color_emph	; set color to "item can be used"
 			jsr my_chrout
 			; check for size?
@@ -232,16 +252,14 @@ engine_new_location ; show current location
 		jsr interpreter_run_YYAA
 		; now text should be on screen and possible directions in buffers.
 		; show local items:
-		jsr my_primm
-!if DEUTSCH {	!tx cr, "Dinge:", 0	} else {	!tx cr, "Items:", 0	}
+		+primm [ cr, i18n_ITEMS, ":" ]
 		lda gamevars_lo	+ vo_PLAYER
 		ldy gamevars_hi	+ vo_PLAYER
 		jsr itemlist_at_YYAA_new	; scan items
 		jmp itemlist_list
 
 show_paths ; output list of possible directions:
-		jsr my_primm
-!if DEUTSCH {	!tx cr, "Wege:", 0	} else {	!tx cr, "Paths:", 0	}
+		+primm [ cr, i18n_PATHS, ":" ]
 		ldx #0
 ---
 			lda #' '
@@ -258,30 +276,9 @@ show_paths ; output list of possible directions:
 			inx
 			cpx #6
 			bne ---
-		jsr my_primm	: !tx color_std, cr, cr, 0
+		+primm [ color_std, cr, cr ]
 		rts
 
-!macro unknown_cmd { ; error handler called on illegal byte code
-		dec restart_flag
-		jsr my_primm
-!if DEUTSCH {
-		!tx CR, CR, "BUG: unbekannte Byte-Code-Anweisung!", 0
-} else {
-		!tx CR, CR, "BUG: encountered unknown instruction!", 0
-}
-		jmp exit
-}
-
-!macro too_deep { ; error handler called if recursion too deep
-		dec restart_flag
-		jsr my_primm
-!if DEUTSCH {
-		!tx CR, CR, "BUG: Rekursion zu tief!", 0
-} else {
-		!tx CR, CR, "BUG: recursion too deep!", 0
-}
-		jmp exit
-}
 
 ; bytecode interpreter:
 
@@ -304,9 +301,8 @@ interpreter_go_on ; enter with A = offset to add
 		ldy #0
 		lda (runptr), y
 		cmp #CMDLIMIT
-		bcc +
-			+unknown_cmd
-+		asl
+		bcs @unknown_cmd
+		asl
 		tax
 ; FIXME - why this ASL:TAX stuff? Just use separate tables for lo/hi!
 		lda cmd_table, x
@@ -314,6 +310,11 @@ interpreter_go_on ; enter with A = offset to add
 		lda cmd_table + 1, x
 		sta .vector + 1
 		jmp MODIFIED16	: .vector = * - 2
+
+@unknown_cmd ; error handler called on illegal byte code
+		dec restart_flag
+		+primm [ CR, CR, "BUG: invalid byte code instruction!" ]
+		jmp exit
 ;---------------------------------------
 	; macro magic to assign instruction codes and put pointers into table
 	!macro instruction ~.code, ~.ptr {
@@ -398,21 +399,13 @@ interpreter_go_on ; enter with A = offset to add
 		lda #3
 		jmp interpreter_go_on
 
-!if DEUTSCH {
-north	!tx "Nord", 0
-south	!tx "S", ü, "d", 0
-west	!tx "West", 0
-east	!tx "Ost", 0
-up	!tx "Hoch", 0
-down	!tx "Runter", 0
-} else {
-north	!tx "North", 0
-south	!tx "South", 0
-west	!tx "West", 0
-east	!tx "East", 0
-up	!tx "Up", 0
-down	!tx "Down", 0
-}
+north	!tx i18n_NORTH, 0
+south	!tx i18n_SOUTH, 0
+west	!tx i18n_WEST, 0
+east	!tx i18n_EAST, 0
+up	!tx i18n_UP, 0
+down	!tx i18n_DOWN, 0
+
 dirs_lo	!by <north, <south, <west, <east, <up, <down	; FIXME - use offsets to build table?
 dirs_hi	!by >north, >south, >west, >east, >up, >down
 	offset_NORTH	= 0
@@ -483,7 +476,10 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		ldx recursion_depth
 		cpx #MAX_RECURSIONS
 		bcc +
-			+too_deep
+			; error handler called if recursion too deep
+			dec restart_flag
+			+primm [ CR, CR, "BUG: recursion too deep!" ]
+			jmp exit
 +		; no, then stack current pointer
 		lda runptr
 		sta softstack_lo, x

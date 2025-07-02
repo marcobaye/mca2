@@ -1,4 +1,4 @@
-;ACME 0.96.2
+;ACME 0.97
 ; architecture-specific stuff for C16/+4
 
 ; config
@@ -178,9 +178,8 @@ sys_chrout ;
 			bne ---
 	}
 		; now CLEAR to init screen
-		jsr my_primm
-		!tx petscii_LOWERCASE	; FIXME - get rid of this and set ted register directly
-		!tx color_std, petscii_CLEAR, 0
+		+primm [ petscii_LOWERCASE, color_std, petscii_CLEAR ]
+		; FIXME - get rid of LOWERCASE and set ted register directly
 }
 
 !macro arch_set_colors {
