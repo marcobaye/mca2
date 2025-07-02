@@ -104,6 +104,7 @@ screen_buffer=$df00
 ; if architecture does NOT use MAKE_BASIC_HEADER, this macro will be called to
 ; create your own program header. enter the program with a jump to "entry".
 !macro arch_header {
+	!cpu 65c02
 		jsr entry
 		jmp (address($da))	; return to shell
 }

@@ -355,7 +355,7 @@ interpreter_go_on ; enter with A = offset to add
 ;---------------------------------------
 	!macro print		{!by CMD_PRINT	}
 	!macro terminate	{!by 0		}
-			jsr indent0
+			jsr indent0	; FIXME - this is dead code!
 --			jsr my_chrout
 +instruction ~CMD_PRINT, ~cmd_print
 			inc runptr
