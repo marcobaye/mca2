@@ -544,7 +544,7 @@ using spade ghoul
 	"Der Ghoul schmeißt sich weg vor Lachen, als du unbeholfen mit dem "
 	"Spaten auf ihn einschlagen willst."
 using spade raven
-	"Der Rabe kräht und faucht dich wütend an, als du mit dem dem Spaten "
+	"Der Rabe kräht und faucht dich wütend an, als du mit dem Spaten "
 	"auf ihn losgehen willst.",cr,cr
 	"Erschrocken weichst du einen Schritt zurück."
 using sickle pala
