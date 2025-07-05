@@ -38,6 +38,14 @@ operators = {
     '@': 'equal',       # actually "at", specially handled
     '!@': 'not_equal'   # actually "not at", specially handled
 }
+inverted_operators = {
+    'equal':        'not_equal',
+    'not_equal':    'equal',
+    'smaller':      'greater_or_equal',
+    'greater':      'smaller_or_equal',
+    'smaller_or_equal': 'greater',
+    'greater_or_equal': 'smaller'
+}
 
 
 def nospace(string):
@@ -273,7 +281,7 @@ class converter(object):
         self.in_comment = False # for c-style multi-line comments
         self.text_mode = False  # needed to add command prefix and trailing NUL char
         self.codeseq = None # needed to track locations/procedures/combinations/usages
-        self.cond_state = [0]   # keeps track of "if/elif/else/endif" and nesting
+        self.block_state = [0]  # keeps track of "while/endwhile/if/elif/else/endif" and nesting
         self.code = []  # for stuff from "asm" lines
         self.subst = dict() # dictionary for "define/enum" substitutions    FIXME - move to some input preprocessor
         self.stringcoll = stringcoll()
@@ -666,8 +674,8 @@ class converter(object):
         """if we are in description/location/procedure/usage/combination, terminate"""
         self.text_close()
         if self.codeseq != None:
-            if self.cond_state != [0]:
-                self.error_line('cannot start new description/location/procedure/usage/combination, there are "if" blocks left open')
+            if self.block_state != [0]:
+                self.error_line('cannot start new description/location/procedure/usage/combination, there are "if" or "while" blocks left open')
             self.codeseq = None
         self.current_location = None
 
@@ -737,8 +745,8 @@ class converter(object):
         if backdir:
             if self.current_location == None:
                 self.error_line('two-way directions can only be used in "location" blocks')
-            elif self.cond_state != [0]:
-                self.error_line('two-way directions cannot be used in "if" blocks')
+            elif self.block_state != [0]:
+                self.error_line('two-way directions cannot be used in "if"/"while" blocks')
             else:
                 self.add_location_backdirection(target_loc_name, backdir)
 
@@ -751,8 +759,8 @@ class converter(object):
         if two_way:
             if self.current_location == None:
                 self.error_line('two-way directions can only be used in "location" blocks')
-            elif self.cond_state != [0]:
-                self.error_line('two-way directions cannot be used in "if" blocks')
+            elif self.block_state != [0]:
+                self.error_line('two-way directions cannot be used in "if"/"while" blocks')
             else:
                 self.add_location_backdirection(target_loc_name1, dir2)
                 self.add_location_backdirection(target_loc_name2, dir1)
@@ -819,7 +827,7 @@ class converter(object):
         return False
 
 # if/elif/else/endif helpers:
-    def process_condition(self, line):
+    def process_condition(self, line, label=None, invert=False):
         if len(line) == 2:
             hinz = self.get_args(line, 1)[0]
             op = '!='
@@ -831,6 +839,8 @@ class converter(object):
         else:
             self.error_line('Comparison not recognised')
             return
+        if invert:
+            oper = inverted_operators[oper]
         if op.endswith('@'):
             'args are expected to be MOVEABLE/MOVEABLE or MOVEABLE/LOCATION'
             var1 = self.ensure_defined(hinz, moveable)
@@ -847,28 +857,54 @@ class converter(object):
             var1 = self.get_force2var(hinz)
             var2 = self.get_force2var(kunz)
         code = '+if_' + oper + ' ' + var1.offset_symbol() + ', ' + var2.offset_symbol()
-        self.codeseq.add_code(code + ', .c_after' + str(self.cond_state[-1]))
+        if label is None:
+            label = '.c_after' + str(self.block_state[-1])
+        self.codeseq.add_code(code + ', ' + label)
 
     def end_cond_block(self):
         self.codeseq.add_code('+goto .c_end')
-        self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
+        self.codeseq.add_label('.c_after' + str(self.block_state[-1]))
+
+# while/endwhile:
+    def process_while_line(self, line):
+        self.text_close()
+        self.codeseq.add_code('!zone { ; "while"')  # TODO: get rid of zone. find a way to implement break/continue!
+        self.block_state.append(line)   # keep line for later, will be evaluated by "endwhile"
+        self.block_state.append("w")    # go deeper, now in "while" block
+        self.codeseq.add_code('+goto .c_continue')
+        self.codeseq.add_label('.c_loop')
+        self.codeseq.change_indent(1)
+
+    def process_endwhile_line(self, line):
+        self.text_close()
+        if ' '.join(line) != 'endwhile':
+            self.error_line('Garbage after ENDWHILE?!')
+        if self.block_state[-1] != "w":
+            self.error_line('Used ENDWHILE without WHILE')
+            return
+        self.block_state.pop()  # leave nesting level (remove "w")
+        line = self.block_state.pop()   # get condition
+        self.codeseq.add_label('.c_continue')
+        self.process_condition(line, '.c_loop', invert=True)
+        self.codeseq.change_indent(-1)
+        self.codeseq.add_code('} ; end of "while" zone')
 
 # if/elif/else/endif:
     def process_if_line(self, line):
         self.text_close()
-        self.codeseq.add_code('!zone {')    # TODO: get rid of zone, add an "if" nesting counter to labels instead. I need "zone" for loops/break/continue!
-        self.cond_state.append(1)   # go deeper, then in 1st block of if/elif/else/endif
+        self.codeseq.add_code('!zone { ; "if/elif/else"')   # TODO: get rid of zone, add an "if" nesting counter to labels instead. I need "zone" for loops/break/continue!
+        self.block_state.append(1)  # go deeper, then in 1st block of if/elif/else
         self.process_condition(line)
         self.codeseq.change_indent(1)
 
     def process_elif_line(self, line):
         self.text_close()
-        if self.cond_state[-1] == 0:
+        if self.block_state[-1] in (0, "w"):
             self.error_line('Used ELIF without IF')
-        if self.cond_state[-1] == -1:
+        if self.block_state[-1] == -1:
             self.error_line('Used ELIF after ELSE')
         self.end_cond_block()
-        self.cond_state[-1] += 1    # in next block of if/elif/else/endif
+        self.block_state[-1] += 1    # in next block of if/elif/else/endif
         self.codeseq.change_indent(-1)
         self.process_condition(line)
         self.codeseq.change_indent(1)
@@ -877,28 +913,28 @@ class converter(object):
         self.text_close()
         if ' '.join(line) != 'else':
             self.error_line('Garbage after ELSE?!')
-        if self.cond_state[-1] == 0:
+        if self.block_state[-1] in (0, "w"):
             self.error_line('Used ELSE without IF')
-        if self.cond_state[-1] == -1:
+        if self.block_state[-1] == -1:
             self.error_line('Used ELSE after ELSE')
         self.end_cond_block()
         self.codeseq.change_indent(-1)
         self.codeseq.add_code(';else')
         self.codeseq.change_indent(1)
-        self.cond_state[-1] = -1    # in ELSE block of if/elif/else/endif
+        self.block_state[-1] = -1   # in ELSE block of if/elif/else/endif
 
     def process_endif_line(self, line):
         self.text_close()
         if ' '.join(line) != 'endif':
             self.error_line('Garbage after ENDIF?!')
-        if self.cond_state[-1] == 0:
+        if self.block_state[-1] == 0:
             self.error_line('Used ENDIF without IF')
-        if self.cond_state[-1] != -1:
-            self.codeseq.add_label('.c_after' + str(self.cond_state[-1]))
+        if self.block_state[-1] != -1:
+            self.codeseq.add_label('.c_after' + str(self.block_state[-1]))
         self.codeseq.add_label('.c_end')
-        self.cond_state.pop()   # leave nesting level
+        self.block_state.pop()  # leave nesting level
         self.codeseq.change_indent(-1)
-        self.codeseq.add_code('} ; end of zone')
+        self.codeseq.add_code('} ; end of "if/elif/else" zone')
 
 # var changing:
     def process_move_line(self, line):
@@ -994,6 +1030,10 @@ class converter(object):
                 self.process_hide_line(line)
             elif key == 'delay':
                 self.process_delay_line(line)
+            elif key == 'while':
+                self.process_while_line(line)
+            elif key == 'endwhile':
+                self.process_endwhile_line(line)
             elif key == 'if':
                 self.process_if_line(line)
             elif key == 'elif':
