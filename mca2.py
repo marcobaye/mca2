@@ -20,8 +20,10 @@ This program converts MCA2 game description files into executables.
     gamefile = args.file + ".tmp.a"
     print("Trying to convert", args.file, "to", gamefile, "...")
     backend.convert(args.file, gamefile)
+    print("Ok.")
     print("Trying to assemble ...")
     backend.assemble(archfile, gamefile, args.outfile)
+    print("Ok.\n")
 
 if __name__ == '__main__':
     main()

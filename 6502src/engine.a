@@ -1,6 +1,7 @@
 ;ACME 0.97
 
 	!src <6502/std.a>	; for bit16 macro
+	!src <6502/split.a>	; for macro to split pointer tables into lo/hi
 
 ; helper values
 !addr	MODIFIED16	= $ffff
@@ -295,42 +296,59 @@ interpreter_go_on ; enter with A = offset to add
 		clc
 		adc runptr
 		sta runptr
-		bcc +
-			inc runptr + 1
-+		; get byte code and execute
+		bcs @fix_hi
+@after_fix	; get byte code and execute
 		ldy #0
 		lda (runptr), y
 		cmp #CMDLIMIT
 		bcs @unknown_cmd
-		asl
 		tax
-; FIXME - why this ASL:TAX stuff? Just use separate tables for lo/hi!
-		lda cmd_table, x
+		lda cmd_table_lo, x
 		sta .vector
-		lda cmd_table + 1, x
+		lda cmd_table_hi, x
 		sta .vector + 1
 		jmp MODIFIED16	: .vector = * - 2
+
+@fix_hi ; fix high byte when run ptr crosses a page
+; (this is faster than skipping the INC)
+		inc runptr + 1
+		jmp @after_fix
 
 @unknown_cmd ; error handler called on illegal byte code
 		dec restart_flag
 		+primm [ CR, CR, "BUG: invalid byte code instruction!" ]
 		jmp exit
 ;---------------------------------------
-	; macro magic to assign instruction codes and put pointers into table
-	!macro instruction ~.code, ~.ptr {
-.ptr
-		.code = instruction_enum
-		!set instruction_enum = instruction_enum + 1
-		; if we know where the command table is, write to it
-		.buf = *	; outside of ifdef to make sure locals are counted correctly
-		!ifdef cmd_table {
-			* = cmd_table + 2 * .code
-			!wo .ptr
-			* = .buf	; go back to where we came from
-		}
-	}
-;---------------------------------------
-	!set instruction_enum = 0	; let's go!
+cmd_table_lo
+	+split_lo [ cmd_endofblock, cmd_callasm, cmd_gosub, cmd_goto ]
+	+split_lo [ cmd_ifnotequal, cmd_ifequal, cmd_ifgreaterorequal, cmd_ifgreater ]
+	+split_lo [ cmd_delay, cmd_varinc, cmd_vardec, cmd_varcopy, cmd_varloadimm ]
+	+split_lo [ cmd_print, cmd_north, cmd_south, cmd_west, cmd_east, cmd_up, cmd_down ]
+cmd_table_hi
+	+split_hi
+; command codes (CAUTION, they must match their table indices above):
+CMD_ENDOFBLOCK	= 0	; no args
+CMD_CALLASM	= 1	; followed by target address
+CMD_GOSUB	= 2	; followed by target address
+CMD_GOTO	= 3	; followed by target address
+CMD_IFNOTEQUAL	= 4	; followed by var number, var number, target address
+CMD_IFEQUAL	= 5	; followed by var number, var number, target address
+CMD_IFGREATEROREQUAL = 6	; followed by var number, var number, target address
+CMD_IFGREATER	= 7	; followed by var number, var number, target address
+CMD_DELAY	= 8	; followed by var number
+CMD_VARINC	= 9	; followed by var number
+CMD_VARDEC	= 10	; followed by var number
+CMD_VARCOPY	= 11	; followed by var number, var number
+CMD_VARLOADIMM	= 12	; followed by var number and 16-bit literal
+CMD_PRINT	= 13	; followed by zero-terminated string
+CMD_NORTH	= 14	; followed by target address
+CMD_SOUTH	= 15	; followed by target address
+CMD_WEST	= 16	; followed by target address
+CMD_EAST	= 17	; followed by target address
+CMD_UP		= 18		; followed by target address
+CMD_DOWN	= 19	; followed by target address
+CMDLIMIT	= 20
+
 ;---------------------------------------
 ; all command handlers are entered with runptr pointing to command and Y=0
 ;---------------------------------------
@@ -339,7 +357,8 @@ interpreter_go_on ; enter with A = offset to add
 	!macro end_combi	{!by CMD_ENDOFBLOCK	}
 	!macro end_procedure	{!by CMD_ENDOFBLOCK	}
 	!macro end_location	{!by CMD_ENDOFBLOCK	}
-+instruction ~CMD_ENDOFBLOCK, ~cmd_endofblock
+cmd_endofblock ;
+		; FIXME - this "recursion check" will fail if "callasm" calls interpreter_go_on!
 		ldx recursion_depth
 		bne +
 			rts	; no recursion? then return to caller
@@ -355,16 +374,16 @@ interpreter_go_on ; enter with A = offset to add
 ;---------------------------------------
 	!macro print		{!by CMD_PRINT	}
 	!macro terminate	{!by 0		}
-			jsr indent0	; FIXME - this is dead code!
+;			jsr indent0	; FIXME - this is dead code!
 --			jsr my_chrout
-+instruction ~CMD_PRINT, ~cmd_print
+cmd_print ;
 			inc runptr
 			bne +
 				inc runptr + 1
 +			lda (runptr), y
 			bne --
 		; if text does not end on CR, word wrap buffer will be flushed by main loop
-		lda #1
+		lda #1	; skip terminating zero
 		jmp interpreter_go_on
 ;---------------------------------------
 	!macro north	.target	{!by CMD_NORTH:	!wo .target	}
@@ -373,30 +392,24 @@ interpreter_go_on ; enter with A = offset to add
 	!macro east	.target {!by CMD_EAST:	!wo .target	}
 	!macro up	.target {!by CMD_UP:	!wo .target	}
 	!macro down	.target {!by CMD_DOWN:	!wo .target	}
-+instruction ~CMD_NORTH, ~cmd_north
-		ldx #offset_NORTH
+cmd_north	ldx #offset_NORTH
 		+bit16
-+instruction ~CMD_SOUTH, ~cmd_south
-		ldx #offset_SOUTH
+cmd_south	ldx #offset_SOUTH
 		+bit16
-+instruction ~CMD_WEST, ~cmd_west
-		ldx #offset_WEST
+cmd_west	ldx #offset_WEST
 		+bit16
-+instruction ~CMD_EAST, ~cmd_east
-		ldx #offset_EAST
+cmd_east	ldx #offset_EAST
 		+bit16
-+instruction ~CMD_UP, ~cmd_up
-		ldx #offset_UP
+cmd_up		ldx #offset_UP
 		+bit16
-+instruction ~CMD_DOWN, ~cmd_down
-		ldx #offset_DOWN
+cmd_down	ldx #offset_DOWN
 		iny
 		lda (runptr), y
 		sta directions_lo, x
 		iny
 		lda (runptr), y
 		sta directions_hi, x
-		lda #3
+		lda #3 ; skip command and two parameter bytes
 		jmp interpreter_go_on
 
 north	!tx i18n_NORTH, 0
@@ -428,17 +441,14 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 	!macro if_greater_or_equal	.vo1, .vo2, .t	{!by CMD_IFGREATER,		.vo2, .vo1	: !wo .t	}
 ; virtual flags	for:	<	>	unused	==
 .flags		!by	%0001,	%1101,	0,	%0110	; bits mean  >   >=   ==   !=
-+instruction ~CMD_IFNOTEQUAL,		~cmd_ifnotequal
-		lda #%0001
+cmd_ifnotequal	lda #%0001
 		+bit16
-+instruction ~CMD_IFEQUAL,		~cmd_ifequal
-		lda #%0010
+cmd_ifequal	lda #%0010
 		+bit16
-+instruction ~CMD_IFGREATEROREQUAL,	~cmd_ifgreaterorequal
+cmd_ifgreaterorequal
 		lda #%0100
 		+bit16
-+instruction ~CMD_IFGREATER,		~cmd_ifgreater
-		lda #%1000
+cmd_ifgreater	lda #%1000
 		sta .wanted_bit
 		; get var offsets
 		iny
@@ -467,11 +477,11 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		; now check for desired flag
 		and #MODIFIED8	: .wanted_bit = * - 1
 		bne cmd_goto
-			lda #5
+			lda #5	; skip command and four arg bytes
 			jmp interpreter_go_on
 ;---------------------------------------
 	!macro gosub	.target {!by CMD_GOSUB:	!wo .target	}
-+instruction ~CMD_GOSUB, ~cmd_gosub
+cmd_gosub ; to implement "callproc"
 		; recursed too far?
 		ldx recursion_depth
 		cpx #MAX_RECURSIONS
@@ -492,7 +502,7 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		;FALLTHROUGH to "goto"
 ;---------------------------------------
 	!macro goto	.target	{!by CMD_GOTO:	!wo .target	}
-+instruction ~CMD_GOTO, ~cmd_goto	; to implement if/else/endif blocks and "callproc"
+cmd_goto ; to implement if/else/endif blocks
 ; this entry point is also used by the "gosub" macro ("callproc")
 ; this entry point is used by the four "if" macros as well when they jump!
 		iny
@@ -506,7 +516,7 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		jmp interpreter_go_on
 ;---------------------------------------
 	!macro callasm	.target	{!by CMD_CALLASM:	!wo .target	}
-+instruction ~CMD_CALLASM, ~cmd_callasm
+cmd_callasm ;
 		iny
 		lda (runptr), y
 		sta .jsr_arg
@@ -514,22 +524,22 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		lda (runptr), y
 		sta .jsr_arg + 1
 		jsr MODIFIED16	: .jsr_arg = * - 2
-		lda #3
+		lda #3	; skip command and target address
 		jmp interpreter_go_on
 ;---------------------------------------
 	!macro delay	.var_offset	{!by CMD_DELAY, .var_offset	}
-+instruction ~CMD_DELAY, ~cmd_delay
+cmd_delay ;
 		iny
 		lda (runptr), y
 		tax
 		lda gamevars_lo, x
 		jsr wait_A_tenths
-		lda #2
+		lda #2	; skip command and var number
 		jmp interpreter_go_on
 ;---------------------------------------
 	!macro varinc	.var_offset	{!by CMD_VARINC, .var_offset	}
 	!macro vardec	.var_offset	{!by CMD_VARDEC, .var_offset	}
-+instruction ~CMD_VARINC, ~cmd_varinc
+cmd_varinc ;
 		iny
 		lda (runptr), y
 		tax
@@ -537,7 +547,7 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		bne +++
 			inc gamevars_hi, x
 			jmp +++
-+instruction ~CMD_VARDEC, ~cmd_vardec
+cmd_vardec ;
 		iny
 		lda (runptr), y
 		tax
@@ -545,11 +555,11 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		bne +
 			dec gamevars_hi, x
 +		dec gamevars_lo, x
-+++		lda #2
++++		lda #2	; skip command and var number
 		jmp interpreter_go_on
 ;---------------------------------------
 	!macro varcopy	.vo_target, .vo_source {!by CMD_VARCOPY, .vo_source, .vo_target	}
-+instruction ~CMD_VARCOPY, ~cmd_varcopy
+cmd_varcopy ;
 		iny
 		lda (runptr), y
 		tax
@@ -564,11 +574,11 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 			sta gamevars_hi, x
 		pla
 		sta gamevars_lo, x
-		lda #3
+		lda #3	; skip command and two var numbers
 		jmp interpreter_go_on
 ;---------------------------------------
 	!macro varloadimm	.vo_target, .literal {!by CMD_VARLOADIMM, .vo_target: !wo .literal	}
-+instruction ~CMD_VARLOADIMM, ~cmd_varloadimm
+cmd_varloadimm ;
 		; get target offset
 		iny
 		lda (runptr), y
@@ -581,18 +591,9 @@ dirs_hi	!by >north, >south, >west, >east, >up, >down
 		iny
 		lda (runptr), y
 		sta gamevars_hi, x
-		lda #4
+		lda #4	; skip command, var number and 16-bit literal
 		jmp interpreter_go_on
 ;---------------------------------------
-	; add more instructions here
-;---------------------------------------
-	CMDLIMIT = instruction_enum
-
-cmd_table
-		; reserve space for command pointers
-		* = * + 2 * CMDLIMIT
-		; table will be filled in by "instruction" macro in later pass!
-
 	; special macro for "usages" list: make sure to put smaller value first
 	!macro ordered .hinz, .kunz {
 		; commented out because not needed, actually (values are assigned first)
@@ -607,7 +608,6 @@ cmd_table
 		;	!by 0, 0	; make sure to produce same length
 		;}
 	}
-
 ;---------------------------------------
 ; now that all engine macros are defined,
 ; we can call the macro containing the game description tables:

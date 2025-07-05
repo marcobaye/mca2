@@ -40,11 +40,11 @@ def convert(infile, outfile):
     sys.stdout = temp
 
 def assemble(archfile, gamefile, outfile):
-    print("arch file:", archfile)
-    print("acme file:", gamefile)
-    print("outfile:", outfile)
+    #print("arch file:", archfile)
+    #print("acme file:", gamefile)
+    #print("outfile:", outfile)
     # build arguments for ACME:
-    cliargs = ["acme", "--format", "plain", "--outfile", outfile, "-v1", "-Wtype-mismatch", appdir("6502src/" + archfile), gamefile]
+    cliargs = ["acme", "--format", "plain", "--outfile", outfile, "-v2", "-Wtype-mismatch", appdir("6502src/" + archfile), gamefile]
     # add other source files from application directory (order is important: mca first, tail last, engine before output)
     cliargs.extend([appdir("6502src/mca2.a"), appdir("6502src/charset.a"), appdir("6502src/engine.a"), appdir("6502src/output.a"), appdir("6502src/tail.a")])
     # now call ACME:
