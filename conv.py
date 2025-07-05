@@ -778,8 +778,8 @@ class converter(object):
             self.add_substitution(word, str(value))
             value += 1
 
-    def process_var_line(self, line):
-        """variable declaration"""
+    def process_u16_line(self, line):
+        """variable declaration (unsigned 16 bit)"""
         #self.text_close()      this can actually be given inside of text as it does not inject code into output!
         name, start_value = self.get_args(line, 2)
         num = self.get_value(start_value)   # get actual number for start value     FIXME - move this to some pre-processor
@@ -976,8 +976,8 @@ class converter(object):
                 self.process_define_line(line)
             elif key == 'enum':
                 self.process_enum_line(line)
-            elif key == 'var':
-                self.process_var_line(line)
+            elif key in ('u16', 'var'):
+                self.process_u16_line(line)
             elif key == 'inc':
                 self.process_incdec_line('varinc', line)
             elif key == 'dec':
