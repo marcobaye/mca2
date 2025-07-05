@@ -2,7 +2,6 @@
 ; architecture-specific stuff for C128
 
 ; config
-	MAKE_BASIC_HEADER	= 1
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 1
 	INCLUDE_CHARSET		= 1
@@ -40,9 +39,6 @@
 !addr	z_keychk	= $033c	; fn ptr for f-key string expansion
 !addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
 
-; other
-	load_addr	= $1c01
-
 ; editor/kernal rom
 !addr	editor_putAX	= $c003	; output screencode A and attribute X
 !addr	vdcw		= $cdcc
@@ -71,9 +67,20 @@
 
 ; code macros
 
-!macro arch_basicstuff {
+!macro arch_header {
+	* = $1c01 - 2
+	!wo $1c01	; manually create load address
+		!wo line2, 2025
 		!by $fe, $25, $3a, $fe, $02, $20, $30, $3a	; "fast:bank 0:"
 		!by $de, $20, $9c, $3a, $de, $20, $35, $3a	; "graphic clr:graphic 5:"
+		!by $9e, $20	; "sys "
+		!by '0' + entry % 10000 / 1000
+		!by '0' + entry %  1000 /  100
+		!by '0' + entry %   100 /   10
+		!by '0' + entry %    10
+		!by $3a, $8f, $20	; ":rem "
+		!pet "saufbox!", 0
+line2		!wo 0
 }
 
 !macro arch_wait_X_frames {

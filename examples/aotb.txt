@@ -1,8 +1,5 @@
-#!/bin/cat
-# this is no python source, the file is only
-# called *.py to have syntax coloring!
 
-# see "example.py" for help about the command syntax in this file.
+# see "example.txt" for help about the command syntax in this file.
 
 # symbolic constants:
 define FALSE	0

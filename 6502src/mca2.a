@@ -112,23 +112,9 @@
 
 ; -- start of program binary --
 
-	* = load_addr
-!if MAKE_BASIC_HEADER {
-		!wo line2, 2017
-		+arch_basicstuff	; add architecture-specific basic instructions
-		!by $9e, $20	; "sys "
-		!by '0' + entry % 10000 / 1000
-		!by '0' + entry %  1000 /  100
-		!by '0' + entry %   100 /   10
-		!by '0' + entry %    10
-		!by $3a, $8f, $20	; ":rem "
-		!pet "saufbox!", 0
-line2		!wo 0
-} else {
-		+arch_header
-}
+	+arch_header
 ; main program
-entry ; entry point for SYS
+entry ; entry point, called by header
 		; init
 		cld
 		tsx

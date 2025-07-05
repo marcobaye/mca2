@@ -1,6 +1,3 @@
-#!/bin/cat
-# this is no python source, the file is only
-# called *.py to have syntax coloring!
 
 # simple file format to describe game:
 # file is parsed line-by-line

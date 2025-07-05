@@ -1,8 +1,7 @@
-;ACME 0.96.2
+;ACME 0.97
 ; architecture-specific stuff for FIXME-WHATEVER
 
 ; config
-	MAKE_BASIC_HEADER	= 0	; set to nonzero to create a CBM-style basic header
 	ALLOW_CURSOR		= 0	; set to nonzero to allow cursor navigation (currently needs petscii codes)
 	ALLOW_KEYPAD		= 1	; set to nonzero to allow keypad navigation
 	INCLUDE_CHARSET		= 0	; set to nonzero to include own charset
@@ -31,9 +30,6 @@
 ; system area
 !addr	is_PAL		= $0815	; zero for NTSC, nonzero for PAL (needed so "delay" can convert seconds to video frames)
 
-; other
-	load_addr	= $1000	; program counter at start of assembly
-
 ; kernal
 !addr	sys_chrout	= $ffd2	; system function to output a character - MUST PRESERVE A/X/Y!
 !addr	sys_getin	= $ffe4	; system function to read a character from keyboard
@@ -59,15 +55,11 @@
 
 ; code macros
 
-; if architecture uses MAKE_BASIC_HEADER, this macro will be called just before
-; generating the SYS instruction, so you can insert other instructions
-!macro arch_basicstuff {
-		!by $99, $22, $58, $22, $3a	; print"x":
-}
-
-; if architecture does NOT use MAKE_BASIC_HEADER, this macro will be called to
-; create your own program header. enter the program with a jump to "entry".
+; this macro will be called to create your own program header.
+; enter the program with a jump to "entry".
 !macro arch_header {
+	* = $1000 - 2
+	!wo $1000	; manually create load address
 		jsr entry
 		jmp $4711	; return to shell
 }

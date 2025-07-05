@@ -2,7 +2,6 @@
 ; architecture-specific stuff for C16/+4
 
 ; config
-	MAKE_BASIC_HEADER	= 1
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 0
 	INCLUDE_CHARSET		= 1
@@ -38,7 +37,6 @@
 !addr	SCREEN		= $0c00	; FIXME - default value! when changing this, add code to tell system and ted!
 
 ; other
-	load_addr	= $1001
 !addr	CHARGEN		= $d400	; FIXME - default value for lower/upper! when changing this, add code to tell ted!
 
 ; i/o (FIXME - create proper library files!)
@@ -74,6 +72,21 @@
 
 ; code macros
 
+!macro arch_header {
+	* = $1001 - 2
+	!wo $1001	; manually create load address
+		!wo line2, 2025
+		!by $de, $20, $9c, $3a	; "graphic clr:"
+		!by $9e, $20	; "sys "
+		!by '0' + entry % 10000 / 1000
+		!by '0' + entry %  1000 /  100
+		!by '0' + entry %   100 /   10
+		!by '0' + entry %    10
+		!by $3a, $8f, $20	; ":rem "
+		!pet "saufbox!", 0
+line2		!wo 0
+}
+
 !macro arch_bulk {
 ; look-up table to convert vic colors to matching ted color/luma combo
 ted_colors	!by $00, $71, $22, $63, $44, $45, $26, $67
@@ -104,10 +117,6 @@ sys_chrout ;
 		ldx #MODIFIED8	: .tmp_x = * - 1
 		ldy #MODIFIED8	: .tmp_y = * - 1
 		rts
-}
-
-!macro arch_basicstuff {
-		!by $de, $20, $9c, $3a	; "graphic clr:"
 }
 
 !macro arch_wait_X_frames {

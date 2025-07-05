@@ -1,8 +1,7 @@
-;ACME 0.96.2
-; architecture-specific stuff for FIXME-WHATEVER
+;ACME 0.97
+; architecture-specific stuff for the Steckschwein computer
 
 ; config
-	MAKE_BASIC_HEADER	= 0	; set to nonzero to create a CBM-style basic header
 	ALLOW_CURSOR		= 1	; set to nonzero to allow cursor navigation (currently needs petscii codes)
 	ALLOW_KEYPAD		= 0	; set to nonzero to allow keypad navigation
 	INCLUDE_CHARSET		= 0	; set to nonzero to include own charset
@@ -73,8 +72,6 @@ screen_buffer=$df00
 ; system area
 !addr	is_PAL		= $0815	; zero for NTSC, nonzero for PAL (needed so "delay" can convert seconds to video frames)
 
-; other
-	load_addr	= $1000	; program counter at start of assembly
 
 ; kernal
 !addr	sys_chrout	= sw_chrout	; system function to output a character - MUST PRESERVE A/X/Y!
@@ -101,9 +98,11 @@ screen_buffer=$df00
 
 ; code macros
 
-; if architecture does NOT use MAKE_BASIC_HEADER, this macro will be called to
-; create your own program header. enter the program with a jump to "entry".
+; this macro will be called to create your own program header.
+; enter the program with a jump to "entry".
 !macro arch_header {
+	* = $1000 - 2
+	!wo $1000	; manually create load address
 	!cpu 65c02
 		jsr entry
 		jmp (address($da))	; return to shell

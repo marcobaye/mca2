@@ -2,7 +2,6 @@
 ; architecture-specific stuff for C64
 
 ; config
-	MAKE_BASIC_HEADER	= 1
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 0
 	INCLUDE_CHARSET		= 1
@@ -39,7 +38,6 @@
 !addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
 
 ; other
-	load_addr	= $0801
 !addr	VICBANK		= $c000
 !addr	SCREEN		= VICBANK + $0c00	; screen at $cc00
 !addr	CHARGEN		= VICBANK + $1000	; charset at $d000
@@ -73,8 +71,18 @@
 
 ; code macros
 
-!macro arch_basicstuff {
-		; nothing needed
+!macro arch_header {
+	* = $0801 - 2
+	!wo $0801	; manually create load address
+		!wo line2, 2025
+		!by $9e, $20	; "sys "
+		!by '0' + entry % 10000 / 1000
+		!by '0' + entry %  1000 /  100
+		!by '0' + entry %   100 /   10
+		!by '0' + entry %    10
+		!by $3a, $8f, $20	; ":rem "
+		!pet "saufbox!", 0
+line2		!wo 0
 }
 
 !macro arch_wait_X_frames {

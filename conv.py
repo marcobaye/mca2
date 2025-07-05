@@ -1072,14 +1072,6 @@ class converter(object):
                 self.process_line(line)
             self.code_close()   # make sure last text/code sequence is terminated
 
-def main():
-    if len(sys.argv) != 2:
-        print('Error: wrong number of arguments', file=sys.stderr)
-        sys.exit(1)
-    source_file = sys.argv[1]
-    conv = converter()
-    conv.parse_file(source_file)
-    conv.output()
 
 if __name__ == '__main__':
-    main()
+    sys.exit("This file is a library, it cannot be run.")

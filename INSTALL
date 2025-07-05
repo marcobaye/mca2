@@ -1,0 +1,20 @@
+
+To run this program, you'll need:
+ - Python (at least version 3)
+ - ACME (at least version 0.97)
+
+
+To be able to run this program from any directory, you need to include
+it in your search path:
+
+For example, if you have checked out this repository to
+	/home/USERNAME/githubrepos/mca2
+then enter this to add the start program to the search path:
+
+	cd
+	mkdir bin	(..."already exists" errors can be ignored)
+	cd bin
+	ln -s ../githubrepos/mca2/mca2.py .
+
+now logout, and when you login again, "mca2.py" should be available
+whenever you open a terminal.
