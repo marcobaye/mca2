@@ -26,6 +26,7 @@ import sys
 #   but option 2 seems simpler because option 1 would need some way to indicate "no code here, defined later!"
 # TODO: cleanup line "preprocessor"
 
+MAX_ERROR_COUNT = 5 # give up after this many errors
 
 # mapping operators from source format to macro format:
 operators = {
@@ -277,7 +278,7 @@ class converter(object):
     """converts MCA2 source to ACME source"""
 
     def __init__(self):
-        self.allowed_errors = 5 # converter stops after this many errors
+        self.error_count = 0    # converter stops when this exceeds MAX_ERROR_COUNT
         self.in_comment = False # for c-style multi-line comments
         self.text_mode = False  # needed to add command prefix and trailing NUL char
         self.codeseq = None # needed to track locations/procedures/combinations/usages
@@ -382,9 +383,9 @@ class converter(object):
 
     def error(self, msg):
         message('Error: ' + msg)
-        if self.allowed_errors == 0:
-            sys.exit(1)
-        self.allowed_errors -= 1
+        self.error_count += 1
+        if self.error_count >= MAX_ERROR_COUNT:
+            sys.exit("Giving up.")
 
     def warning_line(self, msg):
         warning('in line %d: %s!' % (self.line_number, msg))
@@ -1111,6 +1112,8 @@ class converter(object):
                         line = line[:-1]
                 self.process_line(line)
             self.code_close()   # make sure last text/code sequence is terminated
+        if self.error_count:
+            sys.exit(1) # give up because of error(s)
 
 
 if __name__ == '__main__':
