@@ -794,7 +794,11 @@ class converter(object):
         num = self.get_value(start_value)   # get actual number for start value     FIXME - move this to some pre-processor
         self.add_symbol_definition(variable(name, num))
 
-    def process_npcitem_line(self, line, objtype):
+    def process_var_line(self, line):
+        """ "var" lines are now "u16" lines """
+        self.process_u16_line(line)
+
+    def process_npcitem(self, line, objtype):
         """declare npc or item for player to interact with"""
         self.code_close()   # close previous code sequence, if there was one
         name, initial_location, weight, game_name = self.get_args(line, 4)
@@ -810,6 +814,10 @@ class converter(object):
         self.add_symbol_reference(initial_location, location)
         # make current
         npcitem.set_description(self.code_open())
+    def process_npc_line(self, line):
+        self.process_npcitem(line, npc)
+    def process_item_line(self, line):
+        self.process_npcitem(line, item)
 
     def process_delay_line(self, line):
         """wait for given number of .1 seconds"""
@@ -1007,56 +1015,18 @@ class converter(object):
         else:
             # everything else should start with a keyword...
             key = line[0]
-            if key == 'asm':
-                self.process_asm_line(line)
-            elif key == 'define':
-                self.process_define_line(line)
-            elif key == 'enum':
-                self.process_enum_line(line)
-            elif key in ('u16', 'var'):
-                self.process_u16_line(line)
-            elif key == 'inc':
+            if key == 'inc':
                 self.process_incdec_line('varinc', line)
             elif key == 'dec':
                 self.process_incdec_line('vardec', line)
-            elif key == 'npc':
-                self.process_npcitem_line(line, npc)
-            elif key == 'item':
-                self.process_npcitem_line(line, item)
-            elif key == 'move':
-                self.process_move_line(line)
-            elif key == 'gain':
-                self.process_gain_line(line)
-            elif key == 'hide':
-                self.process_hide_line(line)
-            elif key == 'delay':
-                self.process_delay_line(line)
-            elif key == 'while':
-                self.process_while_line(line)
-            elif key == 'endwhile':
-                self.process_endwhile_line(line)
-            elif key == 'if':
-                self.process_if_line(line)
-            elif key == 'elif':
-                self.process_elif_line(line)
-            elif key == 'else':
-                self.process_else_line(line)
-            elif key == 'endif':
-                self.process_endif_line(line)
             elif key == 'loc':
                 self.current_location = self.process_proc_loc_line(line, location)
-            elif key == 'use':
-                self.process_use_line(line)
             elif key == 'combine':
                 self.process_combi_line(line)
             elif key == 'using':    # older form of "combine"
                 self.process_combi_line(line)
             elif key == 'proc':
                 self.process_proc_loc_line(line, procedure)
-            elif key == 'callproc':
-                self.process_callproc_line(line)
-            elif key == 'callasm':
-                self.process_callasm_line(line)
             elif key == 'n':
                 self.process_dir_line('north', line)
             elif key == 'n2':
@@ -1097,7 +1067,11 @@ class converter(object):
                 # ...or is an assignment to a variable
                 self.process_let_line(line)
             else:
-                self.error_line('Line type not recognised')
+                handler = getattr(converter, "process_" + key + "_line", None)
+                if handler:
+                    handler(self, line)
+                else:
+                    self.error_line('Line type not recognised')
         #debug:
         #self.codeseq.code.append(str(indents) + line)
 
