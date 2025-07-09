@@ -604,52 +604,50 @@ class converter(object):
 
     # helper functions to parse lines:
     def preprocess(self, line_in):
-        """count and remove indentation characters, remove comments"""
-        indents = 1 # leading prefix for binary space/tab bit pattern
-        count_indents = True
+        """remove comments, return remainder of line as a list of tokens"""
+        result = []
+        token = ''
         quotes = None
-        line_out = ['']
         for char in line_in:
-            # count indentation
-            if count_indents:
-                if char == ' ':
-                    indents <<= 1   # append 0 bit
-                    continue;
-                elif char == '\t':
-                    indents = (indents << 1) + 1    # append 1 bit
-                    continue;
-                else:
-                    count_indents = False
+            cc = ord(char)
             # do not change anything inside strings:
             if quotes != None:
-                # we're inside quotes, so check for end of quotes:
-                if char == quotes:
+                # we're inside quotes
+                # FIXME - check for backslash escapes!
+                token += char
+                # check for end of quotes:
+                if cc == quotes:
                     quotes = None   # found end of quotes
-                line_out[-1] += char
+                    result.append(token)
+                    token = ''
                 continue
             # we're not inside quotes, so check for quotes:
-            if char == '"' or char == "'":
-                quotes = char
-                line_out[-1] += char
+            if cc == 34 or cc == 39:
+                quotes = cc
+                # start a new token:
+                if token:
+                    result.append(token)
+                token = char
                 continue    # do not remove '#' in strings
             # check for comments:
-            if char == '#':
+            if cc == 35:
                 break   # remove comment
-            # separator?
-            if char == ' ' or char == '\t':
-                if line_out[-1] != '':
-                    line_out.append('')
+            # whitespace? then start a new token:
+            if cc == 32 or cc == 9:
+                if token:
+                    result.append(token)
+                    token = ''
                 continue
-            line_out[-1] += char
+            # TODO: add checks so "identifier=9" is split into three tokens!
+            token += char
         if quotes != None:
             self.error_line('quotes still open at end of line')
-        if line_out[-1] == '':
-            line_out = line_out[:-1]
+        if token:
+            result.append(token)
         # subst
-        for idx in range(0, len(line_out)):
-            if line_out[idx] in self.subst:
-                line_out[idx] = self.subst[line_out[idx]]
-        return indents, line_out
+        for idx in range(0, len(result)):
+            result[idx] = self.subst.get(result[idx], result[idx])
+        return result
 
     def get_args(self, line, howmany):
         """ensure correct number of args and return them"""
@@ -994,9 +992,7 @@ class converter(object):
     def process_line(self, line):
         """process a single line of input"""
         self.line_number += 1
-        indents, line = self.preprocess(line)
-        #print indents, line
-        #return
+        line = self.preprocess(line)
         # ignore empty lines
         if line == []:
             return
@@ -1073,7 +1069,7 @@ class converter(object):
                 else:
                     self.error_line('Line type not recognised')
         #debug:
-        #self.codeseq.code.append(str(indents) + line)
+        #self.codeseq.code.append(line)
 
     def parse_file(self, filename):
         with open(filename, 'r') as file:
