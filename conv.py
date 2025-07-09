@@ -356,7 +356,7 @@ class converter(object):
             return
 
         if not isinstance(self.definitions[name], objtype):
-            self.error_line('object "' + name + '" if of wrong type (defined on line ' + str(self.definitions[name].defline) + ').')
+            self.error_line('object "' + name + '" is of wrong type (defined on line ' + str(self.definitions[name].defline) + ').')
             return
 
         self.add_symbol_reference(name, objtype)
