@@ -2,6 +2,39 @@
 
 import sys
 
+def open_for_reading(filename, encoding):
+    """wrapper fn to get nicer error message"""
+    try:
+        fd = open(filename, "rt", encoding=encoding)
+    except Exception as e:
+        sys.exit("Error: Cannot open input file: " + str(e))
+    return fd
+
+def check_encoding(filename, encoding):
+    """check if file adheres to ASCII/UTF8/other limitations"""
+    fd = open_for_reading(filename, encoding)
+    #print("Trying", encoding)
+    with fd as fd:
+        try:
+            contents = fd.readlines()
+        except UnicodeDecodeError as e:
+            return False
+    return True
+
+def find_encoding(filename):
+    """find out if file is UTF-8 or not"""
+    if check_encoding(filename, "ascii"):
+        return "ascii"
+    if check_encoding(filename, "utf-8"):
+        return "utf-8"
+    # at this point we can't really tell all the remaining 8-bit encodings
+    # apart. I guess iso-8859/1 would be the most likely, so let's use the
+    # Windows-style superset just in case some of the fancy quotes were used:
+    if check_encoding(filename, "cp1252"):
+        return "cp1252"
+    # this is more or less impossible:
+    sys.exit("Error: Encoding of input file not recognized.")
+
 #   list of classes linked to name:
 #       line_keyword?   (defined at startup, body is function to handle line)
 #       userdefined (defined by user in file: has line number)  except PLAYER, INVENTORY, etc...
@@ -290,6 +323,7 @@ class converter(object):
         self.ordered_defs = []  # helper list so order of definitions is kept
         self.references = dict()
         self.current_location = None    # name of "current" location, for backlinks
+        self.musthaves = {} # collects a few flags so user can be told what is missing
 
         # create some pre-defined stuff:
         # special value for lines below
@@ -683,6 +717,8 @@ class converter(object):
         """line to pass to assembler unchanged"""
         if self.codeseq != None:
             self.error_line('Please put "asm" lines before all npcs/items/locations/procedures/usages/combinations')
+        if line[1] in ("DEUTSCH", "color_std", "color_border", "color_background", "color_emph", "color_out"):
+            self.musthaves[line[1]] = True
         self.add_code(' '.join(line[1:]))
 
     def process_text_line(self, line):
@@ -714,7 +750,7 @@ class converter(object):
         self.add_symbol_definition(co)
         co.set_code(self.code_open())
 
-    def process_proc_loc_line(self, line, objtype):
+    def proc_loc_line(self, line, objtype):
         """new procedure or location"""
         self.code_close()   # close previous code sequence, if there was one
         name = self.get_args(line, 1)[0]
@@ -722,6 +758,14 @@ class converter(object):
         self.add_symbol_definition(obj)
         obj.set_code(self.code_open())
         return name
+
+    def process_loc_line(self, line):
+        """new location"""
+        self.current_location = self.proc_loc_line(line, location)
+
+    def process_proc_line(self, line):
+        """new procedure"""
+        self.proc_loc_line(line, procedure)
 
     def process_callproc_line(self, line):
         """call procedure"""
@@ -815,6 +859,7 @@ class converter(object):
     def process_npc_line(self, line):
         self.process_npcitem(line, npc)
     def process_item_line(self, line):
+        self.musthaves["item"] = True
         self.process_npcitem(line, item)
 
     def process_delay_line(self, line):
@@ -992,6 +1037,15 @@ class converter(object):
     def process_line(self, line):
         """process a single line of input"""
         self.line_number += 1
+        # if there is a BOM, ignore it
+        # (only really needed for first line of file)
+        if len(line) and line[0] == chr(0xfeff):
+            line = line[1:]
+        # remove (CR)LF:
+        if len(line) and line[-1] == '\n':
+            line = line[:-1]
+        if len(line) and line[-1] == '\r':
+            line = line[:-1]
         line = self.preprocess(line)
         # ignore empty lines
         if line == []:
@@ -1015,14 +1069,10 @@ class converter(object):
                 self.process_incdec_line('varinc', line)
             elif key == 'dec':
                 self.process_incdec_line('vardec', line)
-            elif key == 'loc':
-                self.current_location = self.process_proc_loc_line(line, location)
             elif key == 'combine':
                 self.process_combi_line(line)
             elif key == 'using':    # older form of "combine"
                 self.process_combi_line(line)
-            elif key == 'proc':
-                self.process_proc_loc_line(line, procedure)
             elif key == 'n':
                 self.process_dir_line('north', line)
             elif key == 'n2':
@@ -1072,18 +1122,31 @@ class converter(object):
         #self.codeseq.code.append(line)
 
     def parse_file(self, filename):
-        with open(filename, 'r') as file:
+        encoding = find_encoding(filename)
+        if encoding == "ascii":
+            self.only_ascii = True
+            self.add_code("UTF8 = 0")
+        else:
+            self.only_ascii = False
+            self.add_code("UTF8 = 1")
+        with open_for_reading(filename, encoding=encoding) as file:
             for line in file:
-                if len(line):
-                    if line[-1] == '\n':
-                        line = line[:-1]
-                if len(line):
-                    if line[-1] == '\r':
-                        line = line[:-1]
                 self.process_line(line)
             self.code_close()   # make sure last text/code sequence is terminated
         if self.error_count:
             sys.exit(1) # give up because of error(s)
+        # check must-haves:
+        if "DEUTSCH" not in self.musthaves:
+            sys.exit('You need a "asm DEUTSCH = 0" (or 1) line in your game definition file.')
+        if "item" not in self.musthaves:
+            sys.exit('You need to define at least one item in your game definition file.')
+        for color in ("color_std", "color_border", "color_background", "color_emph", "color_out"):
+            if color not in self.musthaves:
+                sys.exit("You need to define " + color + " in your game definition file.")
+        if "intro" not in self.definitions:
+            sys.exit('You need to define "proc intro" in your game definition file.')
+        if "start" not in self.definitions:
+            sys.exit('You need to define "loc start" in your game definition file.')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,17 @@
+
+	asm	color_std	= color_GREEN
+	asm	color_emph	= color_LGREEN
+	asm	color_out	= color_GRAY1
+	asm	color_border	= color_BLACK
+	asm	color_background	= color_BLACK
+	asm	DEUTSCH		= 0
+
+item thingy INVENTORY small "watchamacallit"
+	"A strange thing."
+
+proc intro
+	"this is the intro text!"
+	callasm	get_key
+
+loc start
+	"This is the start location."
