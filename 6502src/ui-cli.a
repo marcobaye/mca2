@@ -1,0 +1,7 @@
+;ACME 0.97
+
+; "command line interface"
+
+!ifndef MCA2_USE_CLI	!eof
+
+	NUMBER_OF_DIRECTIONS	= 10

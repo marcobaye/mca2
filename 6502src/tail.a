@@ -1,4 +1,4 @@
-;ACME 0.96.2
+;ACME 0.97
 
 ; add architecture-specific stuff (helper functions, tables etc.)
 	+arch_bulk
@@ -15,9 +15,9 @@ softstack_lo
 softstack_hi
 	* = * + MAX_RECURSIONS
 directions_lo
-	* = * + 6	; n/s/w/e/u/d
+	* = * + NUMBER_OF_DIRECTIONS	; n/s/w/e/u/d	TODO: add ne/se/sw/nw
 directions_hi
-	* = * + 6	; n/s/w/e/u/d
+	* = * + NUMBER_OF_DIRECTIONS	; n/s/w/e/u/d	TODO: add ne/se/sw/nw
 gamevars_lo
 	* = * + gamevars_COUNT
 gamevars_hi

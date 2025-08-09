@@ -1,0 +1,424 @@
+;ACME 0.97
+
+; "multiple choice" interface
+
+!ifdef MCA2_USE_CLI	!eof
+
+	NUMBER_OF_DIRECTIONS	= 6
+
+!if DEUTSCH {
+	!macro i18n_HELP {
+		jsr my_primm	: !tx cr
+		!tx "Mögliche Befehle:", cr, color_emph
+		!tx "  Nord Süd West Ost Hoch Runter", cr
+		!tx "  Inventar(=F3) Grabsch Verliere", cr
+		!tx "  Untersuche Benutze Kombiniere", cr, color_std
+		!tx "Immer nur den ersten Buchstaben tippen!", cr
+		!tx "CLR/HOME(=F1) baut den Bildschirm neu auf.", cr
+		!tx "Zum Bewegen können auch "
+		!if ALLOW_CURSOR {
+			!tx "die Cursortasten und "
+		}
+		!tx "+/- benutzt werden"
+		!if ALLOW_KEYPAD {
+			!tx ", außerdem die Zehnertastatur"
+		}
+		!tx ".", cr, 0
+	}
+	i18n_COMMAND_CHARACTERS	= "?nswohrigvubk"	; hilfe, nord, süd, west, ost, hoch, runter, inventar, grabsch, verliere, untersuche, benutze, kombiniere
+	i18n_WRONG_KEY		= "(falsche Taste, drück '?' für Hilfe)"
+	i18n_TAKE		= "Grabsch:"
+	i18n_NOTHING_TO_TAKE	= " Nichts da zum Grabschen!"
+	i18n_NOTHING_TAKEN	= "- nichts gegrabscht!"
+	i18n_TOOK_IT		= "Ok, gegrabscht!"
+	i18n_LOSE		= "Verliere:"
+	i18n_NOTHING_TO_LOSE	= " Nichts da zum Verlieren!"
+	i18n_NOTHING_LOST	= "- nichts verloren!"
+	i18n_LOST_IT		= "Ok, verloren!"
+	i18n_EXAMINE		= "Untersuche:"
+	i18n_NOTHING_TO_EXAMINE	= " Nichts da zum Untersuchen!"
+	i18n_NOTHING_EXAMINED	= "- nichts untersucht!"
+	i18n_USE		= "Benutze:"
+	i18n_NOTHING_TO_USE	= " Nichts da zum Benutzen!"
+	i18n_NOTHING_USED	= "- nichts benutzt!"
+	i18n_COMBINE		= "Kombiniere:"
+	i18n_NOTHING_TO_COMBINE	= " Nichts da zum Kombinieren!"
+	i18n_NOTHING_COMBINED	= "- nichts kombiniert!"
+	i18n_WITH		= " mit:"
+} else {
+	!macro i18n_HELP {
+		jsr my_primm	: !tx cr
+		!tx "Allowed commands:", cr
+		!tx "  North South West East Up Down", cr
+		!tx "Inventory(=F3) Take Lose", cr
+		!tx "eXamine Apply Combine", cr
+		!tx "Type the first character only!", cr
+		!tx "CLR/HOME(=F1) will redisplay the screen.", cr
+		!tx "Moving around can also be done using "
+		!if ALLOW_CURSOR {
+			!tx "the cursor keys and "
+		}
+		!tx "the +/- keys"
+		!if ALLOW_KEYPAD {
+			!tx ", and the numerical keypad is also possible"
+		}
+		!tx ".", cr, 0
+	}
+	i18n_COMMAND_CHARACTERS	= "?nsweuditlxac"	; help, north, south, west, east, up, down, inventory, take, lose, examine, apply, combine
+	i18n_WRONG_KEY		= "(wrong key, press '?' for help)"
+	i18n_TAKE		=  "Take:"
+	i18n_NOTHING_TO_TAKE	= " There is nothing to take!"
+	i18n_NOTHING_TAKEN	= "- nothing taken!"
+	i18n_TOOK_IT		= "Ok, took it!"
+	i18n_LOSE		= "Lose:"
+	i18n_NOTHING_TO_LOSE	= " There is nothing to lose!"
+	i18n_NOTHING_LOST	= "- nothing lost!"
+	i18n_LOST_IT		= "Ok, lost it!"
+	i18n_EXAMINE		= "Examine:"
+	i18n_NOTHING_TO_EXAMINE	= " There is nothing to examine!"
+	i18n_NOTHING_EXAMINED	= "- nothing examined!"
+	i18n_USE		= "Use:"
+	i18n_NOTHING_TO_USE	= " There is nothing to use!"
+	i18n_NOTHING_USED	= "- nothing used!"
+	i18n_COMBINE		= "Combine:"
+	i18n_NOTHING_TO_COMBINE	= " There is nothing to combine!"
+	i18n_NOTHING_COMBINED	= "- nothing combined!"
+	i18n_WITH		= " with:"
+}
+
+; actual main loop for this UI:
+!macro ui_mainloop {
+		; wait for command
+.get			jsr show_paths
+			jsr get_key
+			ldx #0
+--				cmp keys_start, x
+				bne +
+					; found, so call action handler
+					lda action_lo, x
+					sta .call
+					lda action_hi, x
+					sta .call + 1
+					jsr MODIFIED16	: .call = * - 2
+					jmp .get
++				inx
+				cpx #keys_end - keys_start
+				bne --
+			+primm [ i18n_WRONG_KEY, cr ]
+			jmp .get
+}
+
+; stuff called by this UI's mainloop:
+!macro ui_bulk {
+
+help ; "?" command
+		+i18n_HELP
+		rts
+
+!ct raw {
+	!if KEYBOARD_IS_PETSCII {
+		!ct pet	; if sys_getin returns petscii, use petscii for these tables as well:
+	}
+
+keys_start
+		!if ALLOW_CURSOR {
+			!tx controlcode_UP, controlcode_DOWN, controlcode_LEFT, controlcode_RIGHT
+		}
+		!tx "+-"
+		!if ALLOW_KEYPAD {
+			!tx "82465"
+		}
+		!tx controlcode_CLEAR, controlcode_HOME, petscii_F1, petscii_F3	; FIXME - move F1/F3 to arch macro!
+		!tx i18n_COMMAND_CHARACTERS
+keys_end
+}	; back to standard encoding
+
+action_lo
+		!if ALLOW_CURSOR {
+			!by <go_n, <go_s, <go_w, <go_e
+		}
+		!by <go_u, <go_d
+		!if ALLOW_KEYPAD {
+			!by <go_n, <go_s, <go_w, <go_e, <redisp
+		}
+		!by <redisp, <redisp, <redisp, <inventory
+		!by <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <use, <combine
+action_hi
+		!if ALLOW_CURSOR {
+			!by >go_n, >go_s, >go_w, >go_e
+		}
+		!by >go_u, >go_d
+		!if ALLOW_KEYPAD {
+			!by >go_n, >go_s, >go_w, >go_e, >redisp
+		}
+		!by >redisp, >redisp, >redisp, >inventory
+		!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >use, >combine
+
+; "redisplay" command
+	redisp = engine_new_location
+
+; direction commands
+go_n		ldx #offset_NORTH
+		+bit16
+go_s		ldx #offset_SOUTH
+		+bit16
+go_w		ldx #offset_WEST
+		+bit16
+go_e		ldx #offset_EAST
+		+bit16
+go_u		ldx #offset_UP
+		+bit16
+go_d		ldx #offset_DOWN
+		lda directions_hi, x
+		bne +
+			; player chose an illegal direction
+			jsr indent1
+			+primm [ i18n_ILLEGAL_DIRECTION, cr ]
+			rts
++		tay
+		lda directions_lo, x
+		sty gamevars_hi + vo_PLAYER
+		sta gamevars_lo + vo_PLAYER
+		jmp engine_new_location
+
+inventory ; "inventory" command
+		+primm [ i18n_ITEMS_IN_INV ]
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA_new
+		jmp itemlist_list
+
+take ; "take" command
+		+primm [ i18n_TAKE, cr ]
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_at_YYAA_new	; returns number in Y, A and Z ;)
+		bne +
+			+primm [ i18n_NOTHING_TO_TAKE, cr ]
+			rts
++		ldx #1	; yes, do size checking
+		jsr itemlist_menu_X_X	; returns first illegal index in X
+		jsr select	; returns status in C and maybe index in X
+		bcc +
+			+primm [ i18n_NOTHING_TAKEN, cr ]
+			rts
++		+primm [ ":", cr ]
+		; check size
+		lda npcitem_weight, x
+		bpl +
+			+primm [ i18n_CANNOT_TAKE_THAT, cr ]
+			rts
++		; take: set item's location to INVENTORY
+		lda #>location_INVENTORY
+		sta gamevars_hi, x
+		lda #<location_INVENTORY
+		sta gamevars_lo, x
+		+primm [ i18n_TOOK_IT, cr ]
+		rts
+
+lose ; "lose" command
+		+primm [ i18n_LOSE, cr ]
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA_new	; returns number in Y, A and Z ;)
+		bne +
+			+primm [ i18n_NOTHING_TO_LOSE, cr ]
+			rts
++		ldx #0	; no size check
+		jsr itemlist_menu_X_X	; returns first illegal index in X
+		jsr select	; returns status in C and maybe index in X
+		bcc +
+			+primm [ i18n_NOTHING_LOST, cr ]
+			rts
++		+primm [ ":", cr ]
+		; drop: copy player's location to item's location
+		lda gamevars_hi + vo_PLAYER
+		sta gamevars_hi, x
+		lda gamevars_lo + vo_PLAYER
+		sta gamevars_lo, x
+		+primm [ i18n_LOST_IT, cr ]
+		rts
+
+examine ; "examine" command
+		+primm [ i18n_EXAMINE, cr ]
+		; get list of items at location
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_at_YYAA_new
+		; extend list with items in inventory
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA_add	; returns number in Y, A and Z ;)
+		bne +
+			+primm [ i18n_NOTHING_TO_EXAMINE, cr ]
+			rts
++		ldx #0	; no size check
+		jsr itemlist_menu_X_X	; returns first illegal index in X
+		jsr select	; returns status in C and maybe index in X
+		bcc +
+			+primm [ i18n_NOTHING_EXAMINED, cr ]
+			rts
++		+primm [ ":", cr ]
+		; examine: execute item's description code
+		jsr indent1
+		jsr engine_describe_X
+		+primm [ color_std, cr ]
+		rts
+
+use ; "use" command
+		+primm [ i18n_USE, cr ]
+		; get list of items in inventory
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA_new
+		; extend list with items at location
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_at_YYAA_add	; returns number in Y, A and Z ;)
+		bne +
+			+primm [ i18n_NOTHING_TO_USE, cr ]
+			rts
++		ldx #0	; no size check
+		jsr itemlist_menu_X_X	; returns first illegal index in X
+		jsr select	; returns status in C and maybe index in X
+		bcc +
+.no_use			+primm [ i18n_NOTHING_USED, cr ]
+			rts
++		+primm [ ":", cr ]
+		; use: execute item's usage code
+		jsr indent1
+		jsr engine_use_X
+		jmp end_of_use_and_combine
+
+combine ; "combine" command
+		+primm [ i18n_COMBINE, cr ]
+		; get list of items in inventory
+		ldy #>location_INVENTORY
+		lda #<location_INVENTORY
+		jsr itemlist_at_YYAA_new
+		; extend list with items at location
+		ldy gamevars_hi + vo_PLAYER
+		lda gamevars_lo + vo_PLAYER
+		jsr itemlist_at_YYAA_add	; returns number in Y, A and Z ;)
+		bne +
+			+primm [ i18n_NOTHING_TO_COMBINE, cr ]
+			rts
++		; choose first item
+		ldx #0	; no size check
+		jsr itemlist_menu_X_X	; returns first illegal index in X
+		jsr select	; returns status in C and maybe index in X
+		bcc +
+.no_combi		+primm [ i18n_NOTHING_COMBINED, cr ]
+			rts
++		stx .hinz
+		; choose second item
+		; FIXME - inhibit "use X with X"!
+		+primm [ i18n_WITH, cr ]
+		ldx #0	; no size check
+		jsr itemlist_menu_X_X	; returns first illegal index in X
+		jsr select	; returns status in C and maybe index in X
+		bcs .no_combi
+		;stx .kunz
+		+primm [ ":", cr ]
+		lda #MODIFIED8	: .hinz = * - 1
+		; use: call engine with both items
+		jsr engine_combine_A_with_X
+end_of_use_and_combine
+		bcc +
+			+primm [ i18n_DOES_NOT_WORK, cr ]
++		rts
+
+!zone
+select ; ask user to select one of the items in the current list (X must be first illegal index)
+		stx .limit
+		jsr get_key
+		sec
+!if KEYBOARD_IS_PETSCII {
+	!ct pet	; if sys_getin returns petscii, use petscii for comparison character as well:
+}
+		sbc #'a'	; might be either petscii or ascii/iso/utf8
+	!ct raw	; back to standard
+		bcc .illegal_key
+		cmp #MODIFIED8	: .limit = * - 1
+		bcs .illegal_key
+		tax	; remember index (list offset)
+		clc
+		adc #'a'	; ascii/iso/utf8 'a'
+		jsr my_chrout
+		; convert list offset to item offset
+		lda itemlist_buf, x
+		tax
+		; return result
+		clc	; ok
+		rts
+.illegal_key	sec	; fail
+		rts
+
+!zone
+itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!)
+; X says whether to do size check on items (influences color)
+; X returns limiting (illegal) index
+		stx .size_check
+		lda itemlist_len
+		cmp #LIST_LEN_LIMIT	; if too many, limit
+		bcc +
+			lda #LIST_LEN_LIMIT
++		sta .limit
+		jsr indent0
+		lda #'a'	; first list key
+		sta .character
+		lda #0	; start index
+		sta .idx
+---			+primm [ " [" ]
+			lda #color_emph	; set color to "item can be used"
+			jsr my_chrout
+			; check for size?
+			ldx #MODIFIED8	: .size_check = * - 1
+			beq .show_char
+				; check size
+				ldx .idx
+				lda itemlist_buf, x
+				tax
+				lda npcitem_weight, x
+				bpl .show_char
+					; change color to "item cannot be used"
+					lda #color_out
+					jsr my_chrout
+.show_char		jsr my_primm
+.character	!tx MODIFIED8, color_std, "] ", 0
+			ldx #MODIFIED8	: .idx = * - 1
+			lda itemlist_buf, x
+			tax
+			ldy npcitem_name_lo, x
+			lda npcitem_name_hi, x
+			jsr print_AAYY
+			lda #cr
+			jsr my_chrout
+			inc .character
+			inc .idx
+			ldx .idx
+			cpx #MODIFIED8	: .limit = * - 1
+			bne ---
+		rts	; X returns limiting (illegal!) index
+
+show_paths ; output list of possible directions:
+		+primm [ cr, i18n_PATHS, ":" ]
+		ldx #0
+---
+			lda #' '
+			jsr my_chrout	; output separator
+			ldy #color_out
+			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
+			beq +
+				ldy #color_emph
++			tya
+			jsr my_chrout
+			ldy dirs_lo, x
+			lda dirs_hi, x
+			jsr print_AAYY
+			inx
+			cpx #NUMBER_OF_DIRECTIONS
+			bne ---
+		+primm [ color_std, cr, cr ]
+		rts
+}

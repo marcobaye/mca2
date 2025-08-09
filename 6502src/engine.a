@@ -7,28 +7,6 @@
 !addr	MODIFIED16	= $ffff
 	MAX_RECURSIONS	= 64	; ought to be enough for anybody (tm)
 
-!if DEUTSCH {
-	i18n_NO_ITEMS	= " (keine)"
-	i18n_ITEMS	= "Dinge"
-	i18n_PATHS	= "Wege"
-	i18n_NORTH	= "Nord"
-	i18n_SOUTH	= "Süd"
-	i18n_WEST	= "West"
-	i18n_EAST	= "Ost"
-	i18n_UP		= "Hoch"
-	i18n_DOWN	= "Runter"
-} else {
-	i18n_NO_ITEMS	= " (none)"
-	i18n_ITEMS	= "Items"
-	i18n_PATHS	= "Paths"
-	i18n_NORTH	= "North"
-	i18n_SOUTH	= "South"
-	i18n_WEST	= "West"
-	i18n_EAST	= "East"
-	i18n_UP		= "Up"
-	i18n_DOWN	= "Down"
-}
-
 itemlist_at_YYAA_new ; make list of items at a given place
 		ldx #0	; delete old list
 		stx itemlist_len
@@ -84,53 +62,8 @@ none ; show string instead of empty item list
 		+primm [ color_out, i18n_NO_ITEMS, color_std, cr ]
 		rts
 !zone
-itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!)
-; X says whether to do size check on items (influences color)
-; X returns limiting (illegal) index
-		stx .size_check
-		lda itemlist_len
-		cmp #LIST_LEN_LIMIT	; if too many, limit
-		bcc +
-			lda #LIST_LEN_LIMIT
-+		sta .limit
-		jsr indent0
-		lda #'a'	; first list key
-		sta .character
-		lda #0	; start index
-		sta .idx
----			+primm [ " [" ]
-			lda #color_emph	; set color to "item can be used"
-			jsr my_chrout
-			; check for size?
-			ldx #MODIFIED8	: .size_check = * - 1
-			beq .show_char
-				; check size
-				ldx .idx
-				lda itemlist_buf, x
-				tax
-				lda npcitem_weight, x
-				bpl .show_char
-					; change color to "item cannot be used"
-					lda #color_out
-					jsr my_chrout
-.show_char		jsr my_primm
-.character	!tx MODIFIED8, color_std, "] ", 0
-			ldx #MODIFIED8	: .idx = * - 1
-			lda itemlist_buf, x
-			tax
-			ldy npcitem_name_lo, x
-			lda npcitem_name_hi, x
-			jsr print_AAYY
-			lda #cr
-			jsr my_chrout
-			inc .character
-			inc .idx
-			ldx .idx
-			cpx #MODIFIED8	: .limit = * - 1
-			bne ---
-		rts	; X returns limiting (illegal!) index
-
 engine_use_X ; scan "usages" for correct code sequence and execute	FIXME - better use a table than a list!
+; returns C clear for "ok" and C set for "no match"
 		stx .hinz
 		; scan chain
 		lda #<usages
@@ -171,6 +104,7 @@ engine_use_X ; scan "usages" for correct code sequence and execute	FIXME - bette
 !zone
 
 engine_combine_A_with_X ; scan "combinations" for correct code sequence and execute
+; returns C clear for "ok" and C set for "no match"
 		; if A is larger, exchange A and X
 		sta .hinz
 		stx .kunz
@@ -241,7 +175,7 @@ engine_check_restart
 engine_new_location ; show current location
 		; clear directions
 		lda #0
-		ldx #6
+		ldx #NUMBER_OF_DIRECTIONS
 --			sta directions_hi - 1, x	; no need to zero low as well
 			dex
 			bne --
@@ -259,26 +193,6 @@ engine_new_location ; show current location
 		jsr itemlist_at_YYAA_new	; scan items
 		jmp itemlist_list
 
-show_paths ; output list of possible directions:
-		+primm [ cr, i18n_PATHS, ":" ]
-		ldx #0
----
-			lda #' '
-			jsr my_chrout	; output separator
-			ldy #color_out
-			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
-			beq +
-				ldy #color_emph
-+			tya
-			jsr my_chrout
-			ldy dirs_lo, x
-			lda dirs_hi, x
-			jsr print_AAYY
-			inx
-			cpx #6
-			bne ---
-		+primm [ color_std, cr, cr ]
-		rts
 
 
 ; bytecode interpreter:
@@ -345,7 +259,7 @@ CMD_NORTH	= 14	; followed by target address
 CMD_SOUTH	= 15	; followed by target address
 CMD_WEST	= 16	; followed by target address
 CMD_EAST	= 17	; followed by target address
-CMD_UP		= 18		; followed by target address
+CMD_UP		= 18	; followed by target address
 CMD_DOWN	= 19	; followed by target address
 CMDLIMIT	= 20
 
