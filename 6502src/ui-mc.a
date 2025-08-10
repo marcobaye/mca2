@@ -86,9 +86,9 @@
 	i18n_WITH		= " with:"
 }
 
-; actual main loop for this UI:
-!macro ui_mainloop {
-		; wait for command
+!macro ui_main {
+		jsr inventory	; show inventory once without being asked
+		; actual main loop for this UI:
 .get			jsr show_paths
 			jsr get_key
 			ldx #0
@@ -106,14 +106,8 @@
 				bne --
 			+primm [ i18n_WRONG_KEY, cr ]
 			jmp .get
-}
 
-; stuff called by this UI's mainloop:
-!macro ui_bulk {
-
-help ; "?" command
-		+i18n_HELP
-		rts
+; stuff called by main loop:
 
 !ct raw {
 	!if KEYBOARD_IS_PETSCII {
@@ -153,6 +147,10 @@ action_hi
 		}
 		!by >redisp, >redisp, >redisp, >inventory
 		!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >use, >combine
+
+help ; "?" command
+		+i18n_HELP
+		rts
 
 ; "redisplay" command
 	redisp = engine_new_location

@@ -192,6 +192,12 @@ sys_chrout ;
 		rts
 }
 
+; only used by cli interface:
+!macro arch_input {
+arch_input
+		rts	; TODO!
+}
+
 !macro arch_check_memlimit {
 	;!if * >= $a000 {	!error "Reached BASIC ROM. Please add code to disable it." }	; commented out, because Basic ROM is now off anyway
 	!if * >= SCREEN {	!error "Reached screen area. Move screen up in memory!" }

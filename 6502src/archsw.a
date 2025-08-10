@@ -219,6 +219,12 @@ ex:
     rts
 }
 
+; only used by cli interface:
+!macro arch_input {
+arch_input
+		!error "not implemented!"
+}
+
 ; this is called at end of assembly so you can check for memory limits
 !macro arch_check_memlimit {
 	!if * >= $d000 {	!error "Reached kernal area, overwriting it! Shorten program or kernal!" }

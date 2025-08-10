@@ -73,11 +73,8 @@ entry ; entry point, called by header
 		ldy #>proc_intro
 		jsr interpreter_run_YYAA
 		jsr engine_new_location	; show start location
-		jsr inventory	; show inventory once without being asked
-		+ui_mainloop
-
-; put chosen UI's handler functions here:
-		+ui_bulk
+		; now enter chosen UI's main loop:
+		+ui_main
 
 !zone
 ;internal_error	+primm [ "Internal error!", CR ]
@@ -110,8 +107,10 @@ wait_A_tenths ; wait for the number of .1 seconds given in A
 			clc
 			adc .tenths	; *6
 +		;FALLTHROUGH
-wait_A_frames ; wait for the number of frames given in A
+;wait_A_frames ; wait for the number of frames given in A
 		tax
+		; FIXME - move the whole "wait for tenths of seconds" to arch,
+		; let each architecture decide whether to use frame counting!
 		+arch_wait_X_frames
 		rts
 

@@ -208,6 +208,12 @@ sys_chrout ;
 		sta currentcolor	; new characters have correct color
 }
 
+; only used by cli interface:
+!macro arch_input {
+arch_input
+		!error "not implemented!"
+}
+
 !macro arch_check_memlimit {
 	;!if * >= $4000 {	!error "Reached 16 K RAM limit." }
 	!if * >= $8000 {	!error "Reached ROM area. Engine must be changed to cope with this!" }

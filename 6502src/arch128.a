@@ -211,6 +211,12 @@ sys_chrout ;
 		rts
 }
 
+; only used by cli interface:
+!macro arch_input {
+arch_input
+		!error "not implemented!"
+}
+
 !macro arch_check_memlimit {
 	;!if * >= $4000 {	!error "Reached BASIC ROM. Please add code to disable it." }	; basic roms are switched off
 	!if * >= $c000 {	!error "Reached editor/kernal ROM area. Engine must be changed to cope with this!" }

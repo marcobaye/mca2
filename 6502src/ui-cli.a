@@ -5,3 +5,146 @@
 !ifndef MCA2_USE_CLI	!eof
 
 	NUMBER_OF_DIRECTIONS	= 10
+
+!macro ui_main {
+		; actual main loop for this UI:
+			; get user input
+.get			jsr ui_input	; get line from user and pre-process
+			; TODO - parse line
+			; TODO - call handler or output error message and how to show help
+			jmp .get
+
+; stuff called by main loop:
+ui_input
+		jsr arch_input
+		; TODO - strip spaces
+		; TODO - all to lower case?
+		; TODO - convert ä ö ü ß to ae oe ue ss
+		rts
+
+	!set ui_words = ""
+	!set ui_handlers = []
+	!macro cmd @word, @handler {
+		!set ui_words = ui_words + @word + "\0"
+		!set ui_handlers = ui_handlers + [ @handler ]
+	}
+
+; CAUTION: it should be possible to use shortcuts for long commands. the easiest
+; way to do this is to scan all possible commands and select the first where the
+; user input matches, i.e. we want the inputs "n", "no" and "north" all to
+; select the command "north", but we do not want "n" to match "northeast".
+; therefore, "north" must be earlier in the list than "northeast". but this is
+; language-dependent, so we cannot just translate each string on its own, but
+; the whole table must be sorted for each language separately:
+	!if DEUTSCH {
+.verb_table
+		+cmd "?",		.cmd_vocabulary	; vocabulary, info, ?
+		+cmd "ab",		.go_down	; unten, ab, runter
+		+cmd "benutze",		.cmd_use
+		+cmd "hoch",		.go_up		; oben, hoch, rauf
+		 +cmd "hilfe",		.cmd_hint
+		+cmd "info",		.cmd_vocabulary	; vocabulary, info, ?
+		+cmd "inventar",	.cmd_inventory
+		+cmd "kombiniere",	.cmd_combine
+		; ...we need "n" before "no", "no" before "norden" and "norden" before "nordosten"
+		+cmd "n",		.go_north	; n, nor...
+		 +cmd "no",		.go_northeast	; no, nordo...
+		  +cmd "norden",	.go_north	; n, nor...
+		   +cmd "nordosten",	.go_northeast	; no, nordo...
+		   +cmd "nordwesten",	.go_northwest	; nw, nordw...
+		+cmd "nimm",		.cmd_take
+		+cmd "nw",		.go_northwest	; nw, nordw...
+		+cmd "osten",		.go_east	; o...
+		 +cmd "oben",		.go_up		; oben, hoch, rauf
+		+cmd "rauf",		.go_up		; oben, hoch, rauf
+		+cmd "runter",		.go_down	; unten, ab, runter
+		+cmd "s",		.go_south	; s...
+		+cmd "schaue",		.cmd_examine	; untersuche, schau
+		+cmd "so",		.go_southeast	; so, suedo...
+		+cmd "sueden",		.go_south	; s...
+		+cmd "suedosten",	.go_southeast	; so, suedo...
+		+cmd "suedwesten",	.go_southwest	; sw, suedw...
+		+cmd "sw",		.go_southwest	; sw, suedw...
+		+cmd "unten",		.go_down	; unten, ab, runter
+		+cmd "untersuche",	.cmd_examine	; untersuche, schau
+		+cmd "verliere",	.cmd_lose
+		+cmd "vocabulary",	.cmd_vocabulary	; vocabulary, info, ?
+		+cmd "westen",		.go_west	; w...
+		;"ic" -> infocom
+		;"ms" -> magnetic scrolls
+	} else {
+.verb_table
+		+cmd "?",		.cmd_vocabulary	; vocabulary, info, ?
+		+cmd "apply",		.cmd_use	; apply, use
+		+cmd "combine",		.cmd_combine
+		+cmd "down",		.go_down
+		+cmd "east",		.go_east
+		 +cmd "examine",		.cmd_examine
+		+cmd "help",		.cmd_hint
+		+cmd "info",		.cmd_vocabulary	; vocabulary, info, ?
+		+cmd "inventory",	.cmd_inventory
+		+cmd "lose",		.cmd_lose
+		+cmd "north",		.go_north
+		+cmd "northeast",	.go_northeast
+		+cmd "northwest",	.go_northwest
+		 +cmd "ne", 		.go_northeast
+		 +cmd "nw",		.go_northwest
+		+cmd "south",		.go_south
+		+cmd "southeast",	.go_southeast
+		+cmd "southwest",	.go_southwest
+		 +cmd "se",		.go_southeast
+		 +cmd "sw",		.go_southwest
+		+cmd "take",		.cmd_take
+		+cmd "use",		.cmd_use	; apply, use
+		 +cmd "up",		.go_up
+		+cmd "vocabulary",	.cmd_vocabulary	; vocabulary, info, ?
+		+cmd "west",		.go_west
+		;"ic" -> infocom
+		;"ms" -> magnetic scrolls
+	}
+	; "untersuche", "schau" / "examine"	ohne Argument -> Raumbeschreibung, also screen redraw!
+
+ui_word_list	!tx ui_words, 0
+		.size = * - ui_word_list
+		!if .size > 255 {
+			!error "word list takes " + dec(.size) + " bytes, adjust code to handle more than a page!"
+		} else {
+			; at time of writing:
+			; deutsch takes 201 bytes
+			; english takes 152 bytes
+			;!info "word list takes " + dec(.size) + " bytes."
+		}
+ui_handler_lo	!for @h in ui_handlers {
+			!by <@h
+		}
+ui_handler_hi	!for @h in ui_handlers {
+			!by >@h
+		}
+
+; command handler functions:
+.go_north
+.go_northeast
+.go_east
+.go_southeast
+.go_south
+.go_southwest
+.go_west
+.go_northwest
+.go_down
+.go_up
+		; TODO!
+		rts
+.cmd_hint
+.cmd_vocabulary
+.cmd_inventory
+.cmd_examine
+.cmd_take
+.cmd_lose
+.cmd_use
+.cmd_combine
+		; TODO!
+		rts
+
+	; add architecture-dependent code for command line:
+		+arch_input
+}
