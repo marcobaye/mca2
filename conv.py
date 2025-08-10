@@ -793,21 +793,6 @@ class converter(object):
             else:
                 self.add_location_backdirection(target_loc_name, backdir)
 
-    def process_dirs_line(self, dir1, dir2, line, two_way=False):
-        """allow two directions of movement and specify targets, with two-way option"""
-        self.text_close()
-        target_loc_name1, target_loc_name2 = self.get_args(line, 2)
-        self.add_location_direction(dir1, target_loc_name1)
-        self.add_location_direction(dir2, target_loc_name2)
-        if two_way:
-            if self.current_location == None:
-                self.error_line('two-way directions can only be used in "location" blocks')
-            elif self.block_state != [0]:
-                self.error_line('two-way directions cannot be used in "if"/"while" blocks')
-            else:
-                self.add_location_backdirection(target_loc_name1, dir2)
-                self.add_location_backdirection(target_loc_name2, dir1)
-
     def add_substitution(self, name, value):
         """helper function for "define" and "enum" lines"""
         if name in self.definitions:
@@ -1077,26 +1062,18 @@ class converter(object):
                 self.process_dir_line('north', line)
             elif key == 'n2':
                 self.process_dir_line('north', line, 'south')
-            elif key == 's':
-                self.process_dir_line('south', line)
-            elif key == 's2':
-                self.process_dir_line('south', line, 'north')
-            elif key == 'ns':
-                self.process_dirs_line('north', 'south', line)
-            elif key == 'ns2':
-                self.process_dirs_line('north', 'south', line, two_way=True)
-            elif key == 'w':
-                self.process_dir_line('west', line)
-            elif key == 'w2':
-                self.process_dir_line('west', line, 'east')
             elif key == 'e':
                 self.process_dir_line('east', line)
             elif key == 'e2':
                 self.process_dir_line('east', line, 'west')
-            elif key == 'we':
-                self.process_dirs_line('west', 'east', line)
-            elif key == 'we2':
-                self.process_dirs_line('west', 'east', line, two_way=True)
+            elif key == 's':
+                self.process_dir_line('south', line)
+            elif key == 's2':
+                self.process_dir_line('south', line, 'north')
+            elif key == 'w':
+                self.process_dir_line('west', line)
+            elif key == 'w2':
+                self.process_dir_line('west', line, 'east')
             elif key == 'u':
                 self.process_dir_line('up', line)
             elif key == 'u2':
@@ -1105,10 +1082,6 @@ class converter(object):
                 self.process_dir_line('down', line)
             elif key == 'd2':
                 self.process_dir_line('down', line, 'up')
-            elif key == 'ud':
-                self.process_dirs_line('up', 'down', line)
-            elif key == 'ud2':
-                self.process_dirs_line('up', 'down', line, two_way=True)
             elif len(line) == 3 and line[1] == '=':
                 # ...or is an assignment to a variable
                 self.process_let_line(line)
