@@ -193,10 +193,124 @@ sys_chrout ;
 }
 
 ; only used by cli interface:
-!macro arch_input {
+!macro arch_input {	; minibuffer code taken from ACME examples and slightly adjusted
+	; some zeropage/system/kernal addresses used:
+	!address {
+		.z_chars_in_keybuf	= $c6
+		.z_cursor_disable	= $cc	; zero means interrupt handles cursor
+		.z_char_under_cursor	= $ce
+		.z_cursor_is_visible	= $cf
+		.z_quote_mode		= $d4
+		.sys_color_under_cursor	= $0287
+		.k_write_to_screen	= $ea13	; A = screencode, X = color
+		.k_chrout		= $ffd2
+		.k_getin		= $ffe4
+	}
+; config:
+	.MINIBUF_MAXSIZE	= 38	; maximum length user can type (leftmost is prompt char, rightmost is reserved for cursor)
+	!addr	minibuf_buf	= $200	; where the actual buffer space is
+	; $200 is the system's input buffer.
+	; you could also use $100, that's what is used when numbers are
+	; converted to their string representations.
+
+; actual code:
+
 arch_input
-		rts	; TODO!
-}
+;minibuf0 ; call this to get user input
+; on entry:	place the cursor where you want it to be
+; on exit:	X = number of characters in buffer (not terminated)
+		ldx #0	; clear buffer
+		beq @next
+		;always
+
+----			; check for DEL key
+			cpy #petscii_DEL
+			bne +
+				txa	; if cursor is at start, do nothing!
+				beq @next
+				dex	; "remove" char from buffer
+				; and now remove it from screen:
+				lda #0	; clear quote flag so LEFT works
+				sta .z_quote_mode
+				lda #petscii_LEFT
+				jsr .k_chrout
+				lda #' '
+				jsr .k_chrout
+				lda #petscii_LEFT
+				jmp @output
++			; check for other control characters:
+			; - none at the moment -
+			; ignore all other petscii control characters
+			tya
+			and #%.##.....
+			beq @next	; control character, so ignore
+			; printable:
+			; check if another character fits into buffer:
+			cpx #.MINIBUF_MAXSIZE	; check for overrun
+			beq @next	; buffer is full, so ignore
+			tya	; restore byte
+			; add byte to buf
+.use_A			sta minibuf_buf, x
+			inx	; fix content length
+@output			;jsr .k_chrout	; put on screen
+			jsr sys_chrout
+@next			; wait for key with flashing cursor
+-				lda .z_chars_in_keybuf
+				sta .z_cursor_disable	; disable cursor on last iteration
+				beq -
+			; if there is an artifact, remove it
+			lsr .z_cursor_is_visible	; check + clear flag in one go
+			txa	; remember length
+			pha
+				bcc +
+					; restore char under cursor
+					lda .z_char_under_cursor
+					ldx .sys_color_under_cursor
+					jsr .k_write_to_screen	; clobbers y
++				; get character
+				jsr .k_getin	; returns A, clobbers X and Y
+				jsr .petscii_to_iso
+				tay	; into Y
+			pla	; restore length
+			tax
+			; check for RETURN
+			cpy #petscii_CR
+			bne ----
+		; X holds number of characters in buffer
+; if you want the string to be terminated, add these two instructions
+; (but don't forget to make sure the buffer is large enough):
+		lda #0
+		sta minibuf_buf, x
+		rts
+
+.petscii_to_iso ; convert A from petscii to ISO-8859-1
+; we are interested in DEL (i.e. backspace), CR, a-z, A-Z, äöüßÄÖÜ, space, digits, ...
+		; convert f1..f7 to umlauts and ß:
+		cmp #petscii_F1
+		bcc +
+			cmp #petscii_F8
+			bcs +
+				; convert f1..f7 to äöüßÄÖÜ
+				lda .fkey_table - petscii_F1, y
+				rts
++		cmp #0x41	; petscii 'a'
+		bcc .return_A
+		cmp #0x5b	; '['
+		bcs +
+			ora #$20	; convert a-z
+			rts
++		cmp #0xc1
+		bcc .illegal
+		cmp #0xdb
+		bcs .illegal
+			and #$7f	; convert A-Z
+			rts
+.illegal	lda #1	; control code, will be ignored
+.return_A	rts
+
+.fkey_table
+	!by ä, ö, ü, ß, Ä, Ö, Ü	; FIXME - these work with my_chrout but not sys_chrout!
+} ; end of minibuffer example code from ACME
 
 !macro arch_check_memlimit {
 	;!if * >= $a000 {	!error "Reached BASIC ROM. Please add code to disable it." }	; commented out, because Basic ROM is now off anyway

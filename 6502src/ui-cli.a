@@ -16,7 +16,12 @@
 
 ; stuff called by main loop:
 ui_input
-		jsr arch_input
+		lda #'>'	; prompt
+		jsr sys_chrout
+		jsr arch_input	; get input
+		; data is in minibuf_buf (zero-terminated), length is in X
+		lda #cr
+		jsr sys_chrout
 		; TODO - strip spaces
 		; TODO - all to lower case?
 		; TODO - convert ä ö ü ß to ae oe ue ss
