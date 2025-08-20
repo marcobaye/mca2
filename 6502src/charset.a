@@ -1,4 +1,4 @@
-;ACME 0.96.2
+;ACME 0.97
 ; original patterns taken from US charset of C128
 ; then added umlauts and accented characters
 
@@ -25,6 +25,7 @@
 !if INCLUDE_CHARSET {
 charset
 ; first quarter: umlauts and other special characters
+!macro charset_umlauts {
 	; áÀ
 	!by %....##..
 	!by %..##....
@@ -313,7 +314,9 @@ charset
 	!by %.##..##.
 	!by %.##.##..
 	!by %........
+}
 ; second quarter: punctuation and digits
+!macro charset_special {
 	!by %........
 	!by %........
 	!by %........
@@ -601,7 +604,9 @@ charset
 	!by %........
 	!by %...##...
 	!by %........
+}
 ; third quarter: uppercase characters
+!macro charset_uppercase {
 	!by %........
 	!by %..####..
 	!by %.##..##.
@@ -867,7 +872,9 @@ charset
 	!by %........
 	!by %........
 	!by %########
+}
 ; fourth quarter:  lowercase characters
+!macro charset_lowercase {
 	!by %..##....
 	!by %....##..
 	!by %........
@@ -1155,4 +1162,9 @@ charset
 	!by %..##..##
 	!by %##..##..
 	!by %##..##..
+}
+	+charset_umlauts
+	+charset_special
+	+charset_uppercase
+	+charset_lowercase
 }

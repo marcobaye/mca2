@@ -77,6 +77,9 @@ ui_input
 		+cmd "westen",		.go_west	; w...
 		;"ic" -> infocom
 		;"ms" -> magnetic scrolls
+		;"yz" -> do nothing
+		;"zy" -> toggle flag to exchange y and z on input
+		; add "load" and "save"
 	} else {
 .verb_table
 		+cmd "?",		.cmd_vocabulary	; vocabulary, info, ?
@@ -106,6 +109,7 @@ ui_input
 		+cmd "west",		.go_west
 		;"ic" -> infocom
 		;"ms" -> magnetic scrolls
+		; add "load" and "save"
 	}
 	; "untersuche", "schau" / "examine"	ohne Argument -> Raumbeschreibung, also screen redraw!
 
