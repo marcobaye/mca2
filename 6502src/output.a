@@ -1,4 +1,4 @@
-;ACME 0.96.2
+;ACME 0.97
 
 	petscii_F1	= 133:	petscii_F2	= 137
 	petscii_F3	= 134:	petscii_F4	= 138
@@ -8,11 +8,16 @@
 ; helper values
 	CR		= sys_NEWLINE
 	cr		= sys_NEWLINE
-	colorbase	= $b0	; b0..bf
-!if UTF8 {
-	UTF8IGNORE	= $c2	; prefix byte for 0x80..0xbf
+; FIXME - make cbm architectures use a different code for CLEAR,
+; then change colorbase to 0x80!
+	colorbase	= $b0	; 0xb0..0xbf
+; the color codes are not actually UTF-8-encoded, but our "decoder" does not
+; care and will accept them anyway. the value range clashes with special
+; characters we do not intend to support (see below).
+	UTF8IGNORE	= $c2	; prefix byte for 0x80..0xbf meaning 0x80..0xbf
 	UTF8CONVERT	= $c3	; prefix byte to convert 0x80..0xbf to 0xc0..0xff
-}
+
+	; ISO-8859/1 values:
 	Ä		= $c4
 	Ö		= $d6
 	Ü		= $dc
@@ -21,38 +26,44 @@
 	ö		= $f6
 	ü		= $fc
 
-;ISO encodes as 0xc0 .. 0xdf,
-;UTF8 encodes as 0xc3 0x80 .. 0xc3 0x9f:
-;	ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß	
-;ISO encodes as 0xe0 .. 0xff,
-;UTF8 encodes as 0xc3 0xa0 .. 0xc3 0xbf:
-;	àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	XOR 1!
+; code points 0xb0..0xbf (UTF-8 would encode as 0xc2 0xb0 .. 0xc2 0xbf):
+;	actually "°±²³´µ¶·¸¹º»¼½¾¿", but we use them as color codes
+; code points 0xc0..0xdf (UTF-8 encodes as 0xc3 0x80 .. 0xc3 0x9f):
+;	"ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"	("uppercase accented")
+; code points 0xe0..0xff (UTF-8 encodes as 0xc3 0xa0 .. 0xc3 0xbf):
+;	"àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ"	("lowercase accented")
+; values in the lowercase range will be changed using "XOR 1" and then both
+; ranges will be mapped to the same 32 slots in our CBM charset, which allows
+; us to support these characters:
+;	"áàãâÄäçÇéèëêíìïîñðóòõôÖöùøûúÜüÿß"
 
-;ISO: 80..af ignore, b0..bf colors, c0..df down, e0..ff xor1
-;UTF8: 80..9f down, a0..bf xor1, c0..ef ignore, f0..ff colors
+; convert UTF-8 to ISO-8859/1
+utf8_to_iso ; must keep X/Y!
+		bit @utf8conv	; is the "convert" flag set?
+		bmi @flag_set
+		cmp #UTF8IGNORE
+		beq @done	; Z set means ignore character
+		cmp #UTF8CONVERT
+		bne @done	; Z clear means use character
+		; set flag
+		lda #$80
+		sta @utf8conv
+		asl	; Z set means ignore character
+@done		rts
+
+@flag_set	lsr @utf8conv	; clear flag
+		ora #$40	; convert 0x80..0xbf to 0xc0..0xff
+		rts	; Z clear -> ok, use A
+
+@utf8conv	!by $00	; msb set means "convert next character"
 
 ; wrapper for CHROUT (to handle UTF8 and color codes etc)
 my_chrout ; must keep X/Y!
 		cmp #$80
 		bcs +
 			jmp wordwrapped	; 00..7f are handled right away
-+
-!if UTF8 {
-		; "convert" flag set?
-		bit utf8conv
-		bpl +
-			lsr utf8conv	; clear flag
-			ora #$40	; convert
-+		cmp #UTF8IGNORE
++		jsr utf8_to_iso	; -> Z set means ignore character
 		beq .rts
-		cmp #UTF8CONVERT
-		bne +
-			sec		; set flag
-			ror utf8conv
-			rts
-utf8conv	!by $00
-+
-}
 		cmp #$e0
 		bcs .xor1
 		cmp #$c0
@@ -71,10 +82,10 @@ utf8conv	!by $00
 		lda #0	; output dummy code to flush buffer
 		jsr wordwrapped
 		pla
-		+arch_set_text_color_A
+		+arch_set_text_color_A	; FIXME - change macro to fn!
 .rts		rts
 
-.xor1		eor #1
+.xor1		eor #1	; FIXME - move this "XOR 1" stuff to arch!
 		;FALLTHROUGH
 .down		ora #%###.....	; make sure arch macro can recognize them
 		jmp wordwrap_printable

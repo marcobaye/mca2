@@ -1096,12 +1096,6 @@ class converter(object):
 
     def parse_file(self, filename):
         encoding = find_encoding(filename)
-        if encoding == "ascii":
-            self.only_ascii = True
-            self.add_code("UTF8 = 0")
-        else:
-            self.only_ascii = False
-            self.add_code("UTF8 = 1")
         with open_for_reading(filename, encoding=encoding) as file:
             for line in file:
                 self.process_line(line)

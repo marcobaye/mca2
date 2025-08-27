@@ -35,7 +35,7 @@ def convert(infile, outfile):
     con.parse_file(infile)
     # redirect stdout to file, call convertor, restore stdout:
     temp = sys.stdout
-    sys.stdout = open(outfile, "wt")
+    sys.stdout = open(outfile, "wt", encoding="utf-8")  # force UTF-8 encoding so umlauts match those of string literals in engine src
     con.output()
     sys.stdout = temp
 
