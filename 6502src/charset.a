@@ -9,24 +9,33 @@
 ; 0x60..0x7f	 ###ä#######Ä########Öö####Üü#ß#	(hashes are graphics characters)
 
 ; new charset uses ascii format and has umlauts in first 32 slots:
-; 0x00..0x1f	áàãâÄäçÇéèëêíìïîñ#óòõôÖöùøûúÜüÿß	hash is graphics characters (i.e. unused)
-; 0x20..0x3f	 !"#$%&'()*+,-./0123456789:;<=>?	32 (0x20) is space
+; 0x00..0x1f	áàãâÄäçÇéèëêíìïîñ-óòõôÖöùøûúÜüÿß	the "-" slot is still available!
+; 0x20..0x3f	 !"#$%&'()*+,-./0123456789:;<=>?	0x20 is space
 ; 0x40..0x5f	@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_
-; 0x60..0x7f	`abcdefghijklmnopqrstuvwxyz{|}~#	127 (0x7f) is backspace/rubout/delete
+; 0x60..0x7f	`abcdefghijklmnopqrstuvwxyz{|}~#	0x7f is ignore/rubout/delete (used for the "unavailable" symbol)
 ; remaining iso 8859-1 characters:
+; (0xa0 is non-breaking space, 0xad is soft hyphen)
 ;a0-bf		 ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿	(do we need Pound sign? Pipe? '´'?)
 ;a0-bf		 ¡¢£€¥Š§š©ª«¬­®¯°±²³Žµ¶·ž¹º»ŒœŸ¿	(ISO 8859-15 variant - Euro sign?)
-;c0-df		ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß	(I want ÄÖÜß)
-;e0-ff		àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	äöü clash with line above! so
-;e0-ff XOR 1	áàãâåäçæéèëêíìïîñðóòõô÷öùøûúýüÿþ	let's do a simple permutation.
+;c0-df		ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß
+;e0-ff		àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
+; of those we support:
+;c0-df		----Ä--Ç--------------Ö-----Ü--ß
+;e0-ff		àáâãä--çèéêëìíîï-ñòóôõö-øùúûü--ÿ
 
-; currently there are two slots remaining (one in first row, plus $7f)
+; for quick lookups, here's the ISO-8859/1 values for german umlauts:
+;	Ä	= $c4
+;	Ö	= $d6
+;	Ü	= $dc
+;	ß	= $df
+;	ä	= $e4
+;	ö	= $f6
+;	ü	= $fc
 
 !if INCLUDE_CHARSET {
-charset
 ; first quarter: umlauts and other special characters
 !macro charset_umlauts {
-	; áÀ
+	; á
 	!by %....##..
 	!by %..##....
 	!by %..####..
@@ -35,7 +44,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; àÁ
+	; à
 	!by %..##....
 	!by %....##..
 	!by %..####..
@@ -44,7 +53,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; ãÂ
+	; ã
 	!by %.######.
 	!by %........
 	!by %..####..
@@ -53,7 +62,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; âÃ
+	; â
 	!by %...##...
 	!by %..#..#..
 	!by %..####..
@@ -62,7 +71,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; åÄ
+	; Ä
 	!by %.##..##.
 	!by %...##...
 	!by %..####..
@@ -71,7 +80,7 @@ charset
 	!by %.##..##.
 	!by %.##..##.
 	!by %........
-	; äÅ
+	; ä
 	!by %........
 	!by %.##..##.
 	!by %..####..
@@ -80,7 +89,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; çÆ
+	; ç
 	!by %........
 	!by %........
 	!by %..####..
@@ -89,7 +98,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %....##..
-	; æÇ
+	; Ç
 	!by %..####..
 	!by %.##..##.
 	!by %.##.....
@@ -98,7 +107,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %....##..
-	; éÈ
+	; é
 	!by %....##..
 	!by %..##....
 	!by %..####..
@@ -107,7 +116,7 @@ charset
 	!by %.##.....
 	!by %..#####.
 	!by %........
-	; èÉ
+	; è
 	!by %..##....
 	!by %....##..
 	!by %..####..
@@ -116,7 +125,7 @@ charset
 	!by %.##.....
 	!by %..#####.
 	!by %........
-	; ëÊ
+	; ë
 	!by %.##..##.
 	!by %........
 	!by %..####..
@@ -125,7 +134,7 @@ charset
 	!by %.##.....
 	!by %..#####.
 	!by %........
-	; êË
+	; ê
 	!by %...##...
 	!by %..#..#..
 	!by %..####..
@@ -134,7 +143,7 @@ charset
 	!by %.##.....
 	!by %..#####.
 	!by %........
-	; íÌ
+	; í
 	!by %....##..
 	!by %..##....
 	!by %........
@@ -143,7 +152,7 @@ charset
 	!by %...##...
 	!by %..####..
 	!by %........
-	; ìÍ
+	; ì
 	!by %..##....
 	!by %....##..
 	!by %........
@@ -152,7 +161,7 @@ charset
 	!by %...##...
 	!by %..####..
 	!by %........
-	; ïÎ
+	; ï
 	!by %........
 	!by %.##..##.
 	!by %........
@@ -161,7 +170,7 @@ charset
 	!by %...##...
 	!by %..####..
 	!by %........
-	; îÏ
+	; î
 	!by %...##...
 	!by %..#..#..
 	!by %........
@@ -170,7 +179,7 @@ charset
 	!by %...##...
 	!by %..####..
 	!by %........
-	; ñÐ
+	; ñ
 	!by %........
 	!by %.######.
 	!by %........
@@ -179,7 +188,7 @@ charset
 	!by %.##..##.
 	!by %.##..##.
 	!by %........
-	; ðÑ
+	; this slot is still available
 	!by %.#.#.#.#
 	!by %#.#.#.#.
 	!by %.#.#.#.#
@@ -188,7 +197,7 @@ charset
 	!by %#.#.#.#.
 	!by %.#.#.#.#
 	!by %#.#.#.#.
-	; óÒ
+	; ó
 	!by %....##..
 	!by %..##....
 	!by %........
@@ -197,7 +206,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %........
-	; òÓ
+	; ò
 	!by %..##....
 	!by %....##..
 	!by %........
@@ -206,7 +215,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %........
-	; õÔ
+	; õ
 	!by %........
 	!by %.######.
 	!by %........
@@ -215,7 +224,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %........
-	; ôÕ
+	; ô
 	!by %...##...
 	!by %..#..#..
 	!by %........
@@ -224,7 +233,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %........
-	; ÷Ö
+	; Ö
 	!by %.##..##.
 	!by %..####..
 	!by %.##..##.
@@ -233,7 +242,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %........
-	; ö×
+	; ö
 	!by %........
 	!by %.##..##.
 	!by %........
@@ -242,7 +251,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %........
-	; ùØ
+	; ù
 	!by %..##....
 	!by %....##..
 	!by %........
@@ -251,7 +260,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; øÙ
+	; ø
 	!by %........
 	!by %........
 	!by %..###.#.
@@ -260,7 +269,7 @@ charset
 	!by %.##..##.
 	!by %.#.###..
 	!by %........
-	; ûÚ
+	; û
 	!by %...##...
 	!by %..#..#..
 	!by %........
@@ -269,7 +278,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; úÛ
+	; ú
 	!by %....##..
 	!by %..##....
 	!by %........
@@ -278,7 +287,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; ýÜ
+	; ý
 	!by %.##..##.
 	!by %........
 	!by %.##..##.
@@ -287,7 +296,7 @@ charset
 	!by %.##..##.
 	!by %..####..
 	!by %........
-	; üÝ
+	; ü
 	!by %........
 	!by %.##..##.
 	!by %........
@@ -296,7 +305,7 @@ charset
 	!by %.##..##.
 	!by %..#####.
 	!by %........
-	; ÿÞ
+	; ÿ
 	!by %........
 	!by %.##..##.
 	!by %........
@@ -305,7 +314,7 @@ charset
 	!by %..####..
 	!by %...##...
 	!by %.###....
-	; þß
+	; ß
 	!by %..####..
 	!by %.##..##.
 	!by %.##..##.
@@ -1163,8 +1172,20 @@ charset
 	!by %#......#
 	!by %########
 }
+charset
 	+charset_umlauts
 	+charset_special
 	+charset_uppercase
 	+charset_lowercase
+
+charset_map_char ; map ISO-8859/1 character in A to a symbol we can actually print:
+		tax
+		lda #$7f	; we do not support any chars in the 0xa0..0xbf range
+		cpx #$c0
+		bcc +
+			lda @iso_to_local - $c0, x
++		rts
+@iso_to_local:
+        !h 7f7f7f7f047f7f077f7f7f7f7f7f7f7f7f7f7f7f7f7f167f7f7f7f7f1c7f7f1f
+        !h 01000302057f7f0609080b0a0d0c0f0e7f1013121514177f19181b1a1d7f7f1e
 }

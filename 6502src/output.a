@@ -8,34 +8,18 @@
 ; helper values
 	CR		= sys_NEWLINE
 	cr		= sys_NEWLINE
-; FIXME - make cbm architectures use a different code for CLEAR,
-; then change colorbase to 0x80!
-	colorbase	= $b0	; 0xb0..0xbf
+; FIXME - make cbm architectures use a different code for CLEAR
+	colorbase	= $80	; 0x80..0x8f
 ; the color codes are not actually UTF-8-encoded, but our "decoder" does not
-; care and will accept them anyway. the value range clashes with special
-; characters we do not intend to support (see below).
+; care and will accept them anyway.
 	UTF8IGNORE	= $c2	; prefix byte for 0x80..0xbf meaning 0x80..0xbf
 	UTF8CONVERT	= $c3	; prefix byte to convert 0x80..0xbf to 0xc0..0xff
 
-	; ISO-8859/1 values:
-	Ä		= $c4
-	Ö		= $d6
-	Ü		= $dc
-	ß		= $df
-	ä		= $e4
-	ö		= $f6
-	ü		= $fc
-
-; code points 0xb0..0xbf (UTF-8 would encode as 0xc2 0xb0 .. 0xc2 0xbf):
-;	actually "°±²³´µ¶·¸¹º»¼½¾¿", but we use them as color codes
-; code points 0xc0..0xdf (UTF-8 encodes as 0xc3 0x80 .. 0xc3 0x9f):
-;	"ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"	("uppercase accented")
-; code points 0xe0..0xff (UTF-8 encodes as 0xc3 0xa0 .. 0xc3 0xbf):
-;	"àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ"	("lowercase accented")
-; values in the lowercase range will be changed using "XOR 1" and then both
-; ranges will be mapped to the same 32 slots in our CBM charset, which allows
-; us to support these characters:
-;	"áàãâÄäçÇéèëêíìïîñðóòõôÖöùøûúÜüÿß"
+; code points 0xa0..0xff are mostly printables, with the exception of 0xad,
+; which is a soft hyphen. 0xa0 is non-breaking space.
+; " ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿"	0xa0..0xbf, UTF-8 encodes as 0xc2 0xa0 .. 0xc2 0xbf
+; "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"	0xc0..0xdf, UTF-8 encodes as 0xc3 0x80 .. 0xc3 0x9f
+; "àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ"	0xe0..0xff, UTF-8 encodes as 0xc3 0xa0 .. 0xc3 0xbf
 
 ; convert UTF-8 to ISO-8859/1
 utf8_to_iso ; must keep X/Y!
@@ -56,39 +40,6 @@ utf8_to_iso ; must keep X/Y!
 		rts	; Z clear -> ok, use A
 
 @utf8conv	!by $00	; msb set means "convert next character"
-
-; wrapper for CHROUT (to handle UTF8 and color codes etc)
-my_chrout ; must keep X/Y!
-		cmp #$80
-		bcs +
-			jmp wordwrapped	; 00..7f are handled right away
-+		jsr utf8_to_iso	; -> Z set means ignore character
-		beq .rts
-		cmp #$e0
-		bcs .xor1
-		cmp #$c0
-		bcs .down
-		cmp #colorbase
-		bcs .setcolor
-		cmp #$a0
-		bcc +
-			lda #$7f	; map to last, unused character
-+		; 80..9f are handled as control codes to get CLEAR to work
-		jmp wordwrapped	; get CLEAR to work
-
-.setcolor ; handle own color codes ($bX)
-		; set color
-		pha
-		lda #0	; output dummy code to flush buffer
-		jsr wordwrapped
-		pla
-		+arch_set_text_color_A	; FIXME - change macro to fn!
-.rts		rts
-
-.xor1		eor #1	; FIXME - move this "XOR 1" stuff to arch!
-		;FALLTHROUGH
-.down		ora #%###.....	; make sure arch macro can recognize them
-		jmp wordwrap_printable
 
 ; print immediate
 my_primm	pla	; get low byte of return address - 1
@@ -120,6 +71,26 @@ print_AAYY ; print zero-terminated string. keeps X.
 +			lda MODIFIED16 & $ff00, y	: .print_ptr = * - 2	; low byte stays zero!
 			bne ---
 		rts
+
+; wrapper for CHROUT (to handle UTF8 and color codes etc)
+my_chrout ; must keep X/Y!
+		; 00..7f are handled right away
+		cmp #$80
+		bcc wordwrapped
+		; bytes with msb set must be fed to utf-8 decoder:
+		jsr utf8_to_iso	; -> Z set means ignore character
+		beq .rts
+		; 90..9f are passed on to get CLEAR to work
+		; a0..ff are printables again
+		cmp #$90
+		bcs wordwrapped
+		; now only color codes (0x80..0x8f) are left:
+		pha
+		lda #0	; output dummy code to flush buffer
+		jsr wordwrapped
+		pla
+		+arch_set_text_color_A	; FIXME - change macro to fn!
+.rts		rts
 
 ; word wrap:
 .xbuf		!by 0

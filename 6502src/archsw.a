@@ -194,21 +194,20 @@ l2:
 ; if your code needs special routines to call and/or tables, put those here:
 !macro arch_bulk {
 _bitmask:  !byte $80,$40,$20,$10,$08,$04,$02,$01
-_codemap:
-    !raw "    ",$8e,$84,"                ",$99,$94,"    ",$9a,$81," ",$e1,0
+_codemap: ; convert ISO-8859/1 to DOS CP437, beginning with 0xa0:
+	; (the 0xfe symbol is used for "char not available")
+        !h 20ad9b9cfe9d7c15fefea6aeaafefefef8f1fdfefee614fafefea7afacabfea8
+        !h fefefefe8e8f9280fe90fefefefefefefea5fefefefe99fefefefefe9afefee1
+        !h 85a083fe848691878a8288898da18c8bfea495a293fe94f6fe97a39681fefe98
 sw_chrout
     cmp #0
     beq ex
     pha
     phx
-    ; 0x00..0x1f	áàãâÄäçÇéèëêíìïîñ#óòõôÖöùøûúÜüÿß	hash is graphics characters (i.e. unused)
-    ;e0-ff		àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ	äöü clash with line above! so
-    ;e0-ff XOR 1	áàãâåäçæéèëêíìïîñðóòõô÷öùøûúýüÿþ	let's do a simple permutation.
-    cmp #$e0  ;
+    cmp #$a0
     bcc +
-    and #$1f
     tax
-    lda _codemap,x
+    lda _codemap - $a0,x
 +
     phy
     jsr address($FFB3)

@@ -76,9 +76,17 @@ item bow2 NOWHERE	small	"Bogen"	# script code can later replace it with this one
 item hippo start	large	"Nilpferd"	# put a hippo into start location
 	"hierbei handelt es sich um ein ganz normales Nilpferd"
 item umlauts start	small	"äöüßÄÖÜ"
-	"Dieses Objekt ist nur ein Test, um die Darstellung der Sonderzeichen überprüfen zu können. "
-	"Neben äöü, ÄÖÜ und ß funktionieren auch noch áàãâ, éèëê, íìïî, óòõô, ùûú, çÇñøÿ sowie "
-	"<Ñ> (0xd1) und <", 0x7f, "> (0x7f).", cr
+	"Dieses Objekt ist nur ein Test, um die Darstellung der Sonderzeichen überprüfen zu können.", cr
+	"00-1f are control codes", cr
+	"20-3f:  !", 34, "#$%&'()*+,-./0123456789:;<=>?", cr
+	"40-5f: @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_", cr
+	"60-7f: `abcdefghijklmnopqrstuvwxyz{|}~", 127, cr
+	"80-9f are control codes", cr
+	"a0-bf: ", 0xa0, "¡¢£¤¥¦§¨©ª«¬", 0xad, "®¯°±²³´µ¶·¸¹º»¼½¾¿", cr
+	"c0-df: ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß", cr
+	"e0-ff: àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ", cr
+#	"Neben äöü, ÄÖÜ und ß funktionieren auch noch áàãâ, éèëê, íìïî, óòõô, ùûú, çÇñøÿ sowie "
+#	"<Ñ> (0xd1) und <", 0x7f, "> (0x7f).", cr
 item flask INVENTORY	small	"Flask"
 	"The label on the flask says ", '"', "Potion of strength", '"', "."
 # "npc" is a non-player character. Parameters are the same as for items. The single difference:

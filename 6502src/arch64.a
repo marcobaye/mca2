@@ -172,13 +172,13 @@ sys_chrout ;
 		pha
 		stx .tmp_x
 		sty .tmp_y
-		cmp #32
+		cmp #$20
 		bcc .kernal
-		cmp #128
+		cmp #$80
 		bcc .put
-		cmp #$e0
+		cmp #$a0
 		bcc .kernal	; CLEAR, for example
-		and #31
+		jsr charset_map_char	; convert to correct symbol or to 0x7f
 .put		ldx z_revsflag
 		beq +
 			ora #$80	; reverse
