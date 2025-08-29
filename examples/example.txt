@@ -85,8 +85,8 @@ item umlauts start	small	"äöüßÄÖÜ"
 	"a0-bf: ", 0xa0, "¡¢£¤¥¦§¨©ª«¬", 0xad, "®¯°±²³´µ¶·¸¹º»¼½¾¿", cr
 	"c0-df: ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß", cr
 	"e0-ff: àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ", cr
-#	"Neben äöü, ÄÖÜ und ß funktionieren auch noch áàãâ, éèëê, íìïî, óòõô, ùûú, çÇñøÿ sowie "
-#	"<Ñ> (0xd1) und <", 0x7f, "> (0x7f).", cr
+	# now make sure code points larger than 0xff result in the "unsupported" char ("□"):
+	"Euro symbol: <€>", cr	# "€" is a three-byte-sequence
 item flask INVENTORY	small	"Flask"
 	"The label on the flask says ", '"', "Potion of strength", '"', "."
 # "npc" is a non-player character. Parameters are the same as for items. The single difference:

@@ -9,19 +9,20 @@
 ; 0x60..0x7f	 ###ä#######Ä########Öö####Üü#ß#	(hashes are graphics characters)
 
 ; new charset uses ascii format and has umlauts in first 32 slots:
-; 0x00..0x1f	àáâãäÄÇçèéêëìíîï-ñòóôõöÖøùúûüÜßÿ	the "-" slot is still available!
+; 0x00..0x1f	àáâãäÄÇçèéêëìíîï ñòóôõöÖøùúûüÜßÿ	slot 0x10 is still available!
 ; 0x20..0x3f	 !"#$%&'()*+,-./0123456789:;<=>?	0x20 is space
 ; 0x40..0x5f	@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_
-; 0x60..0x7f	`abcdefghijklmnopqrstuvwxyz{|}~#	0x7f is ignore/rubout/delete (used for the "unavailable" symbol)
+; 0x60..0x7f	`abcdefghijklmnopqrstuvwxyz{|}~□	0x7f is ignore/rubout/delete (used for the "unavailable" symbol)
 ; remaining iso 8859-1 characters:
 ; (0xa0 is non-breaking space, 0xad is soft hyphen)
-;a0-bf		 ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿	(do we need Pound sign? Pipe? '´'?)
-;a0-bf		 ¡¢£€¥Š§š©ª«¬­®¯°±²³Žµ¶·ž¹º»ŒœŸ¿	(ISO 8859-15 variant - Euro sign?)
+;a0-bf		 ¡¢£¤¥¦§¨©ª«¬ ®¯°±²³´µ¶·¸¹º»¼½¾¿	(do we need Pound sign? Pipe? '´'?)
+;a0-bf		 ¡¢£€¥Š§š©ª«¬ ®¯°±²³Žµ¶·ž¹º»ŒœŸ¿	(ISO 8859-15 variant - Euro sign?)
 ;c0-df		ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß
 ;e0-ff		àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ
 ; of these we support:
 ;c0-df		----Ä--Ç--------------Ö-----Ü--ß
 ;e0-ff		àáâãä--çèéêëìíîï-ñòóôõö-øùúûü--ÿ
+;...see @iso_to_local at the end of this file for the mapping table.
 
 ; for quick lookups, here's the ISO-8859/1 values for german umlauts:
 ;	Ä	= $c4
@@ -1163,14 +1164,14 @@
 	!by %........
 	!by %........
 
-	!by %########
-	!by %#......#
-	!by %#......#
-	!by %#......#
-	!by %#......#
-	!by %#......#
-	!by %#......#
-	!by %########
+	!by %.#######
+	!by %.#.....#
+	!by %.#.....#
+	!by %.#.....#
+	!by %.#.....#
+	!by %.#.....#
+	!by %.#######
+	!by %........
 }
 charset
 	+charset_umlauts

@@ -12,34 +12,74 @@
 	colorbase	= $80	; 0x80..0x8f
 ; the color codes are not actually UTF-8-encoded, but our "decoder" does not
 ; care and will accept them anyway.
-	UTF8IGNORE	= $c2	; prefix byte for 0x80..0xbf meaning 0x80..0xbf
-	UTF8CONVERT	= $c3	; prefix byte to convert 0x80..0xbf to 0xc0..0xff
 
 ; code points 0xa0..0xff are mostly printables, with the exception of 0xad,
 ; which is a soft hyphen. 0xa0 is non-breaking space.
-; " ¡¢£¤¥¦§¨©ª«¬­®¯°±²³´µ¶·¸¹º»¼½¾¿"	0xa0..0xbf, UTF-8 encodes as 0xc2 0xa0 .. 0xc2 0xbf
+; " ¡¢£¤¥¦§¨©ª«¬ ®¯°±²³´µ¶·¸¹º»¼½¾¿"	0xa0..0xbf, UTF-8 encodes as 0xc2 0xa0 .. 0xc2 0xbf
 ; "ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß"	0xc0..0xdf, UTF-8 encodes as 0xc3 0x80 .. 0xc3 0x9f
 ; "àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ"	0xe0..0xff, UTF-8 encodes as 0xc3 0xa0 .. 0xc3 0xbf
 
+;-------------------------------------------------------------------------------
 ; convert UTF-8 to ISO-8859/1
+; this "decoder" does not attempt to recognize encoding violations. it only does
+; what is needed to convert utf-8-encoded text to iso-8859/1.
+; unsupported code points (everything higher than 0xff) are converted to 0x7f.
 utf8_to_iso ; must keep X/Y!
-		bit @utf8conv	; is the "convert" flag set?
-		bmi @flag_set
-		cmp #UTF8IGNORE
-		beq @done	; Z set means ignore character
-		cmp #UTF8CONVERT
-		bne @done	; Z clear means use character
-		; set flag
-		lda #$80
-		sta @utf8conv
-		asl	; Z set means ignore character
-@done		rts
+		; 0x80..0xbf are continuation bytes,
+		; 0xc0..0xff either start sequences or are forbidden:
+		;  0xc0 is forbidden because its sequences would decode to ascii (0x00..0x3f)
+		;  0xc1 is forbidden because its sequences would decode to ascii (0x40..0x7f)
+		;  0xc2 "converts" the next byte from 0x80..0xbf to 0x80..0xbf
+		;  0xc3 converts the next byte from 0x80..0xbf to 0xc0..0xff
+		cmp #$c2
+		beq @done	; 0xc2 -> Z set -> caller ignores this byte
+		bcs @c3_or_higher
+; handle continuation bytes 0x80..0xbf:
+; color codes (0x80..0x8f) and CLEAR arrive here without a proper UTF-8 sequence
+; start, so they must pass through unchanged.
+; continuation bytes following a 0xc2 should be "converted" to the value they
+; already have, so they must pass through unchanged.
+; continuation bytes following a 0xc3 should be converted by ORing 0x40.
+; continuation bytes following 0xc4 or higher must be ignored:
+			pha	; buffer A so we can check counter without clobbering X/Y
+			lda #0	: @ignore_count = * - 1
+			bne @ignore_one_more_byte
+			pla
+; we do the conversion using an OR mask that is shifted left before each use:
+; the value 0x20 is used for 0xc3 (shifted to 0x40 -> OR -> done)
+; the values 0x40, 0x80 and 0x00 are used otherwise (shifted to 0x80, 0x00, 0x00 -> no change)
+; we do the shift before the OR because that means we have a correct Z flag at the end:
+			asl @or_mask	; update mask value
+			ora #$00	: @or_mask = * - 1	; convert or do nothing
+			rts	; Z clear -> ok, use A
 
-@flag_set	lsr @utf8conv	; clear flag
-		ora #$40	; convert 0x80..0xbf to 0xc0..0xff
-		rts	; Z clear -> ok, use A
+@ignore_one_more_byte	pla	; fix stack
+			dec @ignore_count
+@return_with_Z		lda #0	; set Z
+			rts	; Z set -> caller ignores this byte
 
-@utf8conv	!by $00	; msb set means "convert next character"
+@c3_or_higher	cmp #$c3	; prefix byte to convert 0x80..0xbf to 0xc0..0xff
+		bne @too_high
+; 0xc3 means to convert 0x80..0xbf to 0xc0..0xff.
+; prepare value to fix the next byte (0x20, will be shifted to 0x40 before ORing):
+			lda #$20
+			sta @or_mask
+			lda #0	; set Z
+@done			rts	; Z tells caller whether to ignore byte
+
+@too_high
+; the number of set MSBs is the total byte count of the sequence.
+; decrease by one, write to @ignore_count and return 0x7f ("unsupported") with Z clear
+		pha	; buffer A so we can init counter without clobbering X/Y
+		lda #-2	; pre-init matching loop below
+		sta @ignore_count
+		pla
+--			inc @ignore_count
+			asl
+			bcs --
+		lda #$7f	; this also clears Z
+		rts	; Z clear -> caller uses this byte
+;-------------------------------------------------------------------------------
 
 ; print immediate
 my_primm	pla	; get low byte of return address - 1
@@ -80,6 +120,8 @@ my_chrout ; must keep X/Y!
 		; bytes with msb set must be fed to utf-8 decoder:
 		jsr utf8_to_iso	; -> Z set means ignore character
 		beq .rts
+		cmp #$7f	; "unsupported"?
+		beq wordwrapped
 		; 90..9f are passed on to get CLEAR to work
 		; a0..ff are printables again
 		cmp #$90
