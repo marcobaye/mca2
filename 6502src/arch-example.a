@@ -5,7 +5,6 @@
 	ALLOW_CURSOR		= 0	; set to nonzero to allow cursor navigation (currently needs petscii codes)
 	ALLOW_KEYPAD		= 1	; set to nonzero to allow keypad navigation
 	INCLUDE_CHARSET		= 0	; set to nonzero to include own charset
-	KEYBOARD_IS_PETSCII	= 0	; set to nonzero if "sys_getin" function returns petscii codes
 	LINE_LENGTH		= 80	; system's screen width (needed for location title and word wrap)
 	sys_NEWLINE		= 10	; system's newline character (probably 10 or 13)
 

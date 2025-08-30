@@ -64,6 +64,19 @@ u16 cows_killed	0
 # the remainder of the description file consists of code sequences in the actual
 # script language:
 
+proc charset
+	"available characters:", cr
+	"00-1f are control codes", cr
+	"20-3f:  !", 34, "#$%&'()*+,-./0123456789:;<=>?", cr
+	"40-5f: @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_", cr
+	"60-7f: `abcdefghijklmnopqrstuvwxyz{|}~", 127, cr
+	"80-9f are control codes", cr
+	"a0-bf: ", 0xa0, "¡¢£¤¥¦§¨©ª«¬", 0xad, "®¯°±²³´µ¶·¸¹º»¼½¾¿", cr
+	"c0-df: ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß", cr
+	"e0-ff: àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ", cr
+	# now make sure code points larger than 0xff result in the "unsupported" char ("□"):
+	"Euro symbol: <€>", cr	# "€" is a three-byte-sequence
+
 # "item" defines a game item the player can interact with:
 # parameters are in-script name, start location in game, size (small/large), in-game name
 # small items can be taken by player (put into inventory), large items can only be moved around by script code.
@@ -81,16 +94,7 @@ item hippo start	large	"Nilpferd"	# put a hippo into start location
 	"hierbei handelt es sich um ein ganz normales Nilpferd"
 item umlauts start	small	"äöüßÄÖÜ"
 	"Dieses Objekt ist nur ein Test, um die Darstellung der Sonderzeichen überprüfen zu können.", cr
-	"00-1f are control codes", cr
-	"20-3f:  !", 34, "#$%&'()*+,-./0123456789:;<=>?", cr
-	"40-5f: @ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_", cr
-	"60-7f: `abcdefghijklmnopqrstuvwxyz{|}~", 127, cr
-	"80-9f are control codes", cr
-	"a0-bf: ", 0xa0, "¡¢£¤¥¦§¨©ª«¬", 0xad, "®¯°±²³´µ¶·¸¹º»¼½¾¿", cr
-	"c0-df: ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞß", cr
-	"e0-ff: àáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿ", cr
-	# now make sure code points larger than 0xff result in the "unsupported" char ("□"):
-	"Euro symbol: <€>", cr	# "€" is a three-byte-sequence
+	callproc charset
 item flask INVENTORY	small	"Flask"
 	"The label on the flask says ", '"', "Potion of strength", '"', "."
 # "npc" is a non-player character. Parameters are the same as for items. The single difference:
@@ -236,6 +240,7 @@ proc check_lives
 # 'proc' starts a new procedure, arg is name
 proc intro	# <= one procedure MUST be called "intro", this can show explanatory text
 	"This is an example game to demonstrate the engine.", cr
+	callproc charset
 	"Please press a key."
 	callasm get_key
 

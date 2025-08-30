@@ -5,7 +5,6 @@
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 0
 	INCLUDE_CHARSET		= 1
-	KEYBOARD_IS_PETSCII	= 1
 	LINE_LENGTH		= 40
 	sys_NEWLINE		= 13
 
@@ -48,7 +47,7 @@
 ; kernal rom
 !addr	editor_putAX	= $ea13	; output screencode A and attribute X
 !addr	k_chrout	= $ffd2
-!addr	sys_getin	= $ffe4
+!addr	k_getin		= $ffe4
 
 ; new color codes (because some PetSCII codes clash with the UTF8 conversion):
 ; vic-ii colors:
@@ -167,6 +166,29 @@ line2		!wo 0
 }
 
 !macro arch_bulk {
+sys_getin ; get character from keyboard and return in ISO-8859/1 encoding
+		jsr k_getin
+		;fallthrough
+;.petscii_to_iso ; convert A from petscii to ISO-8859-1
+	!ct pet {
+; check lower case:
+		cmp #'a'
+		bcc @return_A	; in petscii, 'a' comes before 'A', so we can use this shortcut
+		cmp #'z' + 1
+		bcc @is_lower_case
+		cmp #'A'
+		bcc @return_A
+		cmp #'Z' + 1
+		bcc @is_upper_case
+@return_A	rts
+
+@is_lower_case	ora #$20	; convert a-z to ascii/iso
+		rts
+
+@is_upper_case	and #$7f	; convert A-Z to ascii/iso
+		rts
+	}
+
 ; copied from 128:
 sys_chrout ;
 		pha
@@ -204,7 +226,6 @@ sys_chrout ;
 		.sys_color_under_cursor	= $0287
 		.k_write_to_screen	= $ea13	; A = screencode, X = color
 		.k_chrout		= $ffd2
-		.k_getin		= $ffe4	; FIXME - same value as sys_getin
 	}
 ; config:
 	.MINIBUF_MAXSIZE	= 38	; maximum length user can type (leftmost is prompt char, rightmost is reserved for cursor)
@@ -268,8 +289,8 @@ arch_input
 					ldx .sys_color_under_cursor
 					jsr .k_write_to_screen	; clobbers y
 +				; get character
-				jsr .k_getin	; returns A, clobbers X and Y
-				jsr .petscii_to_iso
+				jsr sys_getin	; returns A, clobbers X and Y
+				jsr .sanitize	; convert f-keys to umlauts, ignore color codes, ...
 				tay	; into Y
 			pla	; restore length
 			tax
@@ -283,33 +304,21 @@ arch_input
 		sta minibuf_buf, x
 		rts
 
-.petscii_to_iso ; convert A from petscii to ISO-8859-1
+.sanitize ; convert f-keys to umlauts, ignore color codes, ...
 ; we are interested in DEL (i.e. backspace), CR, a-z, A-Z, äöüßÄÖÜ, space, digits, ...
-		; convert f1..f7 to umlauts and ß:
+		tay	; codes 00..7f can be returned right away
+		bpl @done
+; c64 does not have umlaut keys, so convert f1..f7 to umlauts and ß:
 		cmp #petscii_F1
-		bcc +
+		bcc @illegal
 			cmp #petscii_F8
-			bcs +
+			bcs @illegal
 				; convert f1..f7 to äöüßÄÖÜ
-				lda .fkey_table - petscii_F1, y
+				lda @fkey_table - petscii_F1, y
 				rts
-+		cmp #0x41	; petscii 'a'
-		bcc .return_A
-		cmp #0x5b	; '['
-		bcs +
-			ora #$20	; convert a-z
-			rts
-+		cmp #0xc1
-		bcc .illegal
-		cmp #0xdb
-		bcs .illegal
-			and #$7f	; convert A-Z
-			rts
-.illegal	lda #1	; control code, will be ignored
-.return_A	rts
-
-.fkey_table
-	!by ä, ö, ü, ß, Ä, Ö, Ü	; FIXME - these work with my_chrout but not sys_chrout!
+@illegal	lda #0
+@done		rts
+@fkey_table	!by ä, ö, ü, ß, Ä, Ö, Ü
 } ; end of minibuffer example code from ACME
 
 !macro arch_check_memlimit {

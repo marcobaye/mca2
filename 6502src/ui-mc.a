@@ -113,11 +113,6 @@
 
 ; stuff called by main loop:
 
-!ct raw {
-	!if KEYBOARD_IS_PETSCII {
-		!ct pet	; if sys_getin returns petscii, use petscii for these tables as well:
-	}
-
 keys_start
 		!if ALLOW_CURSOR {
 			!tx controlcode_UP, controlcode_DOWN, controlcode_LEFT, controlcode_RIGHT
@@ -129,7 +124,6 @@ keys_start
 		!tx controlcode_CLEAR, controlcode_HOME, petscii_F1, petscii_F3	; FIXME - move F1/F3 to arch macro!
 		!tx i18n_COMMAND_CHARACTERS
 keys_end
-}	; back to standard encoding
 
 action_lo
 		!if ALLOW_CURSOR {
@@ -335,16 +329,12 @@ select ; ask user to select one of the items in the current list (X must be firs
 		stx .limit
 		jsr get_key
 		sec
-!if KEYBOARD_IS_PETSCII {
-	!ct pet	; if sys_getin returns petscii, use petscii for comparison character as well:
-}
-		sbc #'a'	; might be either petscii or ascii/iso/utf8
-	!ct raw	; back to standard
+		sbc #'a'	; ascii/iso/utf8
 		bcc .illegal_key
 		cmp #MODIFIED8	: .limit = * - 1
 		bcs .illegal_key
 		tax	; remember index (list offset)
-		clc
+		clc	; restore character
 		adc #'a'	; ascii/iso/utf8 'a'
 		jsr my_chrout
 		; convert list offset to item offset

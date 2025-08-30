@@ -5,7 +5,6 @@
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 1
 	INCLUDE_CHARSET		= 1
-	KEYBOARD_IS_PETSCII	= 1	; FIXME - move conversion code to this file?
 	LINE_LENGTH		= 80
 	sys_NEWLINE		= 13
 
@@ -43,7 +42,7 @@
 !addr	editor_putAX	= $c003	; output screencode A and attribute X
 !addr	vdcw		= $cdcc
 !addr	k_chrout	= $ffd2
-!addr	sys_getin	= $ffe4
+!addr	k_getin		= $ffe4
 
 ; new color codes (because some PetSCII codes clash with the UTF8 conversion):
 ; vdc colors (and a mapping to vic color names - basic 7 maps
@@ -186,6 +185,29 @@ c128_copycharset ; copy data to vdc ram with gaps, XORing with A
 			bne -----
 		rts
 ;	!src "pimpvdc.a"
+
+sys_getin ; get character from keyboard and return in ISO-8859/1 encoding
+		jsr k_getin
+		;fallthrough
+;.petscii_to_iso ; convert A from petscii to ISO-8859-1
+	!ct pet {
+; check lower case:
+		cmp #'a'
+		bcc @return_A	; in petscii, 'a' comes before 'A', so we can use this shortcut
+		cmp #'z' + 1
+		bcc @is_lower_case
+		cmp #'A'
+		bcc @return_A
+		cmp #'Z' + 1
+		bcc @is_upper_case
+@return_A	rts
+
+@is_lower_case	ora #$20	; convert a-z to ascii/iso
+		rts
+
+@is_upper_case	and #$7f	; convert A-Z to ascii/iso
+		rts
+	}
 
 sys_chrout ;
 		pha
