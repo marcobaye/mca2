@@ -204,7 +204,7 @@ sys_chrout ;
 		.sys_color_under_cursor	= $0287
 		.k_write_to_screen	= $ea13	; A = screencode, X = color
 		.k_chrout		= $ffd2
-		.k_getin		= $ffe4
+		.k_getin		= $ffe4	; FIXME - same value as sys_getin
 	}
 ; config:
 	.MINIBUF_MAXSIZE	= 38	; maximum length user can type (leftmost is prompt char, rightmost is reserved for cursor)

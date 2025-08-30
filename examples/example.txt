@@ -47,6 +47,10 @@ asm DEUTSCH	= 0
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
 
+# select user interface:
+#asm MCA2_USE_CLI	= 0	# use original multiple-choice interface (default)
+asm MCA2_USE_CLI	= 1	# use the new command line interface
+
 # "u16" defines a game variable (16 bit unsigned int) and its start value:
 u16 dragon	ALIVE
 u16 crocodile	ALIVE

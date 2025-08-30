@@ -24,14 +24,14 @@
 ;e0-ff		àáâãä--çèéêëìíîï-ñòóôõö-øùúûü--ÿ
 ;...see @iso_to_local at the end of this file for the mapping table.
 
-; for quick lookups, here's the ISO-8859/1 values for german umlauts:
-;	Ä	= $c4
-;	Ö	= $d6
-;	Ü	= $dc
-;	ß	= $df
-;	ä	= $e4
-;	ö	= $f6
-;	ü	= $fc
+; for conversion tables in arch*, here's the ISO-8859/1 values for german umlauts:
+	Ä	= $c4
+	Ö	= $d6
+	Ü	= $dc
+	ß	= $df
+	ä	= $e4
+	ö	= $f6
+	ü	= $fc
 
 !if INCLUDE_CHARSET {
 ; first quarter: umlauts and other special characters

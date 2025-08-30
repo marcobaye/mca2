@@ -1,8 +1,12 @@
 ;ACME 0.97
 
+; if unset, use default value
+!ifndef MCA2_USE_CLI	MCA2_USE_CLI = 0
+
+
 ; "multiple choice" interface
 
-!ifdef MCA2_USE_CLI	!eof
+!if MCA2_USE_CLI == 0 {
 
 	NUMBER_OF_DIRECTIONS	= 6
 
@@ -419,4 +423,5 @@ show_paths ; output list of possible directions:
 			bne ---
 		+primm [ color_std, cr, cr ]
 		rts
+}
 }

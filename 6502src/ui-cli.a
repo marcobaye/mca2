@@ -2,7 +2,7 @@
 
 ; "command line interface"
 
-!ifndef MCA2_USE_CLI	!eof
+!if MCA2_USE_CLI {
 
 	NUMBER_OF_DIRECTIONS	= 10
 
@@ -156,4 +156,5 @@ ui_handler_hi	!for @h in ui_handlers {
 
 	; add architecture-dependent code for command line:
 		+arch_input
+}
 }

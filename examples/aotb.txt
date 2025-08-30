@@ -25,6 +25,10 @@ asm color_magic		= color_WHITE
 asm HINZ	= color_YELLOW	# puts "HINZ = color_YELLOW" into output file
 asm KUNZ	= color_LRED
 
+# select user interface:
+asm MCA2_USE_CLI	= 0	# use original multiple-choice interface (default)
+#asm MCA2_USE_CLI	= 1	# use the new command line interface
+
 # variables and default values:
 
 ## angesammelte Punkte
