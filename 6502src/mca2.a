@@ -117,7 +117,7 @@ wait_A_tenths ; wait for the number of .1 seconds given in A
 get_key ; wait for user to press key
 		lda #0
 		jsr my_chrout	; force flushing of word wrap buffer
----			jsr sys_getin
+---			jsr arch_getin
 			tax	; check for zero
 			beq ---
 		rts

@@ -5,8 +5,8 @@
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 0
 	INCLUDE_CHARSET		= 1
-	LINE_LENGTH		= 40
-	sys_NEWLINE		= 13
+	arch_LINE_LENGTH	= 40
+	arch_NEWLINE		= 13
 
 ; libraries
 	!src <cbm/c64/vic.a>
@@ -106,7 +106,7 @@ line2		!wo 0
 
 !macro arch_invert_title {
 		; invert first line for title
-		ldx #LINE_LENGTH - 1
+		ldx #arch_LINE_LENGTH - 1
 		lda #160	; reverse space
 --			sta SCREEN, x
 			dex
@@ -166,7 +166,7 @@ line2		!wo 0
 }
 
 !macro arch_bulk {
-sys_getin ; get character from keyboard and return in ISO-8859/1 encoding
+arch_getin ; get character from keyboard and return in ISO-8859/1 encoding
 		jsr k_getin
 		;fallthrough
 ;.petscii_to_iso ; convert A from petscii to ISO-8859-1
@@ -190,7 +190,7 @@ sys_getin ; get character from keyboard and return in ISO-8859/1 encoding
 	}
 
 ; copied from 128:
-sys_chrout ;
+arch_chrout ; output character in iso-8859/1 encoding:
 		pha
 		stx .tmp_x
 		sty .tmp_y
@@ -274,7 +274,7 @@ arch_input
 .use_A			sta minibuf_buf, x
 			inx	; fix content length
 @output			;jsr .k_chrout	; put on screen
-			jsr sys_chrout
+			jsr arch_chrout
 @next			; wait for key with flashing cursor
 -				lda .z_chars_in_keybuf
 				sta .z_cursor_disable	; disable cursor on last iteration
@@ -289,7 +289,7 @@ arch_input
 					ldx .sys_color_under_cursor
 					jsr .k_write_to_screen	; clobbers y
 +				; get character
-				jsr sys_getin	; returns A, clobbers X and Y
+				jsr arch_getin	; returns A, clobbers X and Y
 				jsr .sanitize	; convert f-keys to umlauts, ignore color codes, ...
 				tay	; into Y
 			pla	; restore length

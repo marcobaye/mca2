@@ -5,8 +5,8 @@
 	ALLOW_CURSOR		= 1
 	ALLOW_KEYPAD		= 1
 	INCLUDE_CHARSET		= 1
-	LINE_LENGTH		= 80
-	sys_NEWLINE		= 13
+	arch_LINE_LENGTH	= 80
+	arch_NEWLINE		= 13
 
 ; libraries
 	!src <cbm/c128/vic.a>	; only needed for timing via frame counting
@@ -109,7 +109,7 @@ line2		!wo 0
 !macro arch_invert_title {
 		; invert first line for title
 		lda #' '
-		ldx #256 - LINE_LENGTH
+		ldx #256 - arch_LINE_LENGTH
 -			jsr k_chrout	; yes, kernal, no need to filter through conv/wordwrap
 			inx
 			bne -
@@ -186,7 +186,7 @@ c128_copycharset ; copy data to vdc ram with gaps, XORing with A
 		rts
 ;	!src "pimpvdc.a"
 
-sys_getin ; get character from keyboard and return in ISO-8859/1 encoding
+arch_getin ; get character from keyboard and return in ISO-8859/1 encoding
 		jsr k_getin
 		;fallthrough
 ;.petscii_to_iso ; convert A from petscii to ISO-8859-1
@@ -209,7 +209,7 @@ sys_getin ; get character from keyboard and return in ISO-8859/1 encoding
 		rts
 	}
 
-sys_chrout ;
+arch_chrout ; output character in iso-8859/1 encoding:
 		pha
 		stx .tmp_x
 		sty .tmp_y

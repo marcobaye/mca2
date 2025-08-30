@@ -6,8 +6,8 @@
 	petscii_F7	= 136:	petscii_F8	= 140
 
 ; helper values
-	CR		= sys_NEWLINE
-	cr		= sys_NEWLINE
+	CR		= arch_NEWLINE
+	cr		= arch_NEWLINE
 ; FIXME - make cbm architectures use a different code for CLEAR
 	colorbase	= $80	; 0x80..0x8f
 ; the color codes are not actually UTF-8-encoded, but our "decoder" does not
@@ -136,7 +136,7 @@ my_chrout ; must keep X/Y!
 
 ; word wrap:
 .xbuf		!by 0
-.space_left	!by LINE_LENGTH
+.space_left	!by arch_LINE_LENGTH
 .chars_in_buf	!by 0
 .indents	!by 0
 indent0		lda #0
@@ -156,13 +156,13 @@ wordwrap_printable ; append to buffer
 		stx .xbuf
 		ldx .chars_in_buf
 		sta linebuf, x
-		cpx #LINE_LENGTH	; buffer overrun? (old value!)
+		cpx #arch_LINE_LENGTH	; buffer overrun? (old value!)
 		bne .end_append
 			; buffer overran, so fuck the word wrap, just output it
 			; "chars_left" does not change in this case!
 			jsr linebuf_flush
 			; and move the new character to start of buf
-			lda linebuf + LINE_LENGTH
+			lda linebuf + arch_LINE_LENGTH
 			sta linebuf
 .end_append	inc .chars_in_buf
 		ldx .xbuf
@@ -188,7 +188,7 @@ wordwrap_printable ; append to buffer
 			; too little space on line, so do wrap
 			; first force carriage return
 			lda #cr
-			jsr sys_chrout
+			jsr arch_chrout
 			jsr .new_line
 
 			lda .space_left
@@ -200,7 +200,7 @@ wordwrap_printable ; append to buffer
 
 			ldx .xbuf
 			pla
-			jsr sys_chrout
+			jsr arch_chrout
 			sec	; next space could be skipped
 			rts
 
@@ -212,16 +212,16 @@ wordwrap_printable ; append to buffer
 
 		ldx .xbuf
 		pla
-		jsr sys_chrout
+		jsr arch_chrout
 		clc	; ok
 		rts
 
-.new_line	lda #LINE_LENGTH	; next line is completely unused
+.new_line	lda #arch_LINE_LENGTH	; next line is completely unused
 		sta .space_left
 		ldx .indents
 		beq +
 			lda #' '
-			jsr sys_chrout
+			jsr arch_chrout
 			dec .space_left
 +		rts
 
@@ -231,7 +231,7 @@ wordwrap_printable ; append to buffer
 		bcs +
 			; space must be output
 			lda #' '
-			jsr sys_chrout
+			jsr arch_chrout
 			dec .space_left
 			bne +
 				jsr .new_line
@@ -240,7 +240,7 @@ wordwrap_printable ; append to buffer
 .home
 .clear
 .cr		jsr .control
-		lda #LINE_LENGTH
+		lda #arch_LINE_LENGTH
 		sta .space_left
 		rts
 
@@ -249,7 +249,7 @@ linebuf_flush ; output what's in the line buffer
 		beq +
 		;--
 ---			lda linebuf, x
-			jsr sys_chrout
+			jsr arch_chrout
 			lda #0
 			sta z_quote_mode
 			inx

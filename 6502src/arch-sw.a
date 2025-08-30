@@ -5,8 +5,8 @@
 	ALLOW_CURSOR		= 1	; set to nonzero to allow cursor navigation (currently needs petscii codes)
 	ALLOW_KEYPAD		= 0	; set to nonzero to allow keypad navigation
 	INCLUDE_CHARSET		= 0	; set to nonzero to include own charset
-	LINE_LENGTH		= 80	; system's screen width (needed for location title and word wrap)
-	sys_NEWLINE		= $0a	; system's newline character (probably 10 or 13)
+	arch_LINE_LENGTH	= 80	; system's screen width (needed for location title and word wrap)
+	arch_NEWLINE		= $0a	; system's newline character (probably 10 or 13)
 
 ; libraries
 	;!src <>
@@ -73,8 +73,8 @@ screen_buffer=$df00
 
 
 ; kernal
-!addr	sys_chrout	= sw_chrout	; system function to output a character - MUST PRESERVE A/X/Y!
-!addr	sys_getin	= $FFB0 	    ; system function to read a character from keyboard
+!addr	arch_chrout	= sw_chrout	; system function to output a character - MUST PRESERVE A/X/Y!
+!addr	arch_getin	= $FFB0		; system function to read a character from keyboard
 
 ; color codes:
 ; (names are from C64 colors, but architecture can change values in 0..f range)
@@ -147,7 +147,7 @@ screen_buffer=$df00
 }
 
 ; change text color to that given in A.
-; do not clobber X or Y! if you need one or both of them, restore their old contents (see arch264.a)
+; do not clobber X or Y! if you need one or both of them, restore their old contents (see arch-plus4.a)
 !macro arch_set_text_color_A {
     phx
     phy
@@ -198,7 +198,7 @@ _codemap: ; convert ISO-8859/1 to DOS CP437, beginning with 0xa0:
         !h 20ad9b9cfe9d7c15fefea6aeaafefefef8f1fdfefee614fafefea7afacabfea8
         !h fefefefe8e8f9280fe90fefefefefefefea5fefefefe99fefefefefe9afefee1
         !h 85a083fe848691878a8288898da18c8bfea495a293fe94f6fe97a39681fefe98
-sw_chrout
+sw_chrout ; output character in iso-8859/1 encoding:
     cmp #0
     beq ex
     pha

@@ -6,10 +6,10 @@ import subprocess
 import sys
 
 architectures = {
-    "c64":          "arch64.a",
-    "c128":         "arch128.a",
-    "plus4":        "arch264.a",
-    "steckschwein": "archsw.a",
+    "c64":          "arch-c64.a",
+    "c128":         "arch-c128.a",
+    "plus4":        "arch-plus4.a",
+    "steckschwein": "arch-sw.a",
 }
 
 def set_arch(arch_arg):
