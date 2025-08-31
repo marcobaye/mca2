@@ -26,7 +26,6 @@
 	; $fb..$fe are in use, so using floating point registers instead:
 !addr	runptr		= $61	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $63	; counts recursion levels
-!addr	is_PAL		= $64	; zero for NTSC, nonzero for PAL (CAUTION - own var, nothing official!)
 !addr	z_revsflag	= $c2
 !addr	z_quote_mode	= $cb
 
@@ -142,7 +141,17 @@ arch_chrout ; output character in iso-8859/1 encoding:
 		rts
 }
 
-!macro arch_wait_X_frames {
+!macro arch_wait_deciseconds {
+		sta @deciseconds
+		asl	; *2
+		asl	; *4
+		adc #0	: @deciseconds = * - 1	; *5
+		; check for PAL/NTSC
+		ldx kernal_version	; msb clear means NTSC, msb set means PAL
+		bmi +
+			; on NTSC:
+			adc @deciseconds	; *6
++		tax
 ---		; count down frames
 -				lda ted_ff1c
 				lsr
@@ -158,13 +167,6 @@ arch_chrout ; output character in iso-8859/1 encoding:
 }
 
 !macro arch_init {
-		; copy ROM hint to own PAL/NTSC flag
-		; (reading from TED would need shift and flip)
-		lda kernal_version
-		asl
-		lda #0
-		rol
-		sta is_PAL
 		; disable 264's F key string expansion
 		ldx #7
 --			lda #1	; set string length to 1

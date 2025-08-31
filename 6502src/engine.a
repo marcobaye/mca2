@@ -447,7 +447,7 @@ cmd_delay ;
 		lda (runptr), y
 		tax
 		lda gamevars_lo, x
-		jsr wait_A_tenths
+		jsr wait_A_deciseconds
 		lda #2	; skip command and var number
 		jmp interpreter_go_on
 ;---------------------------------------

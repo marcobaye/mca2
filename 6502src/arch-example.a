@@ -26,9 +26,6 @@
 !addr	recursion_depth	= $02	; 8bit, counts recursion levels (okay, this need not really be in zp)
 !addr	z_quote_mode	= $03	; 8bit - if your system does not know any "quote mode", just consider this to be a write-only variable)
 
-; system area
-!addr	is_PAL		= $0815	; zero for NTSC, nonzero for PAL (needed so "delay" can convert seconds to video frames)
-
 ; system i/o (assuming iso-8859/1 encoding, at least for all needed printables)
 !addr	arch_chrout	= $ffd2	; system function to output a character - MUST PRESERVE A/X/Y!
 !addr	arch_getin	= $ffe4	; system function to read a character from keyboard
@@ -64,8 +61,12 @@
 }
 
 ; this is used to delay execution
-; if X is zero on call, just wait for vblank
-!macro arch_wait_X_frames {
+; if A is zero on call, just wait for vblank
+!macro arch_wait_deciseconds {
+	; either use a timer or count video frames (count = 5*X on PAL, count = 6*X on NTSC)
+	; ...this function is intended for short pauses during text output,
+	; i.e. for dramatic effect, so you can assume the number of video frames
+	; to fit in 8 bits. :P
 }
 
 ; this is used early on so machine can be initialised

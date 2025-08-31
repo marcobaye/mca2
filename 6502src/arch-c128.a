@@ -36,7 +36,7 @@
 
 ; system area
 !addr	z_keychk	= $033c	; fn ptr for f-key string expansion
-!addr	is_PAL		= $0a03	; zero for NTSC, nonzero for PAL
+!addr	c128_is_PAL	= $0a03	; zero for NTSC, nonzero for PAL
 
 ; editor/kernal rom
 !addr	editor_putAX	= $c003	; output screencode A and attribute X
@@ -82,11 +82,22 @@
 line2		!wo 0
 }
 
-!macro arch_wait_X_frames {
+!macro arch_wait_deciseconds {
+		; convert deciseconds to video frames:
+		sta @deciseconds
+		asl	; *2
+		asl	; *4
+		adc #0	: @deciseconds = * - 1	; *5
+		; check for PAL/NTSC:
+		ldx c128_is_PAL	; zero for NTSC, nonzero for PAL
+		bne +
+			; on NTSC:
+			adc @deciseconds	; *6
++		tax
 ---		; count down VIC frames (exact same algo as c64)
 -				lda vic_controlv
 				bpl -
-			txa	; check for early exit (if called with X zero)
+			txa	; check for early exit (if called with A zero)
 			beq +	; early exit
 -				lda vic_controlv
 				bmi -

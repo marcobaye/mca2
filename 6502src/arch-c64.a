@@ -34,7 +34,7 @@
 !addr	currentcolor	= $0286
 !addr	screenpage	= $0288
 !addr	cbmshift	= $0291
-!addr	is_PAL		= $02a6	; zero for NTSC, nonzero for PAL
+!addr	vic2_is_PAL	= $02a6	; zero for NTSC, nonzero for PAL
 
 ; other
 !addr	VICBANK		= $c000
@@ -84,8 +84,19 @@
 line2		!wo 0
 }
 
-!macro arch_wait_X_frames {
----		; count down frames
+!macro arch_wait_deciseconds {
+		; convert deciseconds to video frames:
+		sta @deciseconds
+		asl	; *2
+		asl	; *4
+		adc #0	: @deciseconds = * - 1	; *5
+		; check for PAL/NTSC:
+		ldx vic2_is_PAL	; zero for NTSC, nonzero for PAL
+		bne +
+			; on NTSC:
+			adc @deciseconds	; *6
++		tax
+---		; count down VIC frames
 -				lda vic_controlv
 				bpl -
 			txa	; check for early exit (if called with A zero)

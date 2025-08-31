@@ -92,26 +92,8 @@ pre_situation ; called before a new situation (to init screen)
 ;---------------------------------------
 ; helper functions
 
-wait_A_tenths ; wait for the number of .1 seconds given in A
-		; convert .1s unit to frames:
-		;	for PAL (50Hz), multiply by 5 (4+1)
-		;	for NTSC (60Hz), multiply by 6 (4+1+1)
-		sta .tenths
-		asl	; *2
-		asl	; *4
-		clc
-		adc #MODIFIED8	: .tenths = * - 1	; *5
-		; for NTSC, add another time
-		ldx is_PAL
-		bne +
-			clc
-			adc .tenths	; *6
-+		;FALLTHROUGH
-;wait_A_frames ; wait for the number of frames given in A
-		tax
-		; FIXME - move the whole "wait for tenths of seconds" to arch,
-		; let each architecture decide whether to use frame counting!
-		+arch_wait_X_frames
+wait_A_deciseconds ; wait for the number of .1 seconds given in A
+		+arch_wait_deciseconds
 		rts
 
 get_key ; wait for user to press key
