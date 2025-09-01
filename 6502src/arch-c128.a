@@ -28,7 +28,6 @@
 ; zero page
 !addr	currentcolor	= $f1
 !addr	z_revsflag	= $f3
-!addr	z_quote_mode	= $f4
 !addr	cbmshift	= $f7
 !addr	runptr		= $fb	; points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $fd	; counts recursion levels
@@ -221,6 +220,12 @@ arch_getin ; get character from keyboard and return in ISO-8859/1 encoding
 	}
 
 arch_chrout ; output character in iso-8859/1 encoding:
+; CAUTION: we do not want the kernal to do its petscii-to-screencode conversion
+; for printables. therefore, we first tell control codes and printables apart:
+; control codes are passed to CHROUT, printables are passed to the kernal's
+; "write-A/X-to-cursor-position" function and then CHROUT moves the cursor.
+; if this is ever changed and printables are passed to CHROUT, remember to clear
+; the quote mode flag at $f4 afterward, in case a '"' character was output!
 		pha
 		stx .tmp_x
 		sty .tmp_y

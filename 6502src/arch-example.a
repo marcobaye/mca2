@@ -24,7 +24,6 @@
 ; zero page
 !addr	runptr		= $00	; 16bit, points to next bytecode instruction (also used for inline text output and scanning of usage list)
 !addr	recursion_depth	= $02	; 8bit, counts recursion levels (okay, this need not really be in zp)
-!addr	z_quote_mode	= $03	; 8bit - if your system does not know any "quote mode", just consider this to be a write-only variable)
 
 ; system i/o (assuming iso-8859/1 encoding, at least for all needed printables)
 !addr	arch_chrout	= $ffd2	; system function to output a character - MUST PRESERVE A/X/Y!

@@ -250,8 +250,6 @@ linebuf_flush ; output what's in the line buffer
 		;--
 ---			lda linebuf, x
 			jsr arch_chrout
-			lda #0
-			sta z_quote_mode
 			inx
 +			cpx .chars_in_buf
 			bne ---
