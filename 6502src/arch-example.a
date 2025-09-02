@@ -28,6 +28,7 @@
 ; system i/o (assuming iso-8859/1 encoding, at least for all needed printables)
 !addr	arch_chrout	= $ffd2	; system function to output a character - MUST PRESERVE A/X/Y!
 !addr	arch_getin	= $ffe4	; system function to read a character from keyboard
+; do not call arch_getin yourself, call mca2_getin instead: it might exchange y and z.
 
 ; color codes:
 ; (names are from C64 colors, but architecture can change values in 0..f range)

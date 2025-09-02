@@ -307,7 +307,7 @@ arch_input
 					ldx .sys_color_under_cursor
 					jsr .k_write_to_screen	; clobbers y
 +				; get character
-				jsr arch_getin	; returns A, clobbers X and Y
+				jsr mca2_getin	; returns A, clobbers X and Y
 				jsr .sanitize	; convert f-keys to umlauts, ignore color codes, ...
 				tay	; into Y
 			pla	; restore length

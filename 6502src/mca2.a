@@ -96,11 +96,31 @@ wait_A_deciseconds ; wait for the number of .1 seconds given in A
 		+arch_wait_deciseconds
 		rts
 
+mca2_getin ; read key from keyboard. if wanted, swap y/z.
+; returns zero (with Z set) if buffer is empty.
+		jsr arch_getin
+		cmp #'y'
+		beq @yzYZ
+		cmp #'z'
+		beq @yzYZ
+		cmp #'Y'
+		beq @yzYZ
+		cmp #'Z'
+		bne @others
+@yzYZ		eor #0	: mca2_yz_swap_flag = * - 1
+@others		tax	; make sure Z flag corresponds to value in A
+		rts
+
+mca2_toggle_yz_swap
+		lda mca2_yz_swap_flag
+		eor #'y' xor 'z'
+		sta mca2_yz_swap_flag
+		rts
+
 get_key ; wait for user to press key
 		lda #0
 		jsr my_chrout	; force flushing of word wrap buffer
----			jsr arch_getin
-			tax	; check for zero
+---			jsr mca2_getin
 			beq ---
 		rts
 
