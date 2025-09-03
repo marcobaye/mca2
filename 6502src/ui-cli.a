@@ -19,12 +19,19 @@ ui_input
 		lda #'>'	; prompt
 		jsr arch_chrout
 		jsr arch_input	; get input
-		; data is in minibuf_buf (zero-terminated), length is in X
+		; data is in stringbuf_a, nullterminated, length before terminator is in X
 		lda #cr
 		jsr arch_chrout
-		; TODO - strip spaces
-		; TODO - all to lower case?
-		; TODO - convert ä ö ü ß to ae oe ue ss
+
+		jsr string_print
+
+		jsr string_tolower	; convert all upper case characters to lower case
+		jsr string_print
+
+		jsr string_toascii	; convert äöüß to aeoeuess
+		jsr string_print
+
+		; TODO - strip spaces?
 		rts
 
 	!set ui_words = ""
@@ -156,5 +163,84 @@ ui_handler_hi	!for @h in ui_handlers {
 
 	; add architecture-dependent code for command line:
 		+arch_input
-}
-}
+
+; helper functions for string handling:
+
+string_print ; print string buffer A (mostly for debugging purposes)
+		ldx #0
+		beq ++
+		;;;
+--			jsr arch_chrout
+			inx
+++			lda stringbuf_a, x
+			bne --
+		; append newline
+		lda #cr
+		jmp arch_chrout
+
+string_tolower ; process string buffer A: convert all upper case characters to lower case
+		ldx #0
+		beq ++
+		;;;
+--			; A..Z -> a..z
+			cmp #'A'
+			bcc @next
+			cmp #'Z' + 1
+			bcc @convert
+			; À..Þ -> à..þ
+			cmp #$c0
+			bcc @next
+			cmp #$de + 1
+			bcs @next
+@convert		ora #$20
+			sta stringbuf_a, x
+@next			inx
+++			lda stringbuf_a, x
+			bne --
+		rts
+
+string_toascii ; convert ä/ö/ü/ß to ae/oe/ue/ss (buffer A to A with B as temp)
+		ldx #0
+		ldy #0
+		beq @entry
+		;;;
+--			cmp #ß
+			bne ++
+				lda #'s'
+				sta stringbuf_b, y	; overwrite ß
+				bne @append
+				;;;
+++			cmp #ä
+			bne ++
+				lda #'a'
+				bne @overwrite_and_append_e
+				;;;
+++			cmp #ö
+			bne ++
+				lda #'o'
+				bne @overwrite_and_append_e
+				;;;
+++			cmp #ü
+			bne @next
+				lda #'u'
+@overwrite_and_append_e		sta stringbuf_b, y	; overwrite ä/ö/ü with a/o/u
+				lda #'e'
+@append				iny
+				sta stringbuf_b, y	; append second character
+@next			inx
+			iny
+@entry			lda stringbuf_a, x
+			sta stringbuf_b, y	; first make a copy (äöüß will be overwritten later)
+			bne --
+		;FALLTHROUGH	jmp string_b_to_a
+;string_b_to_a ; copy string from temp buffer back to main buffer
+		ldx #$ff	; pre-init
+--			inx
+			lda stringbuf_b, x
+			sta stringbuf_a, x
+			bne --
+		rts
+
+	}//endmacro
+
+}//endif

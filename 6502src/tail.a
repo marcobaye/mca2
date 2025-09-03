@@ -26,6 +26,12 @@ itemlist_buf
 	* = * + gamevars_ITEMCOUNT
 linebuf ; line buffer for word wrap (can hold one byte more than actual line)
 	* = * + arch_LINE_LENGTH + 1
+!if MCA2_USE_CLI {
+stringbuf_a ; main buffer for string editing
+	* = * + 256
+stringbuf_b ; temporary buffer for string editing
+	* = * + 256
+}
 
 ; -- end of external storage --
 

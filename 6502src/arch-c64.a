@@ -244,8 +244,8 @@ arch_chrout ; output character in iso-8859/1 encoding:
 		.k_chrout		= $ffd2
 	}
 ; config:
-	.MINIBUF_MAXSIZE	= 38	; maximum length user can type (leftmost is prompt char, rightmost is reserved for cursor)
-	!addr	minibuf_buf	= $200	; where the actual buffer space is
+	.MINIBUF_MAXSIZE	= arch_LINE_LENGTH - 2	; maximum length user can type (leftmost is prompt char, rightmost is reserved for cursor)
+	!addr	minibuf_buf	= stringbuf_a	; where the actual buffer space is
 	; $200 is the system's input buffer.
 	; you could also use $100, that's what is used when numbers are
 	; converted to their string representations.
@@ -255,7 +255,7 @@ arch_chrout ; output character in iso-8859/1 encoding:
 arch_input
 ;minibuf0 ; call this to get user input
 ; on entry:	place the cursor where you want it to be
-; on exit:	X = number of characters in buffer (not terminated)
+; on exit:	buffer holds nullterminated input string, X holds length without terminator.
 		ldx #0	; clear buffer
 		beq @next
 		;always
@@ -315,11 +315,10 @@ arch_input
 			; check for RETURN
 			cpy #petscii_CR
 			bne ----
-		; X holds number of characters in buffer
-; if you want the string to be terminated, add these two instructions
-; (but don't forget to make sure the buffer is large enough):
+		; zero-terminate:
 		lda #0
 		sta minibuf_buf, x
+		; X holds number of characters in buffer (not counting added terminator)
 		rts
 
 .sanitize ; convert f-keys to umlauts, ignore color codes, ...
