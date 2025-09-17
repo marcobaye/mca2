@@ -5,6 +5,9 @@
 !if MCA2_USE_CLI {
 
 	NUMBER_OF_DIRECTIONS	= 10
+	CL_MAX_WORD_COUNT	= 5	; we only really need four ("use X with Y"),
+	; but accepting one more means we can use the same check for
+	; "too many words for this command" and "too many words altogether".
 
 !macro ui_main {
 		; actual main loop for this UI:
@@ -16,20 +19,21 @@
 
 ; stuff called by main loop:
 ui_input
-		lda #'>'	; prompt
+		; show prompt
+		lda #'>'
 		jsr arch_chrout
-		jsr arch_input	; get input
-		; data is in stringbuf_a, nullterminated, length before terminator is in X
+		; get input
+		jsr arch_input	; data is in stringbuf_a, nullterminated, length before terminator is in X
 		lda #cr
 		jsr arch_chrout
-
-		jsr string_print
-
-		jsr string_tolower	; convert all upper case characters to lower case
-		jsr string_print
-
-		jsr string_toascii	; convert äöüß to aeoeuess
-		jsr string_print
+		; postprocess: convert to lower case, substitute umlauts
+		;jsr string_a_print
+		jsr string_a_tolower	; convert all upper case characters to lower case
+		;jsr string_a_print
+		jsr string_a_toascii_b	; convert äöüß to aeoeuess
+		; split into words
+		jsr string_b_towords
+		;jsr words_print
 
 		; TODO - strip spaces?
 		rts
@@ -166,7 +170,8 @@ ui_handler_hi	!for @h in ui_handlers {
 
 ; helper functions for string handling:
 
-string_print ; print string buffer A (mostly for debugging purposes)
+!if 0 {
+string_a_print ; print string buffer A (mostly for debugging purposes)
 		ldx #0
 		beq ++
 		;;;
@@ -178,7 +183,30 @@ string_print ; print string buffer A (mostly for debugging purposes)
 		lda #cr
 		jmp arch_chrout
 
-string_tolower ; process string buffer A: convert all upper case characters to lower case
+; print word from string buffer B starting at offset X (mostly for debugging purposes)
+--			jsr arch_chrout
+			inx
+word_X_print
+++			lda stringbuf_b, x
+			bne --
+		rts
+words_print ; print all words (mostly for debugging purposes)
+		ldy #0
+		beq @entry
+		;;;
+--			ldx word_indices, y
+			jsr word_X_print
+			; append newline
+			lda #cr
+			jsr arch_chrout
+			; next
+			iny
+@entry			cpy word_count
+			bcc --
+		rts
+}
+
+string_a_tolower ; process string buffer A: convert all upper case characters to lower case
 		ldx #0
 		beq ++
 		;;;
@@ -199,7 +227,7 @@ string_tolower ; process string buffer A: convert all upper case characters to l
 			bne --
 		rts
 
-string_toascii ; convert ä/ö/ü/ß to ae/oe/ue/ss (buffer A to A with B as temp)
+string_a_toascii_b ; convert ä/ö/ü/ß to ae/oe/ue/ss (buffer A to B)
 		ldx #0
 		ldy #0
 		beq @entry
@@ -232,13 +260,54 @@ string_toascii ; convert ä/ö/ü/ß to ae/oe/ue/ss (buffer A to A with B as tem
 @entry			lda stringbuf_a, x
 			sta stringbuf_b, y	; first make a copy (äöüß will be overwritten later)
 			bne --
-		;FALLTHROUGH	jmp string_b_to_a
-;string_b_to_a ; copy string from temp buffer back to main buffer
+		rts
+!if 0 {
+;string_b_to_a ; copy string from temp buffer B back to main buffer A
 		ldx #$ff	; pre-init
 --			inx
 			lda stringbuf_b, x
 			sta stringbuf_a, x
 			bne --
+		rts
+}
+
+string_b_towords ; split string in buffer B into separate words
+; output:
+;word_count	byte holding number of words found (in 0..CL_MAX_WORD_COUNT range)
+;word_indices	array of start indices
+;stringbuf_b	array of actual data
+; example: "  word1  word2  word3  " should return (3, [2, 9, 16, ...])
+	; init:
+		ldx #0
+		stx word_count
+	; find next word start:
+		dex;ldx #-1
+@wordloop
+--			inx
+			lda stringbuf_b, x
+			beq @done
+			cmp #' '
+			beq --
+		; we found a non-space at x, so this starts a new word:
+		txa	; remember start index
+		ldx word_count
+		cpx #CL_MAX_WORD_COUNT
+		bcs @too_many_words	; new word would exceed maximum
+		sta word_indices, x	; remember where the new word starts
+		inc word_count	; count this word
+		tax	; restore index
+		; scan forward until space or terminator:
+--			inx
+			lda stringbuf_b, x
+			beq @done
+			cmp #' '
+			bne --
+		; we found a space, so replace with terminator
+		lda #0
+		sta stringbuf_b, x
+		jmp @wordloop	; look for non-space
+@too_many_words
+@done
 		rts
 
 	}//endmacro

@@ -28,9 +28,13 @@ linebuf ; line buffer for word wrap (can hold one byte more than actual line)
 	* = * + arch_LINE_LENGTH + 1
 !if MCA2_USE_CLI {
 stringbuf_a ; main buffer for string editing
-	* = * + 256
+	* = * + 2 * arch_LINE_LENGTH + 1	; maybe use a full page?
 stringbuf_b ; temporary buffer for string editing
-	* = * + 256
+	* = * + 2 * arch_LINE_LENGTH + 1	; maybe use a full page?
+word_count ; number of words found in stringbuf_b
+	* = * + 1
+word_indices ; positions in stringbuf_b where words start
+	* = * + CL_MAX_WORD_COUNT
 }
 
 ; -- end of external storage --
