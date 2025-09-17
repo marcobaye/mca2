@@ -35,14 +35,59 @@ ui_input
 		jsr string_b_towords
 		;jsr words_print
 
-		; TODO - strip spaces?
+		; TODO
 		rts
 
-	!set ui_words = ""
-	!set ui_handlers = []
-	!macro cmd @word, @handler {
-		!set ui_words = ui_words + @word + "\0"
-		!set ui_handlers = ui_handlers + [ @handler ]
+; generate "verb" tables (store min/max args and handler fn, return enum):
+	!set UI_verb_counter = 0
+	!set UI_minmax = []
+	!set UI_handlers = []
+	!macro verb ~@enum, @min, @max, @handler {
+		@enum = UI_verb_counter
+		!set UI_verb_counter = UI_verb_counter + 1
+		!if @min > 3 {
+			!error "Minimum number of arguments must be in 0..3 range."
+		}
+		!set UI_minmax = UI_minmax + [ (@max << 2) | @min ]
+		!set UI_handlers = UI_handlers + [ @handler ]
+	}
+	+verb ~VERB_nothing,	0, 0, .cmd_nothing	; dummy command, needed for yz/zy swap
+	+verb ~VERB_north,	0, 0, .go_north
+	+verb ~VERB_northeast,	0, 0, .go_northeast
+	+verb ~VERB_east,	0, 0, .go_east
+	+verb ~VERB_southeast,	0, 0, .go_southeast
+	+verb ~VERB_south,	0, 0, .go_south
+	+verb ~VERB_southwest,	0, 0, .go_southwest
+	+verb ~VERB_west,	0, 0, .go_west
+	+verb ~VERB_northwest,	0, 0, .go_northwest
+	+verb ~VERB_up,		0, 0, .go_up
+	+verb ~VERB_down,	0, 0, .go_down
+	+verb ~VERB_inventory,	0, 0, .cmd_inventory
+	+verb ~VERB_examine,	0, 1, .cmd_examine	; without arg: describe location
+	+verb ~VERB_take,	1, 1, .cmd_take
+	+verb ~VERB_lose,	1, 1, .cmd_lose
+	+verb ~VERB_use,	1, 3, .cmd_use		; "use X" or "use X on Y" etc.
+	+verb ~VERB_combine,	2, 3, .cmd_combine	; "combine X Y" or "combine X with Y" etc.
+	+verb ~VERB_vocabulary,	0, 0, .cmd_vocabulary
+	+verb ~VERB_hint,	0, 0, .cmd_hint
+	+verb ~VERB_swapyz,	0, 0, .cmd_swapyz	; "zy" swaps y and z, "yz" does nothing
+
+ui_minmax	!for @mm in UI_minmax {
+			!by @mm
+		}
+ui_handler_lo	!for @h in UI_handlers {
+			!by <@h
+		}
+ui_handler_hi	!for @h in UI_handlers {
+			!by >@h
+		}
+
+; generate list of actual words and table with their enum values:
+	!set UI_words = ""
+	!set UI_enums = []
+	!macro cmd @word, @enum {
+		!set UI_words = UI_words + @word + "\0"
+		!set UI_enums = UI_enums + [ @enum ]
 	}
 
 ; CAUTION: it should be possible to use shortcuts for long commands. the easiest
@@ -54,77 +99,81 @@ ui_input
 ; the whole table must be sorted for each language separately:
 	!if DEUTSCH {
 .verb_table
-		+cmd "?",		.cmd_vocabulary	; vocabulary, info, ?
-		+cmd "ab",		.go_down	; unten, ab, runter
-		+cmd "benutze",		.cmd_use
-		+cmd "hoch",		.go_up		; oben, hoch, rauf
-		 +cmd "hilfe",		.cmd_hint
-		+cmd "info",		.cmd_vocabulary	; vocabulary, info, ?
-		+cmd "inventar",	.cmd_inventory
-		+cmd "kombiniere",	.cmd_combine
+		+cmd "?",		VERB_vocabulary	; vocabulary, info, ?
+		+cmd "ab",		VERB_down	; unten, ab, runter
+		+cmd "benutze",		VERB_use
+		+cmd "hoch",		VERB_up		; oben, hoch, rauf
+		 +cmd "hilfe",		VERB_hint
+		+cmd "info",		VERB_vocabulary	; vocabulary, info, ?
+		+cmd "inventar",	VERB_inventory
+		+cmd "kombiniere",	VERB_combine
 		; ...we need "n" before "no", "no" before "norden" and "norden" before "nordosten"
-		+cmd "n",		.go_north	; n, nor...
-		 +cmd "no",		.go_northeast	; no, nordo...
-		  +cmd "norden",	.go_north	; n, nor...
-		   +cmd "nordosten",	.go_northeast	; no, nordo...
-		   +cmd "nordwesten",	.go_northwest	; nw, nordw...
-		+cmd "nimm",		.cmd_take
-		+cmd "nw",		.go_northwest	; nw, nordw...
-		+cmd "osten",		.go_east	; o...
-		 +cmd "oben",		.go_up		; oben, hoch, rauf
-		+cmd "rauf",		.go_up		; oben, hoch, rauf
-		+cmd "runter",		.go_down	; unten, ab, runter
-		+cmd "s",		.go_south	; s...
-		+cmd "schaue",		.cmd_examine	; untersuche, schau
-		+cmd "so",		.go_southeast	; so, suedo...
-		+cmd "sueden",		.go_south	; s...
-		+cmd "suedosten",	.go_southeast	; so, suedo...
-		+cmd "suedwesten",	.go_southwest	; sw, suedw...
-		+cmd "sw",		.go_southwest	; sw, suedw...
-		+cmd "unten",		.go_down	; unten, ab, runter
-		+cmd "untersuche",	.cmd_examine	; untersuche, schau
-		+cmd "verliere",	.cmd_lose
-		+cmd "vocabulary",	.cmd_vocabulary	; vocabulary, info, ?
-		+cmd "westen",		.go_west	; w...
+		+cmd "n",		VERB_north	; n, nor...
+		 +cmd "no",		VERB_northeast	; no, nordo...
+		  +cmd "norden",	VERB_north	; n, nor...
+		   +cmd "nordosten",	VERB_northeast	; no, nordo...
+		   +cmd "nordwesten",	VERB_northwest	; nw, nordw...
+		+cmd "nimm",		VERB_take
+		+cmd "nw",		VERB_northwest	; nw, nordw...
+		+cmd "osten",		VERB_east	; o...
+		 +cmd "oben",		VERB_up		; oben, hoch, rauf
+		+cmd "rauf",		VERB_up		; oben, hoch, rauf
+		+cmd "runter",		VERB_down	; unten, ab, runter
+		+cmd "s",		VERB_south	; s...
+		+cmd "schaue",		VERB_examine	; untersuche, schau
+		+cmd "so",		VERB_southeast	; so, suedo...
+		+cmd "sueden",		VERB_south	; s...
+		+cmd "suedosten",	VERB_southeast	; so, suedo...
+		+cmd "suedwesten",	VERB_southwest	; sw, suedw...
+		+cmd "sw",		VERB_southwest	; sw, suedw...
+		+cmd "unten",		VERB_down	; unten, ab, runter
+		+cmd "untersuche",	VERB_examine	; untersuche, schau
+		+cmd "verliere",	VERB_lose
+		+cmd "vocabulary",	VERB_vocabulary	; vocabulary, info, ?
+		+cmd "westen",		VERB_west	; w...
+		; FIXME - add "y" and "z" entries so they do not do the same as "yz"/"zy"?
+		+cmd "yz",		VERB_nothing	; yz
+		+cmd "zy",		VERB_swapyz	; zy
 		;"ic" -> infocom
 		;"ms" -> magnetic scrolls
-		;"yz" -> do nothing
-		;"zy" -> toggle flag to exchange y and z on input
 		; add "load" and "save"
 	} else {
 .verb_table
-		+cmd "?",		.cmd_vocabulary	; vocabulary, info, ?
-		+cmd "apply",		.cmd_use	; apply, use
-		+cmd "combine",		.cmd_combine
-		+cmd "down",		.go_down
-		+cmd "east",		.go_east
-		 +cmd "examine",		.cmd_examine
-		+cmd "help",		.cmd_hint
-		+cmd "info",		.cmd_vocabulary	; vocabulary, info, ?
-		+cmd "inventory",	.cmd_inventory
-		+cmd "lose",		.cmd_lose
-		+cmd "north",		.go_north
-		+cmd "northeast",	.go_northeast
-		+cmd "northwest",	.go_northwest
-		 +cmd "ne", 		.go_northeast
-		 +cmd "nw",		.go_northwest
-		+cmd "south",		.go_south
-		+cmd "southeast",	.go_southeast
-		+cmd "southwest",	.go_southwest
-		 +cmd "se",		.go_southeast
-		 +cmd "sw",		.go_southwest
-		+cmd "take",		.cmd_take
-		+cmd "use",		.cmd_use	; apply, use
-		 +cmd "up",		.go_up
-		+cmd "vocabulary",	.cmd_vocabulary	; vocabulary, info, ?
-		+cmd "west",		.go_west
+		+cmd "?",		VERB_vocabulary	; vocabulary, info, ?
+		+cmd "apply",		VERB_use	; apply, use
+		+cmd "combine",		VERB_combine
+		+cmd "down",		VERB_down
+		+cmd "east",		VERB_east
+		 +cmd "examine",	VERB_examine
+		+cmd "help",		VERB_hint
+		+cmd "info",		VERB_vocabulary	; vocabulary, info, ?
+		+cmd "inventory",	VERB_inventory
+		+cmd "lose",		VERB_lose
+		+cmd "north",		VERB_north
+		+cmd "northeast",	VERB_northeast
+		+cmd "northwest",	VERB_northwest
+		 +cmd "ne", 		VERB_northeast
+		 +cmd "nw",		VERB_northwest
+		+cmd "south",		VERB_south
+		+cmd "southeast",	VERB_southeast
+		+cmd "southwest",	VERB_southwest
+		 +cmd "se",		VERB_southeast
+		 +cmd "sw",		VERB_southwest
+		+cmd "take",		VERB_take
+		+cmd "use",		VERB_use	; apply, use
+		 +cmd "up",		VERB_up
+		+cmd "vocabulary",	VERB_vocabulary	; vocabulary, info, ?
+		+cmd "west",		VERB_west
+		; FIXME - add "y" and "z" entries so they do not do the same as "yz"/"zy"?
+		+cmd "yz",		VERB_nothing	; yz
+		+cmd "zy",		VERB_swapyz	; zy
 		;"ic" -> infocom
 		;"ms" -> magnetic scrolls
 		; add "load" and "save"
 	}
 	; "untersuche", "schau" / "examine"	ohne Argument -> Raumbeschreibung, also screen redraw!
 
-ui_word_list	!tx ui_words, 0
+ui_word_list	!tx UI_words, 0
 		.size = * - ui_word_list
 		!if .size > 255 {
 			!error "word list takes " + dec(.size) + " bytes, adjust code to handle more than a page!"
@@ -134,11 +183,8 @@ ui_word_list	!tx ui_words, 0
 			; english takes 152 bytes
 			;!info "word list takes " + dec(.size) + " bytes."
 		}
-ui_handler_lo	!for @h in ui_handlers {
-			!by <@h
-		}
-ui_handler_hi	!for @h in ui_handlers {
-			!by >@h
+ui_enums	!for @e in UI_enums {
+			!by @e
 		}
 
 ; command handler functions:
@@ -162,6 +208,10 @@ ui_handler_hi	!for @h in ui_handlers {
 .cmd_lose
 .cmd_use
 .cmd_combine
+		; TODO!
+		rts
+.cmd_nothing ; "yz" -> do nothing
+.cmd_swapyz ; "zy" -> toggle flag to exchange y and z on input
 		; TODO!
 		rts
 
