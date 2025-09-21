@@ -7,6 +7,30 @@
 !addr	MODIFIED16	= $ffff
 	MAX_RECURSIONS	= 64	; ought to be enough for anybody (tm)
 
+; direction commands
+go_north	ldx #offset_NORTH
+		+bit16
+go_south	ldx #offset_SOUTH
+		+bit16
+go_west		ldx #offset_WEST
+		+bit16
+go_east		ldx #offset_EAST
+		+bit16
+go_up		ldx #offset_UP
+		+bit16
+go_down		ldx #offset_DOWN
+		lda directions_hi, x
+		bne +
+			; player chose an illegal direction
+			jsr indent1
+			+primm [ i18n_ILLEGAL_DIRECTION, cr ]
+			rts
++		tay
+		lda directions_lo, x
+		sty gamevars_hi + vo_PLAYER
+		sta gamevars_lo + vo_PLAYER
+		jmp engine_new_location
+
 itemlist_at_YYAA_new ; make list of items at a given place
 		ldx #0	; delete old list
 		stx itemlist_len

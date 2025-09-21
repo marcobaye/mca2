@@ -4,39 +4,45 @@
 
 !if MCA2_USE_CLI {
 
+	DEBUG			= 0	; set to nonzero to enable debugging code
 	NUMBER_OF_DIRECTIONS	= 10
 	CL_MAX_WORD_COUNT	= 5	; we only really need four ("use X with Y"),
 	; but accepting one more means we can use the same check for
 	; "too many words for this command" and "too many words altogether".
 
+!if DEUTSCH {
+	i18n_NOT_UNDERSTOOD	= "Hä?"
+	i18n_TOO_MANY_ARGS	= "Zuviele Argumente."
+	i18n_TOO_FEW_ARGS	= "Zuwenig Argumente."
+	i18n_SWAPPED_YZ		= "Y und Z getauscht."
+} else {
+	i18n_NOT_UNDERSTOOD	= "Not understood."
+	i18n_TOO_MANY_ARGS	= "Too many arguments."
+	i18n_TOO_FEW_ARGS	= "Too few arguments."
+	i18n_SWAPPED_YZ		= "Swapped Y and Z."
+}
+
 !macro ui_main {
 		; actual main loop for this UI:
-			; get user input
-.get			jsr ui_input	; get line from user and pre-process
-			; TODO - parse line
-			; TODO - call handler or output error message and how to show help
-			jmp .get
-
-; stuff called by main loop:
-ui_input
-		; show prompt
-		lda #'>'
-		jsr arch_chrout
-		; get input
-		jsr arch_input	; data is in stringbuf_a, nullterminated, length before terminator is in X
-		lda #cr
-		jsr arch_chrout
-		; postprocess: convert to lower case, substitute umlauts
-		;jsr string_a_print
-		jsr string_a_tolower	; convert all upper case characters to lower case
-		;jsr string_a_print
-		jsr string_a_toascii_b	; convert äöüß to aeoeuess
-		; split into words
-		jsr string_b_towords
-		;jsr words_print
-
-		; TODO
-		rts
+.mainloop		; get user input:
+			; first show prompt
+			lda #'>'
+			jsr arch_chrout
+			; then call architecture's input/minibuffer fn
+			jsr arch_input	; data is in stringbuf_a, nullterminated, length before terminator is in X
+			; ensure newline
+			lda #cr
+			jsr arch_chrout
+			; postprocess: convert to lower case, substitute umlauts
+			!if DEBUG { jsr string_a_print }
+			jsr string_a_tolower	; convert all upper case characters to lower case
+			!if DEBUG { jsr string_a_print }
+			jsr string_a_toascii_b	; convert äöüß to aeoeuess
+			; split into words
+			jsr string_b_towords
+			!if DEBUG { jsr words_print }
+			jsr .parse_words
+			jmp .mainloop
 
 ; generate "verb" tables (store min/max args and handler fn, return enum):
 	!set UI_verb_counter = 0
@@ -52,16 +58,16 @@ ui_input
 		!set UI_handlers = UI_handlers + [ @handler ]
 	}
 	+verb ~VERB_nothing,	0, 0, .cmd_nothing	; dummy command, needed for yz/zy swap
-	+verb ~VERB_north,	0, 0, .go_north
-	+verb ~VERB_northeast,	0, 0, .go_northeast
-	+verb ~VERB_east,	0, 0, .go_east
-	+verb ~VERB_southeast,	0, 0, .go_southeast
-	+verb ~VERB_south,	0, 0, .go_south
-	+verb ~VERB_southwest,	0, 0, .go_southwest
-	+verb ~VERB_west,	0, 0, .go_west
-	+verb ~VERB_northwest,	0, 0, .go_northwest
-	+verb ~VERB_up,		0, 0, .go_up
-	+verb ~VERB_down,	0, 0, .go_down
+	+verb ~VERB_north,	0, 0, go_north
+	+verb ~VERB_northeast,	0, 0, go_northeast
+	+verb ~VERB_east,	0, 0, go_east
+	+verb ~VERB_southeast,	0, 0, go_southeast
+	+verb ~VERB_south,	0, 0, go_south
+	+verb ~VERB_southwest,	0, 0, go_southwest
+	+verb ~VERB_west,	0, 0, go_west
+	+verb ~VERB_northwest,	0, 0, go_northwest
+	+verb ~VERB_up,		0, 0, go_up
+	+verb ~VERB_down,	0, 0, go_down
 	+verb ~VERB_inventory,	0, 0, .cmd_inventory
 	+verb ~VERB_examine,	0, 1, .cmd_examine	; without arg: describe location
 	+verb ~VERB_take,	1, 1, .cmd_take
@@ -71,14 +77,16 @@ ui_input
 	+verb ~VERB_vocabulary,	0, 0, .cmd_vocabulary
 	+verb ~VERB_hint,	0, 0, .cmd_hint
 	+verb ~VERB_swapyz,	0, 0, .cmd_swapyz	; "zy" swaps y and z, "yz" does nothing
+	+verb ~VERB_UNKNOWN,	0, 63, .cmd_unknown	; default if verb not recognized
 
-ui_minmax	!for @mm in UI_minmax {
+; now generate actual tables from the data given in the macro calls above:
+.ui_minmax	!for @mm in UI_minmax {
 			!by @mm
 		}
-ui_handler_lo	!for @h in UI_handlers {
+.ui_handler_lo	!for @h in UI_handlers {
 			!by <@h
 		}
-ui_handler_hi	!for @h in UI_handlers {
+.ui_handler_hi	!for @h in UI_handlers {
 			!by >@h
 		}
 
@@ -89,7 +97,6 @@ ui_handler_hi	!for @h in UI_handlers {
 		!set UI_words = UI_words + @word + "\0"
 		!set UI_enums = UI_enums + [ @enum ]
 	}
-
 ; CAUTION: it should be possible to use shortcuts for long commands. the easiest
 ; way to do this is to scan all possible commands and select the first where the
 ; user input matches, i.e. we want the inputs "n", "no" and "north" all to
@@ -173,8 +180,9 @@ ui_handler_hi	!for @h in UI_handlers {
 	}
 	; "untersuche", "schau" / "examine"	ohne Argument -> Raumbeschreibung, also screen redraw!
 
-ui_word_list	!tx UI_words, 0
-		.size = * - ui_word_list
+; now generate actual tables from the data given in the macro calls above:
+.ui_word_list	!tx UI_words, 0
+		.size = * - .ui_word_list
 		!if .size > 255 {
 			!error "word list takes " + dec(.size) + " bytes, adjust code to handle more than a page!"
 		} else {
@@ -183,23 +191,24 @@ ui_word_list	!tx UI_words, 0
 			; english takes 152 bytes
 			;!info "word list takes " + dec(.size) + " bytes."
 		}
-ui_enums	!for @e in UI_enums {
+.ui_enums	!for @e in UI_enums {
 			!by @e
 		}
 
 ; command handler functions:
-.go_north
-.go_northeast
-.go_east
-.go_southeast
-.go_south
-.go_southwest
-.go_west
-.go_northwest
-.go_down
-.go_up
-		; TODO!
+;go_north
+go_northeast
+;go_east
+go_southeast
+;go_south
+go_southwest
+;go_west
+go_northwest
+;go_up
+;go_down
+		+primm [ "TODO - still missing", cr ]
 		rts
+
 .cmd_hint
 .cmd_vocabulary
 .cmd_inventory
@@ -208,19 +217,107 @@ ui_enums	!for @e in UI_enums {
 .cmd_lose
 .cmd_use
 .cmd_combine
-		; TODO!
+		+primm [ "TODO - still missing", cr ]
 		rts
-.cmd_nothing ; "yz" -> do nothing
-.cmd_swapyz ; "zy" -> toggle flag to exchange y and z on input
-		; TODO!
+
+.cmd_unknown	+primm [ i18n_NOT_UNDERSTOOD, cr ]
 		rts
+
+; "yz" -> do nothing
+.cmd_nothing	rts
+
+; "zy" -> toggle flag to exchange y and z on input
+.cmd_swapyz	+primm [ i18n_SWAPPED_YZ, cr ]
+		jmp mca2_toggle_yz_swap
 
 	; add architecture-dependent code for command line:
 		+arch_input
 
+; stuff called by main loop:
+
+.find_verb
+; on entry:
+;word_count	byte holding number of words found (in 0..CL_MAX_WORD_COUNT range)
+;word_indices	array of start indices
+;stringbuf_b	array of actual data
+; example: "  word1  word2  word3  " should return (3, [2, 9, 16, ...])
+; on exit: X = verb enum
+		; try to find first input word in our list of verbs
+		; start checking at start of verb table (offset 0, verb 0)
+		ldy #0	; offset 0
+		sty @verb_counter	; verb 0
+----			; now compare input word to current verb
+			ldx word_indices+0	; get start of first word
+			jmp @entry
+
+--				; compare word to current verb
+				inx
+				iny
+@entry				lda stringbuf_b, x
+				beq @found	; if we arrive at terminator, we have a match!
+				cmp .verb_table, y
+				beq --
+			; input does not match current verb. go to next verb:
+			; (scan for terminator, unless we already found it)
+			; CAUTION! by using "-1" we can skip the DEY before and INY after:
+			;dey
+--				iny
+				lda .verb_table - 1, y
+				bne --
+			;iny	; go on _after_ terminator
+			inc @verb_counter	; next verb
+			; check for end of verb table:
+			lda .verb_table, y
+			bne ----
+;out_of_verbs
+		ldx #VERB_UNKNOWN
+		rts
+
+@found		ldx #MODIFIED8	: @verb_counter = * - 1
+		; convert verb counter (position in list) to verb enum (exact id)
+		lda .ui_enums, x
+		tax
+		!if DEBUG {
+			ora #$40
+			jsr arch_chrout
+			lda #cr
+			jsr arch_chrout
+		}
+.rts		rts
+
+; parse user input
+.parse_words	ldx word_count
+		beq .rts	; no input -> no reaction -> go on with mainloop
+		dex
+		stx @arg_count
+		jsr .find_verb	; -> X = verb enum
+		; check number of arguments
+		lda .ui_minmax, x
+		tay
+		lsr
+		lsr	; now A = maximum number of args
+		cmp #MODIFIED8	: @arg_count = * - 1
+		bcc @too_many_arguments
+		tya
+		and #3	; now A = minimum number of args
+		cmp word_count
+		bcs @too_few_arguments
+		lda .ui_handler_lo, x
+		sta .call
+		lda .ui_handler_hi, x
+		sta .call + 1
+		jmp MODIFIED16	: .call = * - 2
+
+@too_many_arguments
+		+primm [ i18n_TOO_MANY_ARGS, cr ]
+		rts
+@too_few_arguments
+		+primm [ i18n_TOO_FEW_ARGS, cr ]
+		rts
+
 ; helper functions for string handling:
 
-!if 0 {
+!if DEBUG {
 string_a_print ; print string buffer A (mostly for debugging purposes)
 		ldx #0
 		beq ++

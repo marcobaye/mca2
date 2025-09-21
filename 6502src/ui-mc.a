@@ -127,24 +127,24 @@ keys_end
 
 action_lo
 		!if ALLOW_CURSOR {
-			!by <go_n, <go_s, <go_w, <go_e
+			!by <go_north, <go_south, <go_west, <go_east
 		}
-		!by <go_u, <go_d
+		!by <go_up, <go_down
 		!if ALLOW_KEYPAD {
-			!by <go_n, <go_s, <go_w, <go_e, <redisp
+			!by <go_north, <go_south, <go_west, <go_east, <redisp
 		}
 		!by <redisp, <redisp, <redisp, <inventory
-		!by <help, <go_n, <go_s, <go_w, <go_e, <go_u, <go_d, <inventory, <take, <lose, <examine, <use, <combine
+		!by <help, <go_north, <go_south, <go_west, <go_east, <go_up, <go_down, <inventory, <take, <lose, <examine, <use, <combine
 action_hi
 		!if ALLOW_CURSOR {
-			!by >go_n, >go_s, >go_w, >go_e
+			!by >go_north, >go_south, >go_west, >go_east
 		}
-		!by >go_u, >go_d
+		!by >go_up, >go_down
 		!if ALLOW_KEYPAD {
-			!by >go_n, >go_s, >go_w, >go_e, >redisp
+			!by >go_north, >go_south, >go_west, >go_east, >redisp
 		}
 		!by >redisp, >redisp, >redisp, >inventory
-		!by >help, >go_n, >go_s, >go_w, >go_e, >go_u, >go_d, >inventory, >take, >lose, >examine, >use, >combine
+		!by >help, >go_north, >go_south, >go_west, >go_east, >go_up, >go_down, >inventory, >take, >lose, >examine, >use, >combine
 
 help ; "?" command
 		+i18n_HELP
@@ -152,30 +152,6 @@ help ; "?" command
 
 ; "redisplay" command
 	redisp = engine_new_location
-
-; direction commands
-go_n		ldx #offset_NORTH
-		+bit16
-go_s		ldx #offset_SOUTH
-		+bit16
-go_w		ldx #offset_WEST
-		+bit16
-go_e		ldx #offset_EAST
-		+bit16
-go_u		ldx #offset_UP
-		+bit16
-go_d		ldx #offset_DOWN
-		lda directions_hi, x
-		bne +
-			; player chose an illegal direction
-			jsr indent1
-			+primm [ i18n_ILLEGAL_DIRECTION, cr ]
-			rts
-+		tay
-		lda directions_lo, x
-		sty gamevars_hi + vo_PLAYER
-		sta gamevars_lo + vo_PLAYER
-		jmp engine_new_location
 
 inventory ; "inventory" command
 		+primm [ i18n_ITEMS_IN_INV ]
