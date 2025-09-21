@@ -713,7 +713,10 @@ class converter(object):
         self.current_location = None
 
 # functions to parse different line types:
-    def process_asm_line(self, line):
+    # CAUTION: all names starting with "handle_" may be looked up via internal dict,
+    # so this code won't necessarily reference them directly!
+
+    def handle_asm_line(self, line):
         """line to pass to assembler unchanged"""
         if self.codeseq != None:
             self.error_line('Please put "asm" lines before all npcs/items/locations/procedures/usages/combinations')
@@ -728,7 +731,7 @@ class converter(object):
             self.text_mode = True
         self.codeseq.add_code('!tx ' + ' '.join(line))
 
-    def process_use_line(self, line):
+    def handle_use_line(self, line):
         """code to call if player wants to use item"""
         self.code_close()   # close previous code sequence, if there was one
         it = self.get_args(line, 1)[0]
@@ -738,7 +741,7 @@ class converter(object):
         self.add_symbol_definition(use)
         use.set_code(self.code_open())
 
-    def process_combi_line(self, line):
+    def handle_combine_line(self, line):
         """code to call if player wants to combine items"""
         self.code_close()   # close previous code sequence, if there was one
         it1, it2 = self.get_args(line, 2)
@@ -750,6 +753,10 @@ class converter(object):
         self.add_symbol_definition(co)
         co.set_code(self.code_open())
 
+    def handle_using_line(self, line):
+        """older form of "combine" keyword"""
+        self.handle_combine_line(line)
+
     def proc_loc_line(self, line, objtype):
         """new procedure or location"""
         self.code_close()   # close previous code sequence, if there was one
@@ -759,22 +766,22 @@ class converter(object):
         obj.set_code(self.code_open())
         return name
 
-    def process_loc_line(self, line):
+    def handle_loc_line(self, line):
         """new location"""
         self.current_location = self.proc_loc_line(line, location)
 
-    def process_proc_line(self, line):
+    def handle_proc_line(self, line):
         """new procedure"""
         self.proc_loc_line(line, procedure)
 
-    def process_callproc_line(self, line):
+    def handle_callproc_line(self, line):
         """call procedure"""
         self.text_close()
         proc_name = self.get_args(line, 1)[0]
         proc = self.ensure_defined(proc_name, procedure)
         self.codeseq.add_code('+gosub ' + proc.code_label())
 
-    def process_callasm_line(self, line):
+    def handle_callasm_line(self, line):
         """call machine language"""
         self.text_close()
         asm_name = self.get_args(line, 1)[0]
@@ -793,6 +800,34 @@ class converter(object):
             else:
                 self.add_location_backdirection(target_loc_name, backdir)
 
+    # directional movements
+    def handle_n_line(self, line):
+        self.process_dir_line('north', line)
+    def handle_e_line(self, line):
+        self.process_dir_line('east', line)
+    def handle_s_line(self, line):
+        self.process_dir_line('south', line)
+    def handle_w_line(self, line):
+        self.process_dir_line('west', line)
+    def handle_u_line(self, line):
+        self.process_dir_line('up', line)
+    def handle_d_line(self, line):
+        self.process_dir_line('down', line)
+
+    # directional movements with two-way shortcut:
+    def handle_n2_line(self, line):
+        self.process_dir_line('north', line, 'south')
+    def handle_e2_line(self, line):
+        self.process_dir_line('east', line, 'west')
+    def handle_s2_line(self, line):
+        self.process_dir_line('south', line, 'north')
+    def handle_w2_line(self, line):
+        self.process_dir_line('west', line, 'east')
+    def handle_u2_line(self, line):
+        self.process_dir_line('up', line, 'down')
+    def handle_d2_line(self, line):
+        self.process_dir_line('down', line, 'up')
+
     def add_substitution(self, name, value):
         """helper function for "define" and "enum" lines"""
         if name in self.definitions:
@@ -800,13 +835,13 @@ class converter(object):
         else:
             self.subst[name] = value
 
-    def process_define_line(self, line):
+    def handle_define_line(self, line):
         """definition for text substitution (basically symbolic constants)"""
         #self.text_close()      this can actually be given inside of text as it does not inject code into output!
         name, value = self.get_args(line, 2)
         self.add_substitution(name, value)
 
-    def process_enum_line(self, line):
+    def handle_enum_line(self, line):
         """enumerate symbolic constants"""
         #self.text_close()      this can actually be given inside of text as it does not inject code into output!
         value = 0
@@ -814,16 +849,16 @@ class converter(object):
             self.add_substitution(word, str(value))
             value += 1
 
-    def process_u16_line(self, line):
+    def handle_u16_line(self, line):
         """variable declaration (unsigned 16 bit)"""
         #self.text_close()      this can actually be given inside of text as it does not inject code into output!
         name, start_value = self.get_args(line, 2)
         num = self.get_value(start_value)   # get actual number for start value     FIXME - move this to some pre-processor
         self.add_symbol_definition(variable(name, num))
 
-    def process_var_line(self, line):
-        """ "var" lines are now "u16" lines """
-        self.process_u16_line(line)
+    def handle_var_line(self, line):
+        """older form of "u16" keyword"""
+        self.handle_u16_line(line)
 
     def process_npcitem(self, line, objtype):
         """declare npc or item for player to interact with"""
@@ -841,13 +876,15 @@ class converter(object):
         self.add_symbol_reference(initial_location, location)
         # make current
         npcitem.set_description(self.code_open())
-    def process_npc_line(self, line):
+
+    def handle_npc_line(self, line):
         self.process_npcitem(line, npc)
-    def process_item_line(self, line):
+
+    def handle_item_line(self, line):
         self.musthaves["item"] = True
         self.process_npcitem(line, item)
 
-    def process_delay_line(self, line):
+    def handle_delay_line(self, line):
         """wait for given number of .1 seconds"""
         self.text_close()
         var = self.get_force2var(self.get_args(line, 1)[0]) # arg could be var or const or literal
@@ -903,7 +940,7 @@ class converter(object):
         self.codeseq.add_label('.c_after' + str(self.block_state[-1]))
 
 # while/endwhile:
-    def process_while_line(self, line):
+    def handle_while_line(self, line):
         self.text_close()
         self.codeseq.add_code('!zone { ; "while"')  # TODO: get rid of zone. find a way to implement break/continue!
         self.block_state.append(line)   # keep line for later, will be evaluated by "endwhile"
@@ -912,7 +949,7 @@ class converter(object):
         self.codeseq.add_label('.c_loop')
         self.codeseq.change_indent(1)
 
-    def process_endwhile_line(self, line):
+    def handle_endwhile_line(self, line):
         self.text_close()
         if ' '.join(line) != 'endwhile':
             self.error_line('Garbage after ENDWHILE?!')
@@ -927,14 +964,14 @@ class converter(object):
         self.codeseq.add_code('} ; end of "while" zone')
 
 # if/elif/else/endif:
-    def process_if_line(self, line):
+    def handle_if_line(self, line):
         self.text_close()
         self.codeseq.add_code('!zone { ; "if/elif/else"')   # TODO: get rid of zone, add an "if" nesting counter to labels instead. I need "zone" for loops/break/continue!
         self.block_state.append(1)  # go deeper, then in 1st block of if/elif/else
         self.process_condition(line)
         self.codeseq.change_indent(1)
 
-    def process_elif_line(self, line):
+    def handle_elif_line(self, line):
         self.text_close()
         if self.block_state[-1] in (0, "w"):
             self.error_line('Used ELIF without IF')
@@ -946,7 +983,7 @@ class converter(object):
         self.process_condition(line)
         self.codeseq.change_indent(1)
 
-    def process_else_line(self, line):
+    def handle_else_line(self, line):
         self.text_close()
         if ' '.join(line) != 'else':
             self.error_line('Garbage after ELSE?!')
@@ -960,7 +997,7 @@ class converter(object):
         self.codeseq.change_indent(1)
         self.block_state[-1] = -1   # in ELSE block of if/elif/else/endif
 
-    def process_endif_line(self, line):
+    def handle_endif_line(self, line):
         self.text_close()
         if ' '.join(line) != 'endif':
             self.error_line('Garbage after ENDIF?!')
@@ -974,7 +1011,7 @@ class converter(object):
         self.codeseq.add_code('} ; end of "if/elif/else" zone')
 
 # var changing:
-    def process_move_line(self, line):
+    def handle_move_line(self, line):
         """move an npc/item to a different location
         args are expected to be MOVEABLE/MOVEABLE or MOVEABLE/LOCATION"""
         self.text_close()
@@ -990,15 +1027,15 @@ class converter(object):
             # but still the problem remains if moving large item @ small item in INV!
             self.codeseq.add_code('+varloadimm ' + npcitem.offset_symbol() + ', ' + asmlabel_location(target))
 
-    def process_gain_line(self, line):
+    def handle_gain_line(self, line):
         """move an npc/item to INVENTORY"""
         npcitem = self.get_args(line, 1)[0]
-        self.process_move_line(['move', npcitem, 'INVENTORY'])
+        self.handle_move_line(['move', npcitem, 'INVENTORY'])
 
-    def process_hide_line(self, line):
+    def handle_hide_line(self, line):
         """move an npc/item to NOWHERE"""
         npcitem = self.get_args(line, 1)[0]
-        self.process_move_line(['move', npcitem, 'NOWHERE'])
+        self.handle_move_line(['move', npcitem, 'NOWHERE'])
 
     def process_let_line(self, line):
         """writing to variable"""
@@ -1017,6 +1054,12 @@ class converter(object):
         var = self.ensure_defined(varname, variable)
         # FIXME - make sure var is not read-only!
         self.codeseq.add_code('+' + what + ' ' + var.offset_symbol())
+
+    # increment/decrement variable
+    def handle_inc_line(self, line):
+        self.process_incdec_line('varinc', line)
+    def handle_dec_line(self, line):
+        self.process_incdec_line('vardec', line)
 
 # outer stuff:
     def process_line(self, line):
@@ -1048,45 +1091,12 @@ class converter(object):
             # text output
             self.process_text_line(line)
         else:
-            # everything else should start with a keyword...
-            key = line[0]
-            if key == 'inc':
-                self.process_incdec_line('varinc', line)
-            elif key == 'dec':
-                self.process_incdec_line('vardec', line)
-            elif key == 'combine':
-                self.process_combi_line(line)
-            elif key == 'using':    # older form of "combine"
-                self.process_combi_line(line)
-            elif key == 'n':
-                self.process_dir_line('north', line)
-            elif key == 'n2':
-                self.process_dir_line('north', line, 'south')
-            elif key == 'e':
-                self.process_dir_line('east', line)
-            elif key == 'e2':
-                self.process_dir_line('east', line, 'west')
-            elif key == 's':
-                self.process_dir_line('south', line)
-            elif key == 's2':
-                self.process_dir_line('south', line, 'north')
-            elif key == 'w':
-                self.process_dir_line('west', line)
-            elif key == 'w2':
-                self.process_dir_line('west', line, 'east')
-            elif key == 'u':
-                self.process_dir_line('up', line)
-            elif key == 'u2':
-                self.process_dir_line('up', line, 'down')
-            elif key == 'd':
-                self.process_dir_line('down', line)
-            elif key == 'd2':
-                self.process_dir_line('down', line, 'up')
-            elif len(line) == 3 and line[1] == '=':
-                # ...or is an assignment to a variable
+            if len(line) == 3 and line[1] == '=':
+                # everything else should be an assignment to a variable...
                 self.process_let_line(line)
             else:
-                handler = getattr(converter, "process_" + key + "_line", None)
+                # ...or start with a keyword:
+                handler = getattr(converter, "handle_" + line[0] + "_line", None)
                 if handler:
                     handler(self, line)
                 else:
