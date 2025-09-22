@@ -8,8 +8,6 @@
 
 !if MCA2_USE_CLI == 0 {
 
-	NUMBER_OF_DIRECTIONS	= 6
-
 !if DEUTSCH {
 	!macro i18n_HELP {
 		jsr my_primm	: !tx cr
@@ -29,7 +27,7 @@
 		}
 		!tx ".", cr, 0
 	}
-	i18n_COMMAND_CHARACTERS	= "?nswohrigvubk"	; hilfe, nord, süd, west, ost, hoch, runter, inventar, grabsch, verliere, untersuche, benutze, kombiniere
+	i18n_COMMAND_CHARACTERS	= "?noswhrigvubk"	; hilfe, nord, ost, süd, west, hoch, runter, inventar, grabsch, verliere, untersuche, benutze, kombiniere
 	i18n_WRONG_KEY		= "(falsche Taste, drück '?' für Hilfe)"
 	i18n_TAKE		= "Grabsch:"
 	i18n_NOTHING_TO_TAKE	= " Nichts da zum Grabschen!"
@@ -68,7 +66,7 @@
 		}
 		!tx ".", cr, 0
 	}
-	i18n_COMMAND_CHARACTERS	= "?nsweuditlxac"	; help, north, south, west, east, up, down, inventory, take, lose, examine, apply, combine
+	i18n_COMMAND_CHARACTERS	= "?neswuditlxac"	; help, north, east, south, west, up, down, inventory, take, lose, examine, apply, combine
 	i18n_WRONG_KEY		= "(wrong key, press '?' for help)"
 	i18n_TAKE		=  "Take:"
 	i18n_NOTHING_TO_TAKE	= " There is nothing to take!"
@@ -115,11 +113,11 @@
 
 keys_start
 		!if ALLOW_CURSOR {
-			!tx controlcode_UP, controlcode_DOWN, controlcode_LEFT, controlcode_RIGHT
+			!tx controlcode_UP, controlcode_RIGHT, controlcode_DOWN, controlcode_LEFT
 		}
 		!tx "+-"
 		!if ALLOW_KEYPAD {
-			!tx "82465"
+			!tx "896321475"
 		}
 		!tx controlcode_CLEAR, controlcode_HOME, petscii_F1, petscii_F3	; FIXME - move F1/F3 to arch macro!
 		!tx i18n_COMMAND_CHARACTERS
@@ -127,24 +125,16 @@ keys_end
 
 action_lo
 		!if ALLOW_CURSOR {
-			!by <go_north, <go_south, <go_west, <go_east
+			+split_lo [ go_north, go_east, go_south, go_west ]
 		}
-		!by <go_up, <go_down
+		+split_lo [ go_up, go_down ]
 		!if ALLOW_KEYPAD {
-			!by <go_north, <go_south, <go_west, <go_east, <redisp
+			+split_lo [ go_north, go_northeast, go_east, go_southeast, go_south, go_southwest, go_west, go_northwest, redisp ]
 		}
-		!by <redisp, <redisp, <redisp, <inventory
-		!by <help, <go_north, <go_south, <go_west, <go_east, <go_up, <go_down, <inventory, <take, <lose, <examine, <use, <combine
+		+split_lo [ redisp, redisp, redisp, inventory ]
+		+split_lo [ help, go_north, go_east, go_south, go_west, go_up, go_down, inventory, take, lose, examine, use, combine ]
 action_hi
-		!if ALLOW_CURSOR {
-			!by >go_north, >go_south, >go_west, >go_east
-		}
-		!by >go_up, >go_down
-		!if ALLOW_KEYPAD {
-			!by >go_north, >go_south, >go_west, >go_east, >redisp
-		}
-		!by >redisp, >redisp, >redisp, >inventory
-		!by >help, >go_north, >go_south, >go_west, >go_east, >go_up, >go_down, >inventory, >take, >lose, >examine, >use, >combine
+		+split_hi
 
 help ; "?" command
 		+i18n_HELP
@@ -368,26 +358,5 @@ itemlist_menu_X_X ; list up items with characters (DO NOT CALL IF LIST IS EMPTY!
 			cpx #MODIFIED8	: .limit = * - 1
 			bne ---
 		rts	; X returns limiting (illegal!) index
-
-show_paths ; output list of possible directions:
-		+primm [ cr, i18n_PATHS, ":" ]
-		ldx #0
----
-			lda #' '
-			jsr my_chrout	; output separator
-			ldy #color_out
-			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
-			beq +
-				ldy #color_emph
-+			tya
-			jsr my_chrout
-			ldy dirs_lo, x
-			lda dirs_hi, x
-			jsr print_AAYY
-			inx
-			cpx #NUMBER_OF_DIRECTIONS
-			bne ---
-		+primm [ color_std, cr, cr ]
-		rts
 }
 }

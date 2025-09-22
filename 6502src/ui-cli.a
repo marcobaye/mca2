@@ -5,7 +5,6 @@
 !if MCA2_USE_CLI {
 
 	DEBUG			= 0	; set to nonzero to enable debugging code
-	NUMBER_OF_DIRECTIONS	= 10
 	CL_MAX_WORD_COUNT	= 5	; we only really need four ("use X with Y"),
 	; but accepting one more means we can use the same check for
 	; "too many words for this command" and "too many words altogether".
@@ -24,7 +23,8 @@
 
 !macro ui_main {
 		; actual main loop for this UI:
-.mainloop		; get user input:
+.mainloop		jsr show_paths
+			; get user input:
 			; first show prompt
 			lda #'>'
 			jsr arch_chrout
@@ -196,19 +196,6 @@
 		}
 
 ; command handler functions:
-;go_north
-go_northeast
-;go_east
-go_southeast
-;go_south
-go_southwest
-;go_west
-go_northwest
-;go_up
-;go_down
-		+primm [ "TODO - still missing", cr ]
-		rts
-
 .cmd_hint
 .cmd_vocabulary
 .cmd_inventory

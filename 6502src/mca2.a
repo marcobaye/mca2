@@ -10,12 +10,15 @@
 ; 26 Jun 2017	got it to work
 ; 16 Aug 2017	looks finished enough to release v1.1 of demo game
 
-	!src <6502/std.a>	; for +bit16
+	!src <6502/std.a>	; for bit16 macro
+	!src <6502/split.a>	; for macro to split pointer tables into lo/hi
 	;!ct pet	; disabled, strings are now in ISO 8859-1 or UTF-8
 
 ; helper values
 	MODIFIED8	= $ff
+!addr	MODIFIED16	= $ffff
 	LIST_LEN_LIMIT	= 24	; with prompt underneath, screen shouldn't scroll
+	NUMBER_OF_DIRECTIONS	= 10	; 8 horizontal (N/NE/E/SE/S/SW/W/NW) plus up/down
 
 !if DEUTSCH {
 	i18n_ILLEGAL_DIRECTION	= "Richtung nicht möglich, bitte eine andere wählen."
@@ -25,10 +28,14 @@
 	i18n_NO_ITEMS	= " (keine)"
 	i18n_ITEMS	= "Dinge"
 	i18n_PATHS	= "Wege"
-	i18n_NORTH	= "Nord"
-	i18n_SOUTH	= "Süd"
-	i18n_WEST	= "West"
-	i18n_EAST	= "Ost"
+	i18n_NORTH	= "N"	;"Nord"
+	i18n_NORTHEAST	= "NO"	;"Nordost"
+	i18n_EAST	= "O"	;"Ost"
+	i18n_SOUTHEAST	= "SO"	;"Südost"
+	i18n_SOUTH	= "S"	;"Süd"
+	i18n_SOUTHWEST	= "SW"	;"Südwest"
+	i18n_WEST	= "W"	;"West"
+	i18n_NORTHWEST	= "NW"	;"Nordwest"
 	i18n_UP		= "Hoch"
 	i18n_DOWN	= "Runter"
 } else {
@@ -39,10 +46,14 @@
 	i18n_NO_ITEMS	= " (none)"
 	i18n_ITEMS	= "Items"
 	i18n_PATHS	= "Paths"
-	i18n_NORTH	= "North"
-	i18n_SOUTH	= "South"
-	i18n_WEST	= "West"
-	i18n_EAST	= "East"
+	i18n_NORTH	= "N"	;"North"
+	i18n_NORTHEAST	= "NE"	;"Northeast"
+	i18n_EAST	= "E"	;"East"
+	i18n_SOUTHEAST	= "SE"	;"Southeast"
+	i18n_SOUTH	= "S"	;"South"
+	i18n_SOUTHWEST	= "SW"	;"Southwest"
+	i18n_WEST	= "W"	;"West"
+	i18n_NORTHWEST	= "NW"	;"Northwest"
 	i18n_UP		= "Up"
 	i18n_DOWN	= "Down"
 }

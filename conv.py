@@ -790,6 +790,8 @@ class converter(object):
     def process_dir_line(self, direction, line, backdir=None):
         """allow a direction of movement and specify target, with two-way option"""
         self.text_close()
+        if direction in ('northeast', 'southeast', 'southwest', 'northwest'):
+            self.uses_10_directions = True  # FIXME: add a check and error if combined with old mc interface because that only supports six directions (unless playing with numpad)
         target_loc_name = self.get_args(line, 1)[0]
         self.add_location_direction(direction, target_loc_name)
         if backdir:
@@ -803,12 +805,20 @@ class converter(object):
     # directional movements
     def handle_n_line(self, line):
         self.process_dir_line('north', line)
+    def handle_ne_line(self, line):
+        self.process_dir_line('northeast', line)
     def handle_e_line(self, line):
         self.process_dir_line('east', line)
+    def handle_se_line(self, line):
+        self.process_dir_line('southeast', line)
     def handle_s_line(self, line):
         self.process_dir_line('south', line)
+    def handle_sw_line(self, line):
+        self.process_dir_line('southwest', line)
     def handle_w_line(self, line):
         self.process_dir_line('west', line)
+    def handle_nw_line(self, line):
+        self.process_dir_line('northwest', line)
     def handle_u_line(self, line):
         self.process_dir_line('up', line)
     def handle_d_line(self, line):
@@ -817,12 +827,20 @@ class converter(object):
     # directional movements with two-way shortcut:
     def handle_n2_line(self, line):
         self.process_dir_line('north', line, 'south')
+    def handle_ne2_line(self, line):
+        self.process_dir_line('northeast', line, 'southwest')
     def handle_e2_line(self, line):
         self.process_dir_line('east', line, 'west')
+    def handle_se2_line(self, line):
+        self.process_dir_line('southeast', line, 'northwest')
     def handle_s2_line(self, line):
         self.process_dir_line('south', line, 'north')
+    def handle_sw2_line(self, line):
+        self.process_dir_line('southwest', line, 'northeast')
     def handle_w2_line(self, line):
         self.process_dir_line('west', line, 'east')
+    def handle_nw2_line(self, line):
+        self.process_dir_line('northwest', line, 'southeast')
     def handle_u2_line(self, line):
         self.process_dir_line('up', line, 'down')
     def handle_d2_line(self, line):

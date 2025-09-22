@@ -1,20 +1,24 @@
 ;ACME 0.97
 
-	!src <6502/std.a>	; for bit16 macro
-	!src <6502/split.a>	; for macro to split pointer tables into lo/hi
-
 ; helper values
-!addr	MODIFIED16	= $ffff
 	MAX_RECURSIONS	= 64	; ought to be enough for anybody (tm)
 
 ; direction commands
 go_north	ldx #offset_NORTH
 		+bit16
+go_northeast	ldx #offset_NORTHEAST
+		+bit16
+go_east		ldx #offset_EAST
+		+bit16
+go_southeast	ldx #offset_SOUTHEAST
+		+bit16
 go_south	ldx #offset_SOUTH
+		+bit16
+go_southwest	ldx #offset_SOUTHWEST
 		+bit16
 go_west		ldx #offset_WEST
 		+bit16
-go_east		ldx #offset_EAST
+go_northwest	ldx #offset_NORTHWEST
 		+bit16
 go_up		ldx #offset_UP
 		+bit16
@@ -217,6 +221,26 @@ engine_new_location ; show current location
 		jsr itemlist_at_YYAA_new	; scan items
 		jmp itemlist_list
 
+show_paths ; output list of possible directions:
+		+primm [ cr, i18n_PATHS, ":" ]
+		ldx #0
+---
+			lda #' '
+			jsr my_chrout	; output separator
+			ldy #color_out
+			lda directions_hi, x	; check high byte for zero (if zero, assume low byte is zero as well)
+			beq +
+				ldy #color_emph
++			tya
+			jsr my_chrout
+			ldy dirs_lo, x
+			lda dirs_hi, x
+			jsr print_AAYY
+			inx
+			cpx #NUMBER_OF_DIRECTIONS
+			bne ---
+		+primm [ color_std, cr, cr ]
+		rts
 
 
 ; bytecode interpreter:
@@ -261,7 +285,8 @@ cmd_table_lo
 	+split_lo [ cmd_endofblock, cmd_callasm, cmd_gosub, cmd_goto ]
 	+split_lo [ cmd_ifnotequal, cmd_ifequal, cmd_ifgreaterorequal, cmd_ifgreater ]
 	+split_lo [ cmd_delay, cmd_varinc, cmd_vardec, cmd_varcopy, cmd_varloadimm ]
-	+split_lo [ cmd_print, cmd_north, cmd_south, cmd_west, cmd_east, cmd_up, cmd_down ]
+	+split_lo [ cmd_print ]
+	+split_lo [ cmd_north, cmd_northeast, cmd_east, cmd_southeast, cmd_south, cmd_southwest, cmd_west, cmd_northwest, cmd_up, cmd_down ]
 cmd_table_hi
 	+split_hi
 ; command codes (CAUTION, they must match their table indices above):
@@ -280,12 +305,16 @@ CMD_VARCOPY	= 11	; followed by var number, var number
 CMD_VARLOADIMM	= 12	; followed by var number and 16-bit literal
 CMD_PRINT	= 13	; followed by zero-terminated string
 CMD_NORTH	= 14	; followed by target address
-CMD_SOUTH	= 15	; followed by target address
-CMD_WEST	= 16	; followed by target address
-CMD_EAST	= 17	; followed by target address
-CMD_UP		= 18	; followed by target address
-CMD_DOWN	= 19	; followed by target address
-CMDLIMIT	= 20
+CMD_NORTHEAST	= 15	; followed by target address
+CMD_EAST	= 16	; followed by target address
+CMD_SOUTHEAST	= 17	; followed by target address
+CMD_SOUTH	= 18	; followed by target address
+CMD_SOUTHWEST	= 19	; followed by target address
+CMD_WEST	= 20	; followed by target address
+CMD_NORTHWEST	= 21	; followed by target address
+CMD_UP		= 22	; followed by target address
+CMD_DOWN	= 23	; followed by target address
+CMDLIMIT	= 24
 
 ;---------------------------------------
 ; all command handlers are entered with runptr pointing to command and Y=0
@@ -324,19 +353,31 @@ cmd_print ;
 		lda #1	; skip terminating zero
 		jmp interpreter_go_on
 ;---------------------------------------
-	!macro north	.target	{!by CMD_NORTH:	!wo .target	}
-	!macro south	.target {!by CMD_SOUTH:	!wo .target	}
-	!macro west	.target {!by CMD_WEST:	!wo .target	}
-	!macro east	.target {!by CMD_EAST:	!wo .target	}
-	!macro up	.target {!by CMD_UP:	!wo .target	}
-	!macro down	.target {!by CMD_DOWN:	!wo .target	}
+	!macro north		.target	{!by CMD_NORTH:		!wo .target	}
+	!macro northeast	.target	{!by CMD_NORTHEAST:	!wo .target	}
+	!macro east		.target {!by CMD_EAST:		!wo .target	}
+	!macro southeast	.target	{!by CMD_SOUTHEAST:	!wo .target	}
+	!macro south		.target {!by CMD_SOUTH:		!wo .target	}
+	!macro southwest	.target	{!by CMD_SOUTHWEST:	!wo .target	}
+	!macro west		.target {!by CMD_WEST:		!wo .target	}
+	!macro northwest	.target	{!by CMD_NORTHWEST:	!wo .target	}
+	!macro up		.target {!by CMD_UP:		!wo .target	}
+	!macro down		.target {!by CMD_DOWN:		!wo .target	}
 cmd_north	ldx #offset_NORTH
+		+bit16
+cmd_northeast	ldx #offset_NORTHEAST
+		+bit16
+cmd_east	ldx #offset_EAST
+		+bit16
+cmd_southeast	ldx #offset_SOUTHEAST
 		+bit16
 cmd_south	ldx #offset_SOUTH
 		+bit16
+cmd_southwest	ldx #offset_SOUTHWEST
+		+bit16
 cmd_west	ldx #offset_WEST
 		+bit16
-cmd_east	ldx #offset_EAST
+cmd_northwest	ldx #offset_NORTHWEST
 		+bit16
 cmd_up		ldx #offset_UP
 		+bit16
@@ -350,21 +391,29 @@ cmd_down	ldx #offset_DOWN
 		lda #3 ; skip command and two parameter bytes
 		jmp interpreter_go_on
 
-north	!tx i18n_NORTH, 0
-south	!tx i18n_SOUTH, 0
-west	!tx i18n_WEST, 0
-east	!tx i18n_EAST, 0
-up	!tx i18n_UP, 0
-down	!tx i18n_DOWN, 0
+north		!tx i18n_NORTH, 0
+northeast	!tx i18n_NORTHEAST, 0
+east		!tx i18n_EAST, 0
+southeast	!tx i18n_SOUTHEAST, 0
+south		!tx i18n_SOUTH, 0
+southwest	!tx i18n_SOUTHWEST, 0
+west		!tx i18n_WEST, 0
+northwest	!tx i18n_NORTHWEST, 0
+up		!tx i18n_UP, 0
+down		!tx i18n_DOWN, 0
 
-dirs_lo	!by <north, <south, <west, <east, <up, <down	; FIXME - use offsets to build table?
-dirs_hi	!by >north, >south, >west, >east, >up, >down
-	offset_NORTH	= 0
-	offset_SOUTH	= 1
-	offset_WEST	= 2
-	offset_EAST	= 3
-	offset_UP	= 4
-	offset_DOWN	= 5
+dirs_lo	+split_lo [ north, northeast, east, southeast, south, southwest, west, northwest, up, down ]	; FIXME - use offsets to build table?
+dirs_hi	+split_hi
+	offset_NORTH		= 0
+	offset_NORTHEAST	= 1
+	offset_EAST		= 2
+	offset_SOUTHEAST	= 3
+	offset_SOUTH		= 4
+	offset_SOUTHWEST	= 5
+	offset_WEST		= 6
+	offset_NORTHWEST	= 7
+	offset_UP		= 8
+	offset_DOWN		= 9
 ;---------------------------------------
 	; CAUTION! a macro like "if a < b then execute block" is internally
 	; implemented as "if not a < b then goto after block", therefore all
